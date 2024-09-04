@@ -13,10 +13,11 @@ import os
 # Constants
 GRID_SIZE = 30
 NUM_COLORS = 10  # 0-9
-CONTEXT_LENGTH = 4
-BATCH_SIZE = 16
+CONTEXT_LENGTH = 6
+BATCH_SIZE = 8
 NUM_EPOCHS = 100
 LEARNING_RATE = 1e-4
+NUM_LAYERS = 3
 
 # Import the GridTransformer model
 from grid_transformer import GridTransformer
@@ -124,7 +125,7 @@ def main():
     print(f"Using device: {device}")
 
     # Load the pre-trained model
-    model = GridTransformer(num_layers=2, embed_dim=64, num_heads=4, ff_dim=256).to(device)
+    model = GridTransformer(num_layers=NUM_LAYERS, embed_dim=64, num_heads=4, ff_dim=256).to(device)
     model.load_state_dict(torch.load("grid_transformer_model_exact_loss.pth"))
     model = model.to(device)
 

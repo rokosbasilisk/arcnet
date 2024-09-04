@@ -10,10 +10,11 @@ from tqdm import tqdm
 # Constants
 GRID_SIZE = 30
 NUM_COLORS = 10  # 0-9
-CONTEXT_LENGTH = 4
-BATCH_SIZE = 16
+CONTEXT_LENGTH = 6
+BATCH_SIZE = 8
 NUM_EPOCHS = 50
 LEARNING_RATE = 1e-4
+NUM_LAYERS = 3
 
 class GridDataset(Dataset):
     def __init__(self, trajectories):
@@ -124,7 +125,7 @@ def train_model():
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 
     # Initialize model
-    model = GridTransformer(num_layers=2, embed_dim=64, num_heads=4, ff_dim=256).to(device)
+    model = GridTransformer(num_layers=NUM_LAYERS, embed_dim=64, num_heads=4, ff_dim=256).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
