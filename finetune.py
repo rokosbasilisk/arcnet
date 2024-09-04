@@ -13,7 +13,7 @@ import random
 GRID_SIZE = 30
 NUM_COLORS = 10  # 0-9
 CONTEXT_LENGTH = 6
-BATCH_SIZE = 8
+BATCH_SIZE = 6
 NUM_EPOCHS = 100
 LEARNING_RATE = 1e-4
 NUM_LAYERS = 3
@@ -48,7 +48,7 @@ SCREEN_SIZE = GRID_SIZE * CELL_SIZE
 FPS = 30
 
 # Import the GridTransformer model
-from grid_transformer import GridTransformer
+from pretrain import GridTransformer
 
 class ARCDataset(Dataset):
     def __init__(self, challenges_file, solutions_file):
@@ -214,10 +214,9 @@ def main():
         print("Pre-trained model not found. Training from scratch...")
 
     # Create dataset and dataloader for ARC data
-    arc_dataset = ARCDataset("data/arc-agi_training_challenges.json", "data/arc-agi_training_solutions.json")
-    train_size = int(0.8 * len(arc_dataset))
-    val_size = len(arc_dataset) - train_size
-    train_dataset, val_dataset = torch.utils.data.random_split(arc_dataset, [train_size, val_size])
+    train_dataset = ARCDataset("data/arc-agi_training_challenges.json", "data/arc-agi_training_solutions.json")
+    val_dataset = ARCDataset("data/arc-agi_evaluation_challenges.json", "data/arc-agi_evaluation_solutions.json")
+
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 
