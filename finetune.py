@@ -9,6 +9,8 @@ import os
 import pygame
 import random
 import time
+from grid_transformer import *
+from vis import visualize_examples
 
 # Constants
 GRID_SIZE = 30
@@ -47,9 +49,6 @@ GRID_SIZE = 30
 CELL_SIZE = 20
 SCREEN_SIZE = GRID_SIZE * CELL_SIZE
 FPS = 30
-
-# Import the GridTransformer model
-from pretrain import GridTransformer, visualize_examples
 
 class ARCDataset(Dataset):
     def __init__(self, challenges_file, solutions_file):
@@ -157,7 +156,15 @@ def main():
     print(f"Using device: {device}")
 
     # Initialize model
-    model = GridTransformer(num_layers=NUM_LAYERS, embed_dim=64, num_heads=4, ff_dim=256).to(device)
+    model = GridTransformer(
+        num_layers=NUM_LAYERS,  # Define this elsewhere in your code
+        embed_dim=64, 
+        num_heads=4, 
+        ff_dim=256, 
+        max_height=30,  # Specify the height of the grid
+        max_width=30    # Specify the width of the grid
+    ).to(device)
+
 
     # Check if pre-trained model exists
     if os.path.exists("grid_transformer_model_exact_loss.pth"):

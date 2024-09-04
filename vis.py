@@ -2,6 +2,9 @@ import pygame
 import json
 import sys
 import os
+from termcolor import colored
+import random
+import torch
 
 # Constants
 GRID_SIZE = 30
@@ -75,6 +78,53 @@ def main(trajectory_folder, trajectory_number):
 
     pygame.quit()
 
+def visualize_examples(model, val_loader, device):
+    model.eval()
+    with torch.no_grad():
+        for _ in range(3):  # Display only 3 examples
+            # Select a random batch from the loader
+            inputs, targets = next(iter(val_loader))
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = model(inputs)
+            predicted = outputs.argmax(dim=1)
+
+            # Pick a random example from the batch
+            idx = random.randint(0, targets.size(0) - 1)
+            
+            print(colored("Ground Truth vs Predicted", 'yellow'))
+            print_grid(targets[idx].cpu().numpy(), predicted[idx].cpu().numpy())
+            
+            print("\n" + "-" * 20 + "\n")  # Separator between examples
+
+def print_grid(gt_grid, pred_grid):
+    """ Helper function to print two grids side by side in the terminal. """
+    for gt_row, pred_row in zip(gt_grid, pred_grid):
+        gt_line = []
+        pred_line = []
+
+        for gt_cell, pred_cell in zip(gt_row, pred_row):
+            # Get colored strings based on cell values
+            gt_line.append(colored(str(gt_cell), color_for_value(gt_cell)))
+            pred_line.append(colored(str(pred_cell), color_for_value(pred_cell)))
+
+        # Print the two rows side by side
+        print(" ".join(gt_line) + "    " + " ".join(pred_line))
+
+def color_for_value(value):
+    """ Returns a color based on the value for grid cells ranging from 0 to 9. """
+    color_map = {
+        0: 'white',
+        1: 'blue',
+        2: 'cyan',
+        3: 'magenta',
+        4: 'yellow',
+        5: 'green',
+        6: 'red',
+        7: 'grey',
+        8: 'light_blue',
+        9: 'light_magenta'
+    }
+    return color_map.get(value, 'white')  # Default to 'white' if value is not found
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: python visualizer.py <trajectory_folder> <trajectory_number>")
