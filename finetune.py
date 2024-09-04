@@ -11,18 +11,25 @@ import random
 from termcolor import colored
 from tokenized_grid_transformer import TokenizedGridTransformer, ARCTokenizer, GRID_SIZE, CONTEXT_LENGTH, NUM_COLORS
 
-
 # Constants
 BATCH_SIZE = 32
 NUM_EPOCHS = 100
 LEARNING_RATE = 1e-4
-NUM_LAYERS = 4
+NUM_LAYERS = 5
 EMBED_DIM = 256
 NUM_HEADS = 8
 FF_DIM = 1024
 
+
+
+import numpy as np
+import torch
+from torch.utils.data import Dataset
+import json
+import random
+
 class ARCDataset(Dataset):
-    def __init__(self, challenges_file, solutions_file):
+    def __init__(self, challenges_file, solutions_file, apply_transformations=True):
         with open(challenges_file, 'r') as f:
             self.challenges = json.load(f)
         with open(solutions_file, 'r') as f:
@@ -30,6 +37,8 @@ class ARCDataset(Dataset):
         
         self.tokenizer = ARCTokenizer()
         self.data = []
+        self.apply_transformations = apply_transformations
+        
         for challenge_id in self.challenges:
             challenge = self.challenges[challenge_id]
             solution = self.solutions[challenge_id]
@@ -37,6 +46,9 @@ class ARCDataset(Dataset):
             for train_pair in challenge['train']:
                 input_sequence = self.preprocess_grid(train_pair['input'])
                 output_grid = self.preprocess_single_grid(train_pair['output'])
+                
+                if self.apply_transformations:
+                    input_sequence, output_grid = self.apply_random_transformations(input_sequence, output_grid)
                 
                 # Tokenize input sequence and output grid
                 input_tokens = [self.tokenizer.tokenize(self.tokenizer.pad_grid(grid)) for grid in input_sequence]
@@ -49,7 +61,6 @@ class ARCDataset(Dataset):
                     input_tokens.insert(0, [0] * ((GRID_SIZE // 2) ** 2))
                 
                 self.data.append((input_tokens, output_tokens))
-
     
     def preprocess_grid(self, grid):
         if isinstance(grid[0], list):  # If it's already a 2D grid
@@ -62,6 +73,45 @@ class ARCDataset(Dataset):
         h, w = min(GRID_SIZE, len(grid)), min(GRID_SIZE, len(grid[0]))
         padded_grid[:h, :w] = np.array(grid)[:h, :w]
         return padded_grid
+    
+    def apply_random_transformations(self, input_sequence, output_grid):
+        # Randomly choose transformations
+        transformations = []
+        if random.random() < 0.5:
+            transformations.append(self.rotate_grid)
+        if random.random() < 0.5:
+            transformations.append(self.replace_colors)
+        
+        # Apply chosen transformations
+        for transform in transformations:
+            input_sequence, output_grid = transform(input_sequence, output_grid)
+        
+        return input_sequence, output_grid
+    
+    def rotate_grid(self, input_sequence, output_grid):
+        k = random.choice([1, 2, 3])  # Number of 90-degree rotations
+        rotated_input = [np.rot90(grid, k) for grid in input_sequence]
+        rotated_output = np.rot90(output_grid, k)
+        return rotated_input, rotated_output
+    
+    def replace_colors(self, input_sequence, output_grid):
+        # Get unique colors excluding 0
+        unique_colors = set(np.unique(input_sequence + [output_grid])) - {0}
+        
+        # Create color map, keeping 0 unchanged
+        color_map = {0: 0}  # Ensure 0 maps to 0
+        available_colors = list(range(1, NUM_COLORS))
+        for color in unique_colors:
+            if color != 0:
+                new_color = random.choice(available_colors)
+                color_map[color] = new_color
+                available_colors.remove(new_color)
+        
+        # Apply color replacement
+        replaced_input = [np.vectorize(lambda x: color_map.get(x, x))(grid) for grid in input_sequence]
+        replaced_output = np.vectorize(lambda x: color_map.get(x, x))(output_grid)
+        
+        return replaced_input, replaced_output
     
     def __len__(self):
         return len(self.data)
