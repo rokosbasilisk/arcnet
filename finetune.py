@@ -1,3 +1,4 @@
+#from vis import *
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -6,49 +7,19 @@ import json
 import numpy as np
 from tqdm import tqdm
 import os
-import pygame
 import random
-import time
-from grid_transformer import *
-from vis import visualize_examples
+from termcolor import colored
+from tokenized_grid_transformer import TokenizedGridTransformer, ARCTokenizer, GRID_SIZE, CONTEXT_LENGTH, NUM_COLORS
+
 
 # Constants
-GRID_SIZE = 30
-NUM_COLORS = 10  # 0-9
-CONTEXT_LENGTH = 6
-BATCH_SIZE = 4
+BATCH_SIZE = 32
 NUM_EPOCHS = 100
 LEARNING_RATE = 1e-4
 NUM_LAYERS = 4
-CELL_SIZE = 20
-SCREEN_SIZE = GRID_SIZE * CELL_SIZE
-FPS = 30
-
-# Colors
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-GRAY = (128, 128, 128)
-
-# Color mapping
-COLOR_MAP = [
-    (0, 0, 0),      # 0: Black (empty)
-    (255, 0, 0),    # 1: Red
-    (0, 255, 0),    # 2: Green
-    (0, 0, 255),    # 3: Blue
-    (255, 255, 0),  # 4: Yellow
-    (255, 0, 255),  # 5: Magenta
-    (0, 255, 255),  # 6: Cyan
-    (128, 0, 0),    # 7: Maroon
-    (0, 128, 0),    # 8: Dark Green
-    (0, 0, 128)     # 9: Navy
-]
-
-
-# Constants
-GRID_SIZE = 30
-CELL_SIZE = 20
-SCREEN_SIZE = GRID_SIZE * CELL_SIZE
-FPS = 30
+EMBED_DIM = 256
+NUM_HEADS = 8
+FF_DIM = 1024
 
 class ARCDataset(Dataset):
     def __init__(self, challenges_file, solutions_file):
@@ -57,6 +28,7 @@ class ARCDataset(Dataset):
         with open(solutions_file, 'r') as f:
             self.solutions = json.load(f)
         
+        self.tokenizer = ARCTokenizer()
         self.data = []
         for challenge_id in self.challenges:
             challenge = self.challenges[challenge_id]
@@ -66,13 +38,18 @@ class ARCDataset(Dataset):
                 input_sequence = self.preprocess_grid(train_pair['input'])
                 output_grid = self.preprocess_single_grid(train_pair['output'])
                 
-                # Ensure we have at least CONTEXT_LENGTH frames
-                while len(input_sequence) < CONTEXT_LENGTH:
-                    input_sequence.insert(0, np.zeros((GRID_SIZE, GRID_SIZE), dtype=int))
+                # Tokenize input sequence and output grid
+                input_tokens = [self.tokenizer.tokenize(self.tokenizer.pad_grid(grid)) for grid in input_sequence]
+                output_tokens = self.tokenizer.tokenize(self.tokenizer.pad_grid(output_grid))
                 
-                # Use the last CONTEXT_LENGTH frames to predict the output
-                input_window = input_sequence[-CONTEXT_LENGTH:]
-                self.data.append((input_window, output_grid))
+                # Ensure we have exactly CONTEXT_LENGTH frames
+                if len(input_tokens) > CONTEXT_LENGTH:
+                    input_tokens = input_tokens[-CONTEXT_LENGTH:]
+                while len(input_tokens) < CONTEXT_LENGTH:
+                    input_tokens.insert(0, [0] * ((GRID_SIZE // 2) ** 2))
+                
+                self.data.append((input_tokens, output_tokens))
+
     
     def preprocess_grid(self, grid):
         if isinstance(grid[0], list):  # If it's already a 2D grid
@@ -90,20 +67,87 @@ class ARCDataset(Dataset):
         return len(self.data)
     
     def __getitem__(self, idx):
-        input_grids, target_grid = self.data[idx]
-        return torch.tensor(input_grids, dtype=torch.long), torch.tensor(target_grid, dtype=torch.long)
+        input_tokens, target_tokens = self.data[idx]
+        return (torch.tensor(input_tokens, dtype=torch.long),
+                torch.tensor(target_tokens, dtype=torch.long))
 
 def exact_match_accuracy(outputs, targets):
-    predicted = outputs.argmax(dim=1)
-    correct = (predicted == targets).all(dim=(1, 2)).float()
+    predicted = outputs.argmax(dim=-1)
+    correct = (predicted == targets).all(dim=1).float()
     return correct.mean().item()
 
 def cell_accuracy(outputs, targets):
-    predicted = outputs.argmax(dim=1)
+    predicted = outputs.argmax(dim=-1)
     correct = (predicted == targets).float()
     return correct.mean().item()
 
-def fine_tune_model(model, train_loader, val_loader, num_epochs, device):
+def color_for_value(value):
+    """ Returns a color based on the value for grid cells ranging from 0 to 9. """
+    color_map = {
+        0: 'white',
+        1: 'blue',
+        2: 'cyan',
+        3: 'magenta',
+        4: 'yellow',
+        5: 'green',
+        6: 'red',
+        7: 'grey',
+        8: 'light_blue',
+        9: 'light_magenta'
+    }
+    return color_map.get(value, 'white')  # Default to 'white' if value is not found
+
+def ensure_2d_grid(grid):
+    """Ensure the grid is a 2D numpy array."""
+    if grid.ndim == 1:
+        side_length = int(np.sqrt(grid.shape[0]))
+        return grid.reshape(side_length, side_length)
+    elif grid.ndim > 2:
+        return grid.reshape(grid.shape[0], -1)
+    return grid
+
+def visualize_examples(model, val_loader, device):
+    model.eval()
+    with torch.no_grad():
+        # Select a random sample from the entire validation loader
+        inputs, targets = next(iter(val_loader))
+        # Randomly sample one input-target pair
+        idx = random.randint(0, targets.size(0) - 1)
+        input_sample = inputs[idx].unsqueeze(0).to(device)
+        target_sample = targets[idx].to(device)
+        # Run the model on the sampled input
+        output_sample = model(input_sample)
+        predicted_sample = output_sample.argmax(dim=-1).squeeze(0)
+        
+        # Detokenize the predicted sample and ensure it's a 2D grid
+        predicted_grid = model.tokenizer.detokenize(predicted_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE))
+        predicted_grid = ensure_2d_grid(predicted_grid)
+        
+        # Detokenize the target sample and ensure it's a 2D grid
+        target_grid = model.tokenizer.detokenize(target_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE))
+        target_grid = ensure_2d_grid(target_grid)
+        
+        print(colored("Ground Truth vs Predicted", 'yellow'))
+        print(f"Target shape: {target_grid.shape}, Predicted shape: {predicted_grid.shape}")
+        print_grid(target_grid, predicted_grid)
+        
+        print("\n" + "-" * 20 + "\n")  # Separator between examples
+
+def print_grid(gt_grid, pred_grid):
+    """ Helper function to print two grids side by side in the terminal. """
+    for gt_row, pred_row in zip(gt_grid, pred_grid):
+        gt_line = []
+        pred_line = []
+        for gt_cell, pred_cell in zip(gt_row, pred_row):
+            # Get colored strings based on cell values
+            gt_line.append(colored(str(int(gt_cell)), color_for_value(int(gt_cell))))
+            pred_line.append(colored(str(int(pred_cell)), color_for_value(int(pred_cell))))
+        # Print the two rows side by side
+        print(" ".join(gt_line) + "    " + " ".join(pred_line))
+
+
+
+def train_model(model, train_loader, val_loader, num_epochs, device):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     
@@ -114,15 +158,22 @@ def fine_tune_model(model, train_loader, val_loader, num_epochs, device):
         train_cell_acc = 0.0
         for inputs, targets in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
             inputs, targets = inputs.to(device), targets.to(device)
+            
             optimizer.zero_grad()
             outputs = model(inputs)
-            loss = criterion(outputs.reshape(-1, NUM_COLORS), targets.reshape(-1))
+            
+            loss = criterion(outputs.reshape(-1, model.tokenizer.vocab_size), targets.reshape(-1))
             loss.backward()
             optimizer.step()
+            
             train_loss += loss.item()
             train_exact_acc += exact_match_accuracy(outputs, targets)
             train_cell_acc += cell_accuracy(outputs, targets)
 
+        train_loss /= len(train_loader)
+        train_exact_acc /= len(train_loader)
+        train_cell_acc /= len(train_loader)
+        
         # Validation
         model.eval()
         val_loss = 0.0
@@ -132,14 +183,11 @@ def fine_tune_model(model, train_loader, val_loader, num_epochs, device):
             for inputs, targets in val_loader:
                 inputs, targets = inputs.to(device), targets.to(device)
                 outputs = model(inputs)
-                loss = criterion(outputs.reshape(-1, NUM_COLORS), targets.reshape(-1))
+                loss = criterion(outputs.reshape(-1, model.tokenizer.vocab_size), targets.reshape(-1))
                 val_loss += loss.item()
                 val_exact_acc += exact_match_accuracy(outputs, targets)
                 val_cell_acc += cell_accuracy(outputs, targets)
         
-        train_loss /= len(train_loader)
-        train_exact_acc /= len(train_loader)
-        train_cell_acc /= len(train_loader)
         val_loss /= len(val_loader)
         val_exact_acc /= len(val_loader)
         val_cell_acc /= len(val_loader)
@@ -151,25 +199,27 @@ def fine_tune_model(model, train_loader, val_loader, num_epochs, device):
         # Visualize examples after each epoch
         visualize_examples(model, val_loader, device)
 
+        # Save the model after each epoch
+        torch.save(model.state_dict(), f"tokenized_grid_transformer_epoch_{epoch+1}.pth")
+
+
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
     # Initialize model
-    model = GridTransformer(
-        num_layers=NUM_LAYERS,  # Define this elsewhere in your code
-        embed_dim=64, 
-        num_heads=4, 
-        ff_dim=256, 
-        max_height=30,  # Specify the height of the grid
-        max_width=30    # Specify the width of the grid
+    model = TokenizedGridTransformer(
+        num_layers=NUM_LAYERS,
+        embed_dim=EMBED_DIM,
+        num_heads=NUM_HEADS,
+        ff_dim=FF_DIM,
+        max_seq_length=CONTEXT_LENGTH * (GRID_SIZE // 2)**2
     ).to(device)
 
-
     # Check if pre-trained model exists
-    if os.path.exists("grid_transformer_finetuned.pth"):
+    if os.path.exists("tokenized_grid_transformer_finetuned.pth"):
         print("Loading pre-trained model...")
-        model.load_state_dict(torch.load("grid_transformer_finetuned.pth"))
+        model.load_state_dict(torch.load("tokenized_grid_transformer_finetuned.pth"))
     else:
         print("Pre-trained model not found. Training from scratch...")
 
@@ -180,12 +230,12 @@ def main():
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 
-    # Fine-tune the model
-    fine_tune_model(model, train_loader, val_loader, NUM_EPOCHS, device)
+    # Train the model
+    train_model(model, train_loader, val_loader, NUM_EPOCHS, device)
 
-    # Save the fine-tuned model
-    torch.save(model.state_dict(), "grid_transformer_finetuned.pth")
-    print("Fine-tuned model saved as grid_transformer_finetuned.pth")
+    # Save the final model
+    torch.save(model.state_dict(), "tokenized_grid_transformer_finetuned.pth")
+    print("Final model saved as tokenized_grid_transformer_finetuned.pth")
 
 if __name__ == "__main__":
     main()
