@@ -51,23 +51,26 @@ import torch
 def visualize_examples(model, val_loader, device):
     model.eval()
     with torch.no_grad():
-        for inputs, targets in val_loader:
+        # Limit to 3 examples
+        for _ in range(3):
+            # Select a random batch from the loader
+            inputs, targets = next(iter(val_loader))
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = model(inputs)
             predicted = outputs.argmax(dim=1)
 
-            for i in range(5):  # Display 5 random examples
-                idx = random.randint(0, targets.size(0) - 1)
-                
-                # Print Ground Truth
-                print(colored("Ground Truth:", 'green'))
-                print_grid(targets[idx].cpu().numpy())
-                
-                # Print Predicted
-                print(colored("Predicted:", 'red'))
-                print_grid(predicted[idx].cpu().numpy())
-                
-                print("\n" + "-" * 20 + "\n")  # Separator between examples
+            # Pick a random example from the batch
+            idx = random.randint(0, targets.size(0) - 1)
+            
+            # Print Ground Truth
+            print(colored("Ground Truth:", 'green'))
+            print_grid(targets[idx].cpu().numpy())
+            
+            # Print Predicted
+            print(colored("Predicted:", 'red'))
+            print_grid(predicted[idx].cpu().numpy())
+            
+            print("\n" + "-" * 20 + "\n")  # Separator between examples
 
 def print_grid(grid):
     """ Helper function to print the grid with colors in terminal. """
@@ -87,6 +90,7 @@ def print_grid(grid):
             else:
                 print(colored(str(cell), 'red'), end=' ')
         print()  # Newline after each row
+
 
 class GridDataset(Dataset):
     def __init__(self, trajectories):
