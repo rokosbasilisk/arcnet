@@ -51,8 +51,7 @@ import torch
 def visualize_examples(model, val_loader, device):
     model.eval()
     with torch.no_grad():
-        # Limit to 3 examples
-        for _ in range(3):
+        for _ in range(3):  # Display only 3 examples
             # Select a random batch from the loader
             inputs, targets = next(iter(val_loader))
             inputs, targets = inputs.to(device), targets.to(device)
@@ -62,34 +61,39 @@ def visualize_examples(model, val_loader, device):
             # Pick a random example from the batch
             idx = random.randint(0, targets.size(0) - 1)
             
-            # Print Ground Truth
-            print(colored("Ground Truth:", 'green'))
-            print_grid(targets[idx].cpu().numpy())
-            
-            # Print Predicted
-            print(colored("Predicted:", 'red'))
-            print_grid(predicted[idx].cpu().numpy())
+            print(colored("Ground Truth vs Predicted", 'yellow'))
+            print_grid(targets[idx].cpu().numpy(), predicted[idx].cpu().numpy())
             
             print("\n" + "-" * 20 + "\n")  # Separator between examples
 
-def print_grid(grid):
-    """ Helper function to print the grid with colors in terminal. """
-    for row in grid:
-        for cell in row:
+def print_grid(gt_grid, pred_grid):
+    """ Helper function to print two grids side by side in the terminal. """
+    for gt_row, pred_row in zip(gt_grid, pred_grid):
+        gt_line = []
+        pred_line = []
+
+        for gt_cell, pred_cell in zip(gt_row, pred_row):
             # Customize colors based on cell values (adjust to your needs)
-            if cell == 0:
-                print(colored('0', 'white'), end=' ')
-            elif cell == 1:
-                print(colored('1', 'blue'), end=' ')
-            elif cell == 2:
-                print(colored('2', 'cyan'), end=' ')
-            elif cell == 3:
-                print(colored('3', 'magenta'), end=' ')
-            elif cell == 4:
-                print(colored('4', 'yellow'), end=' ')
-            else:
-                print(colored(str(cell), 'red'), end=' ')
-        print()  # Newline after each row
+            gt_line.append(colored(str(gt_cell), color_for_value(gt_cell)))
+            pred_line.append(colored(str(pred_cell), color_for_value(pred_cell)))
+
+        # Print the two rows side by side
+        print(" ".join(gt_line) + "    " + " ".join(pred_line))
+
+def color_for_value(value):
+    """ Returns a color based on the value for grid cells. """
+    if value == 0:
+        return 'white'
+    elif value == 1:
+        return 'blue'
+    elif value == 2:
+        return 'cyan'
+    elif value == 3:
+        return 'magenta'
+    elif value == 4:
+        return 'yellow'
+    else:
+        return 'red'
 
 
 class GridDataset(Dataset):

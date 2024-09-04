@@ -49,7 +49,7 @@ SCREEN_SIZE = GRID_SIZE * CELL_SIZE
 FPS = 30
 
 # Import the GridTransformer model
-from pretrain import GridTransformer, visualize_examples, print_grid
+from pretrain import GridTransformer, visualize_examples
 
 class ARCDataset(Dataset):
     def __init__(self, challenges_file, solutions_file):
