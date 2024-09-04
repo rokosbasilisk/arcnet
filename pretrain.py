@@ -7,6 +7,7 @@ import os
 import pygame
 import numpy as np
 from tqdm import tqdm
+import time
 
 # Constants
 GRID_SIZE = 30
@@ -144,6 +145,8 @@ def draw_grid(screen, grid_state, x_offset=0):
             pygame.draw.rect(screen, color, (x_offset + j*CELL_SIZE, i*CELL_SIZE, CELL_SIZE, CELL_SIZE))
             pygame.draw.rect(screen, GRAY, (x_offset + j*CELL_SIZE, i*CELL_SIZE, CELL_SIZE, CELL_SIZE), 1)
 
+import time  # Add this import at the top of your script
+
 def visualize_examples(model, val_loader, device):
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_SIZE * 2, SCREEN_SIZE))
@@ -173,17 +176,12 @@ def visualize_examples(model, val_loader, device):
                 pygame.display.flip()
                 clock.tick(FPS)
 
-                # Wait for a key press or quit event
-                waiting = True
-                while waiting:
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            pygame.quit()
-                            return
-                        if event.type == pygame.KEYDOWN:
-                            waiting = False
+                # Wait for 2 seconds
+                time.sleep(2)
+                return  # Exit the function, closing the window
 
     pygame.quit()
+
 
 def train_model():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
