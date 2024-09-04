@@ -73,7 +73,7 @@ def print_grid(gt_grid, pred_grid):
         pred_line = []
 
         for gt_cell, pred_cell in zip(gt_row, pred_row):
-            # Customize colors based on cell values (adjust to your needs)
+            # Get colored strings based on cell values
             gt_line.append(colored(str(gt_cell), color_for_value(gt_cell)))
             pred_line.append(colored(str(pred_cell), color_for_value(pred_cell)))
 
@@ -81,20 +81,20 @@ def print_grid(gt_grid, pred_grid):
         print(" ".join(gt_line) + "    " + " ".join(pred_line))
 
 def color_for_value(value):
-    """ Returns a color based on the value for grid cells. """
-    if value == 0:
-        return 'white'
-    elif value == 1:
-        return 'blue'
-    elif value == 2:
-        return 'cyan'
-    elif value == 3:
-        return 'magenta'
-    elif value == 4:
-        return 'yellow'
-    else:
-        return 'red'
-
+    """ Returns a color based on the value for grid cells ranging from 0 to 9. """
+    color_map = {
+        0: 'white',
+        1: 'blue',
+        2: 'cyan',
+        3: 'magenta',
+        4: 'yellow',
+        5: 'green',
+        6: 'red',
+        7: 'grey',
+        8: 'light_blue',
+        9: 'light_magenta'
+    }
+    return color_map.get(value, 'white')  # Default to 'white' if value is not found
 
 class GridDataset(Dataset):
     def __init__(self, trajectories):
