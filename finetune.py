@@ -231,10 +231,10 @@ def visualize_examples(model, val_loader, device):
         print("Unique predicted tokens:", unique_tokens.tolist())
         print("Token counts:", counts.tolist())
         
-        predicted_grid = model.tokenizer.detokenize(predicted_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE), padding_value=PADDING_VALUE)
+        predicted_grid = model.tokenizer.detokenize(predicted_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE))
         predicted_grid = ensure_2d_grid(predicted_grid)
         
-        target_grid = model.tokenizer.detokenize(target_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE), padding_value=PADDING_VALUE)
+        target_grid = model.tokenizer.detokenize(target_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE))
         target_grid = ensure_2d_grid(target_grid)
         
         print(colored("Ground Truth vs Predicted", 'yellow'))

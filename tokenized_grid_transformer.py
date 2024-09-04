@@ -34,11 +34,7 @@ class ARCTokenizer:
                 if all(v == self.padding_value for v in subgrid_tuple):
                     tokens.append(self.padding_token)
                 else:
-                    try:
-                        tokens.append(self.grid_to_token[subgrid_tuple])
-                    except KeyError:
-                        # If the subgrid is not in our vocabulary, use the padding token
-                        tokens.append(self.padding_token)
+                    tokens.append(self.grid_to_token.get(subgrid_tuple, self.padding_token))
         return tokens
 
     def detokenize(self, tokens, output_shape):
