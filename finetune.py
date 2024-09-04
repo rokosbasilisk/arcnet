@@ -1,8 +1,7 @@
-#from vis import *
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, Subset, random_split
 import json
 import numpy as np
 from tqdm import tqdm
@@ -12,15 +11,14 @@ from termcolor import colored
 from tokenized_grid_transformer import TokenizedGridTransformer, ARCTokenizer, GRID_SIZE, CONTEXT_LENGTH, NUM_COLORS
 
 # Constants
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 NUM_EPOCHS = 100
 LEARNING_RATE = 1e-4
-NUM_LAYERS = 5
-EMBED_DIM = 256
+NUM_LAYERS = 8
+EMBED_DIM = 64
 NUM_HEADS = 8
-FF_DIM = 1024
-
-
+FF_DIM = 128
+PADDING_VALUE = 10
 
 import numpy as np
 import torch
@@ -28,16 +26,23 @@ from torch.utils.data import Dataset
 import json
 import random
 
+import numpy as np
+import torch
+from torch.utils.data import Dataset
+import json
+
 class ARCDataset(Dataset):
-    def __init__(self, challenges_file, solutions_file, apply_transformations=True):
+    def __init__(self, challenges_file, solutions_file, max_grid_size=30, context_length=6, padding_value=10):
         with open(challenges_file, 'r') as f:
             self.challenges = json.load(f)
         with open(solutions_file, 'r') as f:
             self.solutions = json.load(f)
         
-        self.tokenizer = ARCTokenizer()
+        self.tokenizer = ARCTokenizer(padding_value=padding_value)
         self.data = []
-        self.apply_transformations = apply_transformations
+        self.max_grid_size = max_grid_size
+        self.context_length = context_length
+        self.padding_value = padding_value
         
         for challenge_id in self.challenges:
             challenge = self.challenges[challenge_id]
@@ -47,18 +52,15 @@ class ARCDataset(Dataset):
                 input_sequence = self.preprocess_grid(train_pair['input'])
                 output_grid = self.preprocess_single_grid(train_pair['output'])
                 
-                if self.apply_transformations:
-                    input_sequence, output_grid = self.apply_random_transformations(input_sequence, output_grid)
+                # Pad and tokenize input sequence and output grid
+                input_tokens = [self.tokenize_and_pad(grid) for grid in input_sequence]
+                output_tokens = self.tokenize_and_pad(output_grid)
                 
-                # Tokenize input sequence and output grid
-                input_tokens = [self.tokenizer.tokenize(self.tokenizer.pad_grid(grid)) for grid in input_sequence]
-                output_tokens = self.tokenizer.tokenize(self.tokenizer.pad_grid(output_grid))
-                
-                # Ensure we have exactly CONTEXT_LENGTH frames
-                if len(input_tokens) > CONTEXT_LENGTH:
-                    input_tokens = input_tokens[-CONTEXT_LENGTH:]
-                while len(input_tokens) < CONTEXT_LENGTH:
-                    input_tokens.insert(0, [0] * ((GRID_SIZE // 2) ** 2))
+                # Ensure we have exactly context_length frames
+                if len(input_tokens) > self.context_length:
+                    input_tokens = input_tokens[-self.context_length:]
+                while len(input_tokens) < self.context_length:
+                    input_tokens.insert(0, [self.tokenizer.padding_token] * (self.max_grid_size // 2) ** 2)
                 
                 self.data.append((input_tokens, output_tokens))
     
@@ -69,49 +71,13 @@ class ARCDataset(Dataset):
             return [self.preprocess_single_grid(g) for g in grid]
     
     def preprocess_single_grid(self, grid):
-        padded_grid = np.zeros((GRID_SIZE, GRID_SIZE), dtype=int)
-        h, w = min(GRID_SIZE, len(grid)), min(GRID_SIZE, len(grid[0]))
-        padded_grid[:h, :w] = np.array(grid)[:h, :w]
-        return padded_grid
+        return np.array(grid, dtype=int)
     
-    def apply_random_transformations(self, input_sequence, output_grid):
-        # Randomly choose transformations
-        transformations = []
-        if random.random() < 0.5:
-            transformations.append(self.rotate_grid)
-        if random.random() < 0.5:
-            transformations.append(self.replace_colors)
-        
-        # Apply chosen transformations
-        for transform in transformations:
-            input_sequence, output_grid = transform(input_sequence, output_grid)
-        
-        return input_sequence, output_grid
-    
-    def rotate_grid(self, input_sequence, output_grid):
-        k = random.choice([1, 2, 3])  # Number of 90-degree rotations
-        rotated_input = [np.rot90(grid, k) for grid in input_sequence]
-        rotated_output = np.rot90(output_grid, k)
-        return rotated_input, rotated_output
-    
-    def replace_colors(self, input_sequence, output_grid):
-        # Get unique colors excluding 0
-        unique_colors = set(np.unique(input_sequence + [output_grid])) - {0}
-        
-        # Create color map, keeping 0 unchanged
-        color_map = {0: 0}  # Ensure 0 maps to 0
-        available_colors = list(range(1, NUM_COLORS))
-        for color in unique_colors:
-            if color != 0:
-                new_color = random.choice(available_colors)
-                color_map[color] = new_color
-                available_colors.remove(new_color)
-        
-        # Apply color replacement
-        replaced_input = [np.vectorize(lambda x: color_map.get(x, x))(grid) for grid in input_sequence]
-        replaced_output = np.vectorize(lambda x: color_map.get(x, x))(output_grid)
-        
-        return replaced_input, replaced_output
+    def tokenize_and_pad(self, grid):
+        padded_grid = np.full((self.max_grid_size, self.max_grid_size), self.padding_value, dtype=int)
+        h, w = grid.shape
+        padded_grid[:h, :w] = grid
+        return self.tokenizer.tokenize(padded_grid)
     
     def __len__(self):
         return len(self.data)
@@ -121,9 +87,34 @@ class ARCDataset(Dataset):
         return (torch.tensor(input_tokens, dtype=torch.long),
                 torch.tensor(target_tokens, dtype=torch.long))
 
+def prepare_arc_data(train_file, eval_file, batch_size, padding_value=10, val_fraction=0.1):
+    # Load both datasets
+    full_dataset = ARCDataset(train_file, train_file.replace('challenges', 'solutions'), padding_value=padding_value)
+    full_dataset.data.extend(ARCDataset(eval_file, eval_file.replace('challenges', 'solutions'), padding_value=padding_value).data)
+
+    
+    # Shuffle the combined dataset
+    random.shuffle(full_dataset.data)
+    
+    # Calculate the split
+    dataset_size = len(full_dataset)
+    val_size = int(dataset_size * val_fraction)
+    train_size = dataset_size - val_size
+    
+    # Split the dataset
+    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
+    
+    # Create DataLoaders
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size)
+    
+    print(f"Total samples: {dataset_size}")
+    print(f"Training samples: {train_size}")
+    print(f"Validation samples: {val_size}")
+    
+    return train_loader, val_loader
 
 def color_for_value(value):
-    """ Returns a color based on the value for grid cells ranging from 0 to 9. """
     color_map = {
         0: 'white',
         1: 'blue',
@@ -134,12 +125,12 @@ def color_for_value(value):
         6: 'red',
         7: 'grey',
         8: 'light_blue',
-        9: 'light_magenta'
+        9: 'light_magenta',
+        PADDING_VALUE: 'black'
     }
-    return color_map.get(value, 'white')  # Default to 'white' if value is not found
+    return color_map.get(value, 'white')
 
 def ensure_2d_grid(grid):
-    """Ensure the grid is a 2D numpy array."""
     if grid.ndim == 1:
         side_length = int(np.sqrt(grid.shape[0]))
         return grid.reshape(side_length, side_length)
@@ -148,17 +139,15 @@ def ensure_2d_grid(grid):
     return grid
 
 def print_grid(gt_grid, pred_grid):
-    """ Helper function to print two grids side by side in the terminal. """
     for gt_row, pred_row in zip(gt_grid, pred_grid):
         gt_line = []
         pred_line = []
         for gt_cell, pred_cell in zip(gt_row, pred_row):
-            # Get colored strings based on cell values
-            gt_line.append(colored(str(int(gt_cell)), color_for_value(int(gt_cell))))
-            pred_line.append(colored(str(int(pred_cell)), color_for_value(int(pred_cell))))
-        # Print the two rows side by side
+            if gt_cell != PADDING_VALUE:
+                gt_line.append(colored(str(int(gt_cell)), color_for_value(int(gt_cell))))
+            if pred_cell != PADDING_VALUE:
+                pred_line.append(colored(str(int(pred_cell)), color_for_value(int(pred_cell))))
         print(" ".join(gt_line) + "    " + " ".join(pred_line))
-
 
 def exact_match_accuracy(outputs, targets):
     predicted = outputs.argmax(dim=-1)
@@ -171,7 +160,7 @@ def cell_accuracy(outputs, targets):
     return correct.mean().item()
 
 def train_model(model, train_loader, val_loader, num_epochs, device):
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(ignore_index=PADDING_VALUE)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     
     for epoch in range(num_epochs):
@@ -219,11 +208,9 @@ def train_model(model, train_loader, val_loader, num_epochs, device):
         print(f"Train Loss: {train_loss:.4f}, Train Exact Acc: {train_exact_acc:.4f}, Train Cell Acc: {train_cell_acc:.4f}")
         print(f"Val Loss: {val_loss:.4f}, Val Exact Acc: {val_exact_acc:.4f}, Val Cell Acc: {val_cell_acc:.4f}")
 
-        # Visualize examples after each epoch
         visualize_examples(model, val_loader, device)
 
-        # Save the model after each epoch
-        #torch.save(model.state_dict(), f"tokenized_grid_transformer_epoch_{epoch+1}.pth")
+        torch.save(model.state_dict(), f"tokenized_grid_transformer_epoch_{epoch+1}.pth")
 
 def visualize_examples(model, val_loader, device):
     model.eval()
@@ -235,31 +222,19 @@ def visualize_examples(model, val_loader, device):
         
         output_sample = model(input_sample)
         
-        #print("Raw model output shape:", output_sample.shape)
-        #print("Raw model output min:", output_sample.min().item())
-        #print("Raw model output max:", output_sample.max().item())
-        
-        # Use temperature sampling
         temperature = 0.8
         output_sample = output_sample / temperature
         output_probs = torch.softmax(output_sample, dim=-1)
         predicted_sample = torch.multinomial(output_probs.view(-1, output_probs.size(-1)), num_samples=1).squeeze()
         
-        #print("Predicted sample shape:", predicted_sample.shape)
-        #print("Predicted sample min:", predicted_sample.min().item())
-        #print("Predicted sample max:", predicted_sample.max().item())
-        
-        # Debug: Print unique predicted tokens and their counts
         unique_tokens, counts = torch.unique(predicted_sample, return_counts=True)
         print("Unique predicted tokens:", unique_tokens.tolist())
         print("Token counts:", counts.tolist())
         
-        # Detokenize the predicted sample
-        predicted_grid = model.tokenizer.detokenize(predicted_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE))
+        predicted_grid = model.tokenizer.detokenize(predicted_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE), padding_value=PADDING_VALUE)
         predicted_grid = ensure_2d_grid(predicted_grid)
         
-        # Detokenize the target sample
-        target_grid = model.tokenizer.detokenize(target_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE))
+        target_grid = model.tokenizer.detokenize(target_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE), padding_value=PADDING_VALUE)
         target_grid = ensure_2d_grid(target_grid)
         
         print(colored("Ground Truth vs Predicted", 'yellow'))
@@ -268,39 +243,34 @@ def visualize_examples(model, val_loader, device):
         
         print("\n" + "-" * 20 + "\n")  # Separator between examples
 
-
-
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    # Initialize model
     model = TokenizedGridTransformer(
         num_layers=NUM_LAYERS,
         embed_dim=EMBED_DIM,
         num_heads=NUM_HEADS,
         ff_dim=FF_DIM,
-        max_seq_length=CONTEXT_LENGTH * (GRID_SIZE // 2)**2
+        max_seq_length=CONTEXT_LENGTH * (GRID_SIZE // 2)**2,
+        padding_value=PADDING_VALUE
     ).to(device)
 
-    # Check if pre-trained model exists
     if os.path.exists("tokenized_grid_transformer_finetuned.pth"):
         print("Loading pre-trained model...")
         model.load_state_dict(torch.load("tokenized_grid_transformer_finetuned.pth"))
     else:
         print("Pre-trained model not found. Training from scratch...")
 
-    # Create dataset and dataloader for ARC data
-    train_dataset = ARCDataset("data/arc-agi_training_challenges.json", "data/arc-agi_training_solutions.json")
-    val_dataset = ARCDataset("data/arc-agi_evaluation_challenges.json", "data/arc-agi_evaluation_solutions.json")
+    train_loader, val_loader = prepare_arc_data(
+        "data/arc-agi_training_challenges.json",
+        "data/arc-agi_evaluation_challenges.json",
+        BATCH_SIZE,
+        padding_value=PADDING_VALUE
+    )
 
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
-
-    # Train the model
     train_model(model, train_loader, val_loader, NUM_EPOCHS, device)
 
-    # Save the final model
     torch.save(model.state_dict(), "tokenized_grid_transformer_finetuned.pth")
     print("Final model saved as tokenized_grid_transformer_finetuned.pth")
 
