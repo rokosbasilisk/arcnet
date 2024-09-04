@@ -4,6 +4,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import json
 import os
+import pygame
 import numpy as np
 from tqdm import tqdm
 
@@ -11,10 +12,37 @@ from tqdm import tqdm
 GRID_SIZE = 30
 NUM_COLORS = 10  # 0-9
 CONTEXT_LENGTH = 6
-BATCH_SIZE = 8
+BATCH_SIZE = 6
 NUM_EPOCHS = 50
 LEARNING_RATE = 1e-4
 NUM_LAYERS = 3
+
+# Colors
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+GRAY = (128, 128, 128)
+
+
+# Constants
+GRID_SIZE = 30
+CELL_SIZE = 20
+SCREEN_SIZE = GRID_SIZE * CELL_SIZE
+FPS = 30
+
+# Color mapping
+COLOR_MAP = [
+    (0, 0, 0),      # 0: Black (empty)
+    (255, 0, 0),    # 1: Red
+    (0, 255, 0),    # 2: Green
+    (0, 0, 255),    # 3: Blue
+    (255, 255, 0),  # 4: Yellow
+    (255, 0, 255),  # 5: Magenta
+    (0, 255, 255),  # 6: Cyan
+    (128, 0, 0),    # 7: Maroon
+    (0, 128, 0),    # 8: Dark Green
+    (0, 0, 128)     # 9: Navy
+]
+
 
 class GridDataset(Dataset):
     def __init__(self, trajectories):
@@ -109,6 +137,54 @@ def exact_match_accuracy(outputs, targets):
     correct = (predicted == targets).all(dim=(1, 2)).float()
     return correct.mean().item()
 
+def draw_grid(screen, grid_state, x_offset=0):
+    for i in range(GRID_SIZE):
+        for j in range(GRID_SIZE):
+            color = COLOR_MAP[grid_state[i][j]]
+            pygame.draw.rect(screen, color, (x_offset + j*CELL_SIZE, i*CELL_SIZE, CELL_SIZE, CELL_SIZE))
+            pygame.draw.rect(screen, GRAY, (x_offset + j*CELL_SIZE, i*CELL_SIZE, CELL_SIZE, CELL_SIZE), 1)
+
+def visualize_examples(model, val_loader, device):
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_SIZE * 2, SCREEN_SIZE))
+    pygame.display.set_caption("Ground Truth vs Predicted")
+    clock = pygame.time.Clock()
+
+    model.eval()
+    with torch.no_grad():
+        for inputs, targets in val_loader:
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = model(inputs)
+            predicted = outputs.argmax(dim=1)
+
+            for i in range(5):  # Display 5 random examples
+                idx = random.randint(0, targets.size(0) - 1)
+                
+                screen.fill(BLACK)
+                draw_grid(screen, targets[idx].cpu().numpy())
+                draw_grid(screen, predicted[idx].cpu().numpy(), x_offset=SCREEN_SIZE)
+
+                font = pygame.font.Font(None, 36)
+                gt_text = font.render("Ground Truth", True, WHITE)
+                pred_text = font.render("Predicted", True, WHITE)
+                screen.blit(gt_text, (10, 10))
+                screen.blit(pred_text, (SCREEN_SIZE + 10, 10))
+
+                pygame.display.flip()
+                clock.tick(FPS)
+
+                # Wait for a key press or quit event
+                waiting = True
+                while waiting:
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            return
+                        if event.type == pygame.KEYDOWN:
+                            waiting = False
+
+    pygame.quit()
+
 def train_model():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -162,12 +238,13 @@ def train_model():
         val_acc /= len(val_loader)
         print(f"Epoch {epoch+1}/{NUM_EPOCHS}, Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
 
+        # Visualize examples after each epoch
+        visualize_examples(model, val_loader, device)
+
     # Save the model
     torch.save(model.state_dict(), "grid_transformer_model_exact_loss.pth")
     print("Model saved as grid_transformer_model_exact_loss.pth")
 
 if __name__ == "__main__":
     train_model()
-
-
 
