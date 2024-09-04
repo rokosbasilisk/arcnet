@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -96,7 +90,9 @@ class GridTransformer(nn.Module):
         x = self.pos_encoding(x)
         for layer in self.layers:
             x = layer(x)
-        return self.final_layer(x[:, -1, :, :, :])  # Only predict the last grid state
+        x = x[:, -1, :, :, :]  # Only predict the last grid state
+        x = self.final_layer(x)
+        return x.permute(0, 3, 1, 2)  # Change to (batch, num_colors, height, width)
 
 def load_trajectories(folder_path, num_trajectories=200):
     trajectories = []
@@ -106,6 +102,11 @@ def load_trajectories(folder_path, num_trajectories=200):
             with open(file_path, 'r') as f:
                 trajectories.append(json.load(f))
     return trajectories
+
+def exact_match_accuracy(outputs, targets):
+    predicted = outputs.argmax(dim=1)
+    correct = (predicted == targets).all(dim=(1, 2)).float()
+    return correct.mean().item()
 
 def train_model():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -124,42 +125,48 @@ def train_model():
 
     # Initialize model
     model = GridTransformer(num_layers=2, embed_dim=64, num_heads=4, ff_dim=256).to(device)
-    criterion = nn.CrossEntropyLoss(reduction='none')
+    criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     # Training loop
     for epoch in range(NUM_EPOCHS):
         model.train()
         train_loss = 0
+        train_acc = 0
         for inputs, targets in tqdm(train_loader, desc=f"Epoch {epoch+1}/{NUM_EPOCHS}"):
             inputs, targets = inputs.to(device), targets.to(device)
             optimizer.zero_grad()
             outputs = model(inputs)
-            loss = criterion(outputs.view(-1, NUM_COLORS), targets.view(-1))
-            loss = loss.mean()  # Average the loss over all squares
+            loss = criterion(outputs.reshape(-1, NUM_COLORS), targets.reshape(-1))
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
+            train_acc += exact_match_accuracy(outputs, targets)
 
         # Validation
         model.eval()
         val_loss = 0
+        val_acc = 0
         with torch.no_grad():
             for inputs, targets in val_loader:
                 inputs, targets = inputs.to(device), targets.to(device)
                 outputs = model(inputs)
-                loss = criterion(outputs.view(-1, NUM_COLORS), targets.view(-1))
-                loss = loss.mean()  # Average the loss over all squares
+                loss = criterion(outputs.reshape(-1, NUM_COLORS), targets.reshape(-1))
                 val_loss += loss.item()
+                val_acc += exact_match_accuracy(outputs, targets)
 
         train_loss /= len(train_loader)
+        train_acc /= len(train_loader)
         val_loss /= len(val_loader)
-        print(f"Epoch {epoch+1}/{NUM_EPOCHS}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
+        val_acc /= len(val_loader)
+        print(f"Epoch {epoch+1}/{NUM_EPOCHS}, Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
 
     # Save the model
-    torch.save(model.state_dict(), "grid_transformer_model.pth")
-    print("Model saved as grid_transformer_model.pth")
+    torch.save(model.state_dict(), "grid_transformer_model_exact_loss.pth")
+    print("Model saved as grid_transformer_model_exact_loss.pth")
 
 if __name__ == "__main__":
     train_model()
+
+
 

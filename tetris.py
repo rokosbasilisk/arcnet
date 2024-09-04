@@ -2,6 +2,7 @@ import pygame
 import random
 import sys
 import json
+import copy
 
 # Initialize Pygame
 pygame.init()
@@ -16,7 +17,7 @@ FPS = 30
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 
-# Color mapping (for visualization purposes only)
+# Color mapping
 COLOR_MAP = [
     (0, 0, 0),      # 0: Black (empty)
     (255, 0, 0),    # 1: Red
@@ -30,71 +31,45 @@ COLOR_MAP = [
     (0, 0, 128)     # 9: Navy
 ]
 
-# Updated Tetromino shapes with color information
-SHAPES = [
-    {"shape": [[1, 1, 1, 1]], "colors": [1]},  # I
-    {"shape": [[1, 1], [1, 1]], "colors": [2]},  # O
-    {"shape": [[1, 1, 1], [0, 1, 0]], "colors": [3]},  # T
-    {"shape": [[1, 1, 1], [1, 0, 0]], "colors": [4]},  # L
-    {"shape": [[1, 1, 1], [0, 0, 1]], "colors": [5]},  # J
-    {"shape": [[1, 1, 0], [0, 1, 1]], "colors": [6]},  # S
-    {"shape": [[0, 1, 1], [1, 1, 0]], "colors": [7]},  # Z
-    # New complex shapes
-    {"shape": [[1, 1, 1, 1], [1, 1, 1, 1]], "colors": [8]},  # Opaque rectangle
-    {"shape": [[1, 1, 1], [1, 1, 1], [1, 1, 1]], "colors": [1, 2, 3]},  # Multi-colored 3x3 square
-    {"shape": [[1, 1, 1, 1], [0, 1, 1, 0]], "colors": [4, 5]},  # Two-colored rectangle
-    {"shape": [[1, 0, 1], [1, 1, 1], [1, 0, 1]], "colors": [6, 7]}  # Cross shape
-]
-
 def generate_random_shape():
     shape_type = random.choice([
-        "I", "O", "T", "L", "J", "S", "Z",
-        "rectangle", "square", "two_colored_rectangle", "cross"
+        "tetromino", "complex", "pattern"
     ])
     
-    if shape_type == "I":
-        length = random.randint(2, 6)
-        shape = [[1] * length]
-    elif shape_type == "O":
-        size = random.randint(2, 4)
-        shape = [[1] * size for _ in range(size)]
-    elif shape_type == "T":
-        width = random.randint(3, 5)
-        shape = [[1] * width, [0] + [1] * (width-2) + [0]]
-    elif shape_type in ["L", "J"]:
-        height = random.randint(2, 4)
-        shape = [[1] * 3 for _ in range(height)]
-        if shape_type == "L":
-            shape[-1] = [1, 0, 0]
-        else:
-            shape[-1] = [0, 0, 1]
-    elif shape_type in ["S", "Z"]:
-        width = random.randint(2, 4)
-        if shape_type == "S":
-            shape = [[0] * width + [1] * width, [1] * width + [0] * width]
-        else:
-            shape = [[1] * width + [0] * width, [0] * width + [1] * width]
-    elif shape_type == "rectangle":
-        width = random.randint(2, 5)
-        height = random.randint(2, 3)
-        shape = [[1] * width for _ in range(height)]
-    elif shape_type == "square":
-        size = random.randint(2, 4)
-        shape = [[1] * size for _ in range(size)]
-    elif shape_type == "two_colored_rectangle":
-        width = random.randint(3, 5)
-        shape = [[1] * width, [0] + [1] * (width-2) + [0]]
-    elif shape_type == "cross":
-        size = random.randint(3, 5)
-        shape = [[0] * size for _ in range(size)]
-        for i in range(size):
-            shape[i][size//2] = 1
-            shape[size//2][i] = 1
-    
-    num_colors = random.randint(1, 3)
-    colors = random.sample(range(1, 10), num_colors)
-    
+    if shape_type == "tetromino":
+        return generate_tetromino()
+    elif shape_type == "complex":
+        return generate_complex_shape()
+    else:
+        return generate_pattern()
+
+def generate_tetromino():
+    shapes = [
+        [[1, 1, 1, 1]],  # I
+        [[1, 1], [1, 1]],  # O
+        [[1, 1, 1], [0, 1, 0]],  # T
+        [[1, 1, 1], [1, 0, 0]],  # L
+        [[1, 1, 1], [0, 0, 1]],  # J
+        [[1, 1, 0], [0, 1, 1]],  # S
+        [[0, 1, 1], [1, 1, 0]]   # Z
+    ]
+    shape = random.choice(shapes)
+    color = random.randint(1, 9)
+    return {"shape": shape, "colors": [color]}
+
+def generate_complex_shape():
+    size = random.randint(3, 5)
+    shape = [[random.randint(0, 1) for _ in range(size)] for _ in range(size)]
+    colors = [random.randint(1, 9) for _ in range(random.randint(1, 3))]
     return {"shape": shape, "colors": colors}
+
+def generate_pattern():
+    patterns = [
+        {"shape": [[1, 0, 1], [0, 1, 0], [1, 0, 1]], "colors": [random.randint(1, 9)]},  # X pattern
+        {"shape": [[1, 1, 1], [1, 0, 1], [1, 1, 1]], "colors": [random.randint(1, 9)]},  # O pattern
+        {"shape": [[1, 1, 1], [0, 0, 0], [1, 1, 1]], "colors": [random.randint(1, 9), random.randint(1, 9)]},  # = pattern
+    ]
+    return random.choice(patterns)
 
 class Tetris:
     def __init__(self):
@@ -102,45 +77,19 @@ class Tetris:
         self.current_piece = None
         self.current_colors = None
         self.current_position = None
-        self.current_direction = None
         self.score = 0
         self.game_over = False
-        self.trajectory = []
 
     def new_piece(self):
         piece_data = generate_random_shape()
         self.current_piece = piece_data["shape"]
         self.current_colors = piece_data["colors"]
+        self.current_position = [0, GRID_SIZE // 2 - len(self.current_piece[0]) // 2]
         
-        # Try all four directions
-        directions = ['up', 'down', 'left', 'right']
-        random.shuffle(directions)
-        
-        for direction in directions:
-            if self.can_spawn_piece(direction):
-                self.current_direction = direction
-                if direction == 'up':
-                    self.current_position = [0, GRID_SIZE // 2 - len(self.current_piece[0]) // 2]
-                elif direction == 'down':
-                    self.current_position = [GRID_SIZE - len(self.current_piece), GRID_SIZE // 2 - len(self.current_piece[0]) // 2]
-                elif direction == 'left':
-                    self.current_position = [GRID_SIZE // 2 - len(self.current_piece) // 2, 0]
-                else:  # right
-                    self.current_position = [GRID_SIZE // 2 - len(self.current_piece) // 2, GRID_SIZE - len(self.current_piece[0])]
-                return True
-        
-        self.game_over = True
-        return False
-
-    def can_spawn_piece(self, direction):
-        if direction == 'up':
-            return all(self.grid[0][j] == 0 for j in range(GRID_SIZE))
-        elif direction == 'down':
-            return all(self.grid[GRID_SIZE-1][j] == 0 for j in range(GRID_SIZE))
-        elif direction == 'left':
-            return all(self.grid[i][0] == 0 for i in range(GRID_SIZE))
-        else:  # right
-            return all(self.grid[i][GRID_SIZE-1] == 0 for i in range(GRID_SIZE))
+        if not self.is_valid_position(self.current_position[0], self.current_position[1]):
+            self.game_over = True
+            return False
+        return True
 
     def move(self, dx, dy):
         if self.current_piece is None or self.current_position is None:
@@ -161,8 +110,6 @@ class Tetris:
 
     def is_valid_position(self, x, y, piece=None):
         if piece is None:
-            if self.current_piece is None:
-                return False
             piece = self.current_piece
         for i, row in enumerate(piece):
             for j, cell in enumerate(row):
@@ -182,59 +129,89 @@ class Tetris:
                     color_index = (i * len(self.current_piece[0]) + j) % len(self.current_colors)
                     self.grid[self.current_position[0] + i][self.current_position[1] + j] = self.current_colors[color_index]
 
-    def check_lines(self):
-        lines_cleared = 0
-        for i in range(GRID_SIZE):
-            if all(self.grid[i]):
-                del self.grid[i]
-                self.grid.insert(0, [0 for _ in range(GRID_SIZE)])
-                lines_cleared += 1
-        return lines_cleared
-
-    def check_columns(self):
-        columns_cleared = 0
-        for j in range(GRID_SIZE):
-            if all(self.grid[i][j] for i in range(GRID_SIZE)):
-                for i in range(GRID_SIZE):
-                    self.grid[i][j] = 0
-                columns_cleared += 1
-        return columns_cleared
-
-    def check_color_match(self):
-        matches = 0
-        for i in range(GRID_SIZE):
-            for j in range(GRID_SIZE):
-                if self.grid[i][j] != 0:
-                    color = self.grid[i][j]
-                    if (i > 0 and self.grid[i-1][j] == color) or \
-                       (i < GRID_SIZE-1 and self.grid[i+1][j] == color) or \
-                       (j > 0 and self.grid[i][j-1] == color) or \
-                       (j < GRID_SIZE-1 and self.grid[i][j+1] == color):
-                        matches += 1
-                        self.grid[i][j] = 0
-        return matches
-
     def update(self):
         if self.current_piece is None:
             if not self.new_piece():
                 return
 
-        if self.current_direction == 'up':
-            moved = self.move(1, 0)
-        elif self.current_direction == 'down':
-            moved = self.move(-1, 0)
-        elif self.current_direction == 'left':
-            moved = self.move(0, 1)
-        else:  # right
-            moved = self.move(0, -1)
-
-        if not moved:
+        if not self.move(1, 0):
             self.merge_piece()
-            lines_cleared = self.check_lines()
-            columns_cleared = self.check_columns()
-            color_matches = self.check_color_match()
-            self.score += (lines_cleared + columns_cleared) * 100 + color_matches * 50
+            self.clear_lines()
+            self.apply_random_transformation()
             self.current_piece = None
+
+    def clear_lines(self):
+        lines_to_clear = [i for i in range(GRID_SIZE) if all(self.grid[i])]
+        for line in lines_to_clear:
+            del self.grid[line]
+            self.grid.insert(0, [0 for _ in range(GRID_SIZE)])
+        self.score += len(lines_to_clear) * 100
+
+    def apply_random_transformation(self):
+        transformation = random.choice(["multiply", "flood_fill", "zoom", "color_change", "color_inversion"])
+        
+        if transformation == "multiply":
+            self.multiply_objects()
+        elif transformation == "flood_fill":
+            self.flood_fill()
+        elif transformation == "zoom":
+            self.zoom()
+        elif transformation == "color_change":
+            self.color_change()
+        elif transformation == "color_inversion":
+            self.color_inversion()
+
+    def multiply_objects(self):
+        for i in range(GRID_SIZE):
+            for j in range(GRID_SIZE):
+                if self.grid[i][j] != 0 and random.random() < 0.1:  # 10% chance to multiply
+                    for di, dj in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+                        ni, nj = i + di, j + dj
+                        if 0 <= ni < GRID_SIZE and 0 <= nj < GRID_SIZE and self.grid[ni][nj] == 0:
+                            self.grid[ni][nj] = self.grid[i][j]
+
+    def flood_fill(self):
+        start_i, start_j = random.randint(0, GRID_SIZE-1), random.randint(0, GRID_SIZE-1)
+        color = random.randint(1, 9)
+        self._flood_fill_recursive(start_i, start_j, self.grid[start_i][start_j], color)
+
+    def _flood_fill_recursive(self, i, j, target_color, replacement_color):
+        if i < 0 or i >= GRID_SIZE or j < 0 or j >= GRID_SIZE:
+            return
+        if self.grid[i][j] != target_color:
+            return
+        self.grid[i][j] = replacement_color
+        self._flood_fill_recursive(i+1, j, target_color, replacement_color)
+        self._flood_fill_recursive(i-1, j, target_color, replacement_color)
+        self._flood_fill_recursive(i, j+1, target_color, replacement_color)
+        self._flood_fill_recursive(i, j-1, target_color, replacement_color)
+
+    def zoom(self):
+        zoom_in = random.choice([True, False])
+        factor = 2 if zoom_in else 0.5
+        center_i, center_j = GRID_SIZE // 2, GRID_SIZE // 2
+        new_grid = [[0 for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+        
+        for i in range(GRID_SIZE):
+            for j in range(GRID_SIZE):
+                source_i = int((i - center_i) * factor + center_i)
+                source_j = int((j - center_j) * factor + center_j)
+                if 0 <= source_i < GRID_SIZE and 0 <= source_j < GRID_SIZE:
+                    new_grid[i][j] = self.grid[source_i][source_j]
+        
+        self.grid = new_grid
+
+    def color_change(self):
+        for i in range(GRID_SIZE):
+            for j in range(GRID_SIZE):
+                if self.grid[i][j] != 0:
+                    self.grid[i][j] = random.randint(1, 9)
+
+    def color_inversion(self):
+        for i in range(GRID_SIZE):
+            for j in range(GRID_SIZE):
+                if self.grid[i][j] != 0:
+                    self.grid[i][j] = 10 - self.grid[i][j]  # Invert color (1 becomes 9, 2 becomes 8, etc.)
 
     def draw(self, screen):
         for i in range(GRID_SIZE):
@@ -255,5 +232,3 @@ class Tetris:
         font = pygame.font.Font(None, 36)
         score_text = font.render(f"Score: {self.score}", True, WHITE)
         screen.blit(score_text, (10, 10))
-
-# The main function and game loop remain the same

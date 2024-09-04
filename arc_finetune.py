@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -67,6 +64,16 @@ class ARCDataset(Dataset):
         input_grids, target_grid = self.data[idx]
         return torch.tensor(input_grids, dtype=torch.long), torch.tensor(target_grid, dtype=torch.long)
 
+def exact_match_accuracy(outputs, targets):
+    predicted = outputs.argmax(dim=1)
+    correct = (predicted == targets).all(dim=(1, 2)).float()
+    return correct.mean().item()
+
+def cell_accuracy(outputs, targets):
+    predicted = outputs.argmax(dim=1)
+    correct = (predicted == targets).float()
+    return correct.mean().item()
+
 def fine_tune_model(model, train_loader, val_loader, num_epochs, device):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
@@ -74,32 +81,43 @@ def fine_tune_model(model, train_loader, val_loader, num_epochs, device):
     for epoch in range(num_epochs):
         model.train()
         train_loss = 0.0
+        train_exact_acc = 0.0
+        train_cell_acc = 0.0
         for inputs, targets in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
             inputs, targets = inputs.to(device), targets.to(device)
             optimizer.zero_grad()
             outputs = model(inputs)
-            loss = criterion(outputs.permute(0, 3, 1, 2), targets)
+            loss = criterion(outputs.reshape(-1, NUM_COLORS), targets.reshape(-1))
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
+            train_exact_acc += exact_match_accuracy(outputs, targets)
+            train_cell_acc += cell_accuracy(outputs, targets)
 
         # Validation
         model.eval()
         val_loss = 0.0
+        val_exact_acc = 0.0
+        val_cell_acc = 0.0
         with torch.no_grad():
             for inputs, targets in val_loader:
                 inputs, targets = inputs.to(device), targets.to(device)
                 outputs = model(inputs)
-                loss = criterion(outputs.permute(0, 3, 1, 2), targets)
+                loss = criterion(outputs.reshape(-1, NUM_COLORS), targets.reshape(-1))
                 val_loss += loss.item()
+                val_exact_acc += exact_match_accuracy(outputs, targets)
+                val_cell_acc += cell_accuracy(outputs, targets)
         
         train_loss /= len(train_loader)
+        train_exact_acc /= len(train_loader)
+        train_cell_acc /= len(train_loader)
         val_loss /= len(val_loader)
-        print(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
-
-
-# In[2]:
-
+        val_exact_acc /= len(val_loader)
+        val_cell_acc /= len(val_loader)
+        
+        print(f"Epoch {epoch+1}/{num_epochs}")
+        print(f"Train Loss: {train_loss:.4f}, Train Exact Acc: {train_exact_acc:.4f}, Train Cell Acc: {train_cell_acc:.4f}")
+        print(f"Val Loss: {val_loss:.4f}, Val Exact Acc: {val_exact_acc:.4f}, Val Cell Acc: {val_cell_acc:.4f}")
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -107,7 +125,7 @@ def main():
 
     # Load the pre-trained model
     model = GridTransformer(num_layers=2, embed_dim=64, num_heads=4, ff_dim=256).to(device)
-    model.load_state_dict(torch.load("grid_transformer_model.pth"))
+    model.load_state_dict(torch.load("grid_transformer_model_exact_loss.pth"))
     model = model.to(device)
 
     # Create dataset and dataloader for ARC data
@@ -127,4 +145,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

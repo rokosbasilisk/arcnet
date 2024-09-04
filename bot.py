@@ -1,13 +1,13 @@
-import pygame
+import torch
+import torch.multiprocessing as mp
 import random
-import sys
 import json
 import time
 import copy
-from tetris import Tetris, GRID_SIZE, CELL_SIZE, SCREEN_SIZE, FPS, COLOR_MAP, BLACK, WHITE
-import os 
+from tetris import Tetris, GRID_SIZE
+import os
 
-MAX_MOVES = 500
+MAX_MOVES = 1000
 
 class TetrisBot:
     def __init__(self, game):
@@ -43,83 +43,86 @@ def get_game_state(game):
                         state[x][y] = game.current_colors[color_index]
     return state
 
-def play_game(screen, clock):
+def play_game():
     game = Tetris()
     bot = TetrisBot(game)
     trajectory = []
-
     game.new_piece()
-
     for _ in range(MAX_MOVES):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                return None
-
         move = bot.make_move()
         game_state = get_game_state(game)
         trajectory.append({
             "move": move,
             "state": game_state
         })
-
         game.update()
         
         if game.game_over:
             break
-        
-        screen.fill(BLACK)
-        game.draw(screen)
-        pygame.display.flip()
-        clock.tick(FPS)
 
     return trajectory
 
-def generate_trajectories(num_games):
-    pygame.init()
-    screen = pygame.display.set_mode((SCREEN_SIZE, SCREEN_SIZE))
-    pygame.display.set_caption("Tetris Bot")
-    clock = pygame.time.Clock()
+def worker(num_games, return_dict, worker_id):
+    trajectories = []
+    start_time = time.time()
+    for _ in range(num_games):
+        trajectory = play_game()
+        trajectories.append(trajectory)
+    end_time = time.time()
+    return_dict[worker_id] = {
+        'trajectories': trajectories,
+        'time': end_time - start_time
+    }
 
-    # Create trajectories folder if it doesn't exist
+def generate_trajectories_parallel(num_games, num_processes):
     os.makedirs("trajectories", exist_ok=True)
+    
+    mp.set_start_method('spawn', force=True)
+    manager = mp.Manager()
+    return_dict = manager.dict()
 
-    for i in range(num_games):
-        start_time = time.time()
-        trajectory = play_game(screen, clock)
-        end_time = time.time()
-        
-        if trajectory is None:  # Game was closed
-            break
-        
-        duration = end_time - start_time
+    games_per_process = num_games // num_processes
+    processes = []
+
+    for i in range(num_processes):
+        p = mp.Process(target=worker, args=(games_per_process, return_dict, i))
+        p.start()
+        processes.append(p)
+
+    for p in processes:
+        p.join()
+
+    total_trajectories = []
+    total_time = 0
+
+    for i in range(num_processes):
+        result = return_dict[i]
+        total_trajectories.extend(result['trajectories'])
+        total_time += result['time']
+
+    for i, trajectory in enumerate(total_trajectories):
         game_data = {
             "trajectory": trajectory,
-            "duration": duration
+            "duration": total_time / len(total_trajectories)  # Average duration per game
         }
-        
-        # Save individual trajectory
         with open(f"trajectories/trajectory-{i+1}.json", 'w') as f:
             json.dump(game_data, f)
-        
-        print(f"Game {i+1} completed. Trajectory length: {len(trajectory)}. Time taken: {duration:.2f} seconds")
 
-    pygame.quit()
-    return i + 1  # Return the number of games actually played
+    return len(total_trajectories), total_time
 
 if __name__ == "__main__":
-    num_games = 200
+    num_games = 1000
+    num_processes = os.cpu_count()  # Use the number of CPU cores
     start_time = time.time()
-    
-    games_played = generate_trajectories(num_games)
-    
-    end_time = time.time()
-    total_time = end_time - start_time
-    
+
+    print(f"Starting trajectory generation using {num_processes} processes")
+    games_played, total_time = generate_trajectories_parallel(num_games, num_processes)
+
     print(f"Generated and saved {games_played} trajectories.")
     print(f"Total time taken: {total_time:.2f} seconds")
-    
+
     avg_time_per_trajectory = total_time / games_played if games_played else 0
     print(f"Average time per trajectory: {avg_time_per_trajectory:.2f} seconds")
-    
+
     estimated_total_time = avg_time_per_trajectory * num_games
     print(f"Estimated total time for {num_games} trajectories: {estimated_total_time:.2f} seconds ({estimated_total_time/60:.2f} minutes)")
