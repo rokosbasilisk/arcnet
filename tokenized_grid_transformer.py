@@ -4,8 +4,8 @@ import numpy as np
 
 # Constants
 GRID_SIZE = 30
-CONTEXT_LENGTH = 6
-NUM_COLORS = 10
+CONTEXT_LENGTH = 8
+
 
 class ARCTokenizer:
     def __init__(self, padding_value=10):

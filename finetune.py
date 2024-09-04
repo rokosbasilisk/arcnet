@@ -8,7 +8,7 @@ from tqdm import tqdm
 import os
 import random
 from termcolor import colored
-from tokenized_grid_transformer import TokenizedGridTransformer, ARCTokenizer, GRID_SIZE, CONTEXT_LENGTH, NUM_COLORS
+from tokenized_grid_transformer import TokenizedGridTransformer, ARCTokenizer, GRID_SIZE, CONTEXT_LENGTH
 
 # Constants
 BATCH_SIZE = 64
@@ -26,13 +26,8 @@ from torch.utils.data import Dataset
 import json
 import random
 
-import numpy as np
-import torch
-from torch.utils.data import Dataset
-import json
-
 class ARCDataset(Dataset):
-    def __init__(self, challenges_file, solutions_file, max_grid_size=30, context_length=6, padding_value=10):
+    def __init__(self, challenges_file, solutions_file, max_grid_size=30, context_length=CONTEXT_LENGTH, padding_value=10):
         with open(challenges_file, 'r') as f:
             self.challenges = json.load(f)
         with open(solutions_file, 'r') as f:
@@ -185,7 +180,7 @@ def train_model(model, train_loader, val_loader, num_epochs, device):
 
         visualize_examples(model, val_loader, device)
 
-        torch.save(model.state_dict(), f"tokenized_grid_transformer_epoch_{epoch+1}.pth")
+        #torch.save(model.state_dict(), f"tokenized_grid_transformer_epoch_{epoch+1}.pth")
 
 
 
