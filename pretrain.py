@@ -44,6 +44,49 @@ COLOR_MAP = [
     (0, 0, 128)     # 9: Navy
 ]
 
+from termcolor import colored
+import random
+import torch
+
+def visualize_examples(model, val_loader, device):
+    model.eval()
+    with torch.no_grad():
+        for inputs, targets in val_loader:
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = model(inputs)
+            predicted = outputs.argmax(dim=1)
+
+            for i in range(5):  # Display 5 random examples
+                idx = random.randint(0, targets.size(0) - 1)
+                
+                # Print Ground Truth
+                print(colored("Ground Truth:", 'green'))
+                print_grid(targets[idx].cpu().numpy())
+                
+                # Print Predicted
+                print(colored("Predicted:", 'red'))
+                print_grid(predicted[idx].cpu().numpy())
+                
+                print("\n" + "-" * 20 + "\n")  # Separator between examples
+
+def print_grid(grid):
+    """ Helper function to print the grid with colors in terminal. """
+    for row in grid:
+        for cell in row:
+            # Customize colors based on cell values (adjust to your needs)
+            if cell == 0:
+                print(colored('0', 'white'), end=' ')
+            elif cell == 1:
+                print(colored('1', 'blue'), end=' ')
+            elif cell == 2:
+                print(colored('2', 'cyan'), end=' ')
+            elif cell == 3:
+                print(colored('3', 'magenta'), end=' ')
+            elif cell == 4:
+                print(colored('4', 'yellow'), end=' ')
+            else:
+                print(colored(str(cell), 'red'), end=' ')
+        print()  # Newline after each row
 
 class GridDataset(Dataset):
     def __init__(self, trajectories):
@@ -137,51 +180,6 @@ def exact_match_accuracy(outputs, targets):
     predicted = outputs.argmax(dim=1)
     correct = (predicted == targets).all(dim=(1, 2)).float()
     return correct.mean().item()
-
-def draw_grid(screen, grid_state, x_offset=0):
-    for i in range(GRID_SIZE):
-        for j in range(GRID_SIZE):
-            color = COLOR_MAP[grid_state[i][j]]
-            pygame.draw.rect(screen, color, (x_offset + j*CELL_SIZE, i*CELL_SIZE, CELL_SIZE, CELL_SIZE))
-            pygame.draw.rect(screen, GRAY, (x_offset + j*CELL_SIZE, i*CELL_SIZE, CELL_SIZE, CELL_SIZE), 1)
-
-import time  # Add this import at the top of your script
-
-def visualize_examples(model, val_loader, device):
-    pygame.init()
-    screen = pygame.display.set_mode((SCREEN_SIZE * 2, SCREEN_SIZE))
-    pygame.display.set_caption("Ground Truth vs Predicted")
-    clock = pygame.time.Clock()
-
-    model.eval()
-    with torch.no_grad():
-        for inputs, targets in val_loader:
-            inputs, targets = inputs.to(device), targets.to(device)
-            outputs = model(inputs)
-            predicted = outputs.argmax(dim=1)
-
-            for i in range(5):  # Display 5 random examples
-                idx = random.randint(0, targets.size(0) - 1)
-                
-                screen.fill(BLACK)
-                draw_grid(screen, targets[idx].cpu().numpy())
-                draw_grid(screen, predicted[idx].cpu().numpy(), x_offset=SCREEN_SIZE)
-
-                font = pygame.font.Font(None, 36)
-                gt_text = font.render("Ground Truth", True, WHITE)
-                pred_text = font.render("Predicted", True, WHITE)
-                screen.blit(gt_text, (10, 10))
-                screen.blit(pred_text, (SCREEN_SIZE + 10, 10))
-
-                pygame.display.flip()
-                clock.tick(FPS)
-
-                # Wait for 2 seconds
-                time.sleep(2)
-                return  # Exit the function, closing the window
-
-    pygame.quit()
-
 
 def train_model():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

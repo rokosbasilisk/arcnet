@@ -14,10 +14,10 @@ import time
 GRID_SIZE = 30
 NUM_COLORS = 10  # 0-9
 CONTEXT_LENGTH = 6
-BATCH_SIZE = 6
+BATCH_SIZE = 4
 NUM_EPOCHS = 100
 LEARNING_RATE = 1e-4
-NUM_LAYERS = 3
+NUM_LAYERS = 4
 CELL_SIZE = 20
 SCREEN_SIZE = GRID_SIZE * CELL_SIZE
 FPS = 30
@@ -49,7 +49,7 @@ SCREEN_SIZE = GRID_SIZE * CELL_SIZE
 FPS = 30
 
 # Import the GridTransformer model
-from pretrain import GridTransformer
+from pretrain import GridTransformer, visualize_examples, print_grid
 
 class ARCDataset(Dataset):
     def __init__(self, challenges_file, solutions_file):
@@ -103,51 +103,6 @@ def cell_accuracy(outputs, targets):
     predicted = outputs.argmax(dim=1)
     correct = (predicted == targets).float()
     return correct.mean().item()
-
-def draw_grid(screen, grid_state, x_offset=0):
-    for i in range(GRID_SIZE):
-        for j in range(GRID_SIZE):
-            color = COLOR_MAP[grid_state[i][j]]
-            pygame.draw.rect(screen, color, (x_offset + j*CELL_SIZE, i*CELL_SIZE, CELL_SIZE, CELL_SIZE))
-            pygame.draw.rect(screen, GRAY, (x_offset + j*CELL_SIZE, i*CELL_SIZE, CELL_SIZE, CELL_SIZE), 1)
-
-import time  # Add this import at the top of your script
-
-def visualize_examples(model, val_loader, device):
-    pygame.init()
-    screen = pygame.display.set_mode((SCREEN_SIZE * 2, SCREEN_SIZE))
-    pygame.display.set_caption("Ground Truth vs Predicted")
-    clock = pygame.time.Clock()
-
-    model.eval()
-    with torch.no_grad():
-        for inputs, targets in val_loader:
-            inputs, targets = inputs.to(device), targets.to(device)
-            outputs = model(inputs)
-            predicted = outputs.argmax(dim=1)
-
-            for i in range(5):  # Display 5 random examples
-                idx = random.randint(0, targets.size(0) - 1)
-                
-                screen.fill(BLACK)
-                draw_grid(screen, targets[idx].cpu().numpy())
-                draw_grid(screen, predicted[idx].cpu().numpy(), x_offset=SCREEN_SIZE)
-
-                font = pygame.font.Font(None, 36)
-                gt_text = font.render("Ground Truth", True, WHITE)
-                pred_text = font.render("Predicted", True, WHITE)
-                screen.blit(gt_text, (10, 10))
-                screen.blit(pred_text, (SCREEN_SIZE + 10, 10))
-
-                pygame.display.flip()
-                clock.tick(FPS)
-
-                # Wait for 2 seconds
-                time.sleep(2)
-                return  # Exit the function, closing the window
-
-    pygame.quit()
-
 
 def fine_tune_model(model, train_loader, val_loader, num_epochs, device):
     criterion = nn.CrossEntropyLoss()
