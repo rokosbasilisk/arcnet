@@ -81,20 +81,27 @@ def main(trajectory_folder, trajectory_number):
 def visualize_examples(model, val_loader, device):
     model.eval()
     with torch.no_grad():
-        for _ in range(3):  # Display only 3 examples
-            # Select a random batch from the loader
-            inputs, targets = next(iter(val_loader))
-            inputs, targets = inputs.to(device), targets.to(device)
-            outputs = model(inputs)
-            predicted = outputs.argmax(dim=1)
+        # Select a random sample from the entire validation loader
+        inputs, targets = [], []
+        for data in val_loader:
+            inputs.append(data[0])
+            targets.append(data[1])
+        inputs = torch.cat(inputs, dim=0)
+        targets = torch.cat(targets, dim=0)
 
-            # Pick a random example from the batch
-            idx = random.randint(0, targets.size(0) - 1)
-            
-            print(colored("Ground Truth vs Predicted", 'yellow'))
-            print_grid(targets[idx].cpu().numpy(), predicted[idx].cpu().numpy())
-            
-            print("\n" + "-" * 20 + "\n")  # Separator between examples
+        # Randomly sample one input-target pair
+        idx = random.randint(0, targets.size(0) - 1)
+        input_sample = inputs[idx].unsqueeze(0).to(device)
+        target_sample = targets[idx].unsqueeze(0).to(device)
+
+        # Run the model on the sampled input
+        output_sample = model(input_sample)
+        predicted_sample = output_sample.argmax(dim=1)
+
+        print(colored("Ground Truth vs Predicted", 'yellow'))
+        print_grid(target_sample.squeeze(0).cpu().numpy(), predicted_sample.squeeze(0).cpu().numpy())
+        
+        print("\n" + "-" * 20 + "\n")  # Separator between examples
 
 def print_grid(gt_grid, pred_grid):
     """ Helper function to print two grids side by side in the terminal. """

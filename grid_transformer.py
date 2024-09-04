@@ -1,57 +1,44 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
-GRID_SIZE = 30
+
 NUM_COLORS = 10  # 0-9
-CONTEXT_LENGTH = 6
-BATCH_SIZE = 6
-NUM_EPOCHS = 50
-LEARNING_RATE = 1e-4
-NUM_LAYERS = 3
 
-# Colors
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-GRAY = (128, 128, 128)
-
-
-# Constants
-GRID_SIZE = 30
-CELL_SIZE = 20
-SCREEN_SIZE = GRID_SIZE * CELL_SIZE
-FPS = 30
-
-class PositionalEncoding2D(nn.Module):
-    def __init__(self, d_model, max_height, max_width):
+class ConvolutionalPositionalEncoding2D(nn.Module):
+    def __init__(self, channels, max_height, max_width, num_conv_layers=3):
         super().__init__()
-        assert d_model % 2 == 0, "Embedding dimension (d_model) must be even."
-
-        self.d_model = d_model
+        self.channels = channels
         self.max_height = max_height
         self.max_width = max_width
-
-        pe_row = torch.zeros(max_height, d_model // 2)
-        pe_col = torch.zeros(max_width, d_model // 2)
-
-        position_row = torch.arange(0, max_height, dtype=torch.float).unsqueeze(1)
-        position_col = torch.arange(0, max_width, dtype=torch.float).unsqueeze(1)
-
-        div_term = torch.exp(torch.arange(0, d_model // 2, 2).float() * (-torch.log(torch.tensor(10000.0)) / (d_model // 2)))
-
-        pe_row[:, 0::2] = torch.sin(position_row * div_term)
-        pe_row[:, 1::2] = torch.cos(position_row * div_term)
-
-        pe_col[:, 0::2] = torch.sin(position_col * div_term)
-        pe_col[:, 1::2] = torch.cos(position_col * div_term)
-
-        pe_row = pe_row.unsqueeze(1).expand(-1, max_width, -1)
-        pe_col = pe_col.unsqueeze(0).expand(max_height, -1, -1)
-
-        self.register_buffer('pe', torch.cat([pe_row, pe_col], dim=-1))
+        
+        # Create positional grid
+        pos_h = torch.arange(max_height).unsqueeze(1).expand(-1, max_width).unsqueeze(0)
+        pos_w = torch.arange(max_width).unsqueeze(0).expand(max_height, -1).unsqueeze(0)
+        self.register_buffer('pos_grid', torch.cat([pos_h, pos_w], dim=0).float())
+        
+        # Convolutional layers
+        self.conv_layers = nn.ModuleList([
+            nn.Conv2d(2, channels, kernel_size=3, padding=1)
+        ])
+        for _ in range(num_conv_layers - 1):
+            self.conv_layers.append(nn.Conv2d(channels, channels, kernel_size=3, padding=1))
+        
+        self.norm = nn.LayerNorm(channels)
 
     def forward(self, x):
-        return x + self.pe[:x.size(2), :x.size(3), :]
+        batch_size, seq_len, height, width, _ = x.shape
+        
+        # Generate positional encoding
+        pos_encoding = self.pos_grid.unsqueeze(0).expand(batch_size, -1, -1, -1)
+        for conv in self.conv_layers:
+            pos_encoding = F.relu(conv(pos_encoding))
+        
+        # Reshape and add to input
+        pos_encoding = pos_encoding.permute(0, 2, 3, 1).unsqueeze(1).expand(-1, seq_len, -1, -1, -1)
+        x = x + pos_encoding
+        return self.norm(x)
 
 class SelfAttention2D(nn.Module):
     def __init__(self, embed_dim, num_heads):
@@ -86,7 +73,7 @@ class GridTransformer(nn.Module):
     def __init__(self, num_layers, embed_dim, num_heads, ff_dim, max_height, max_width):
         super().__init__()
         self.embedding = nn.Embedding(NUM_COLORS, embed_dim)
-        self.pos_encoding = PositionalEncoding2D(embed_dim, max_height, max_width)
+        self.pos_encoding = ConvolutionalPositionalEncoding2D(embed_dim, max_height, max_width)
         self.layers = nn.ModuleList([TransformerLayer2D(embed_dim, num_heads, ff_dim) for _ in range(num_layers)])
         self.final_layer = nn.Linear(embed_dim, NUM_COLORS)
         
@@ -98,4 +85,3 @@ class GridTransformer(nn.Module):
         x = x[:, -1, :, :, :]  # Only predict the last grid state
         x = self.final_layer(x)
         return x.permute(0, 3, 1, 2)  # Change to (batch, num_colors, height, width)
-

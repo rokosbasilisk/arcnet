@@ -167,9 +167,9 @@ def main():
 
 
     # Check if pre-trained model exists
-    if os.path.exists("grid_transformer_model_exact_loss.pth"):
+    if os.path.exists("grid_transformer_finetuned.pth"):
         print("Loading pre-trained model...")
-        model.load_state_dict(torch.load("grid_transformer_model_exact_loss.pth"))
+        model.load_state_dict(torch.load("grid_transformer_finetuned.pth"))
     else:
         print("Pre-trained model not found. Training from scratch...")
 
