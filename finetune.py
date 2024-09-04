@@ -114,21 +114,6 @@ def prepare_arc_data(train_file, eval_file, batch_size, padding_value=10, val_fr
     
     return train_loader, val_loader
 
-def color_for_value(value):
-    color_map = {
-        0: 'white',
-        1: 'blue',
-        2: 'cyan',
-        3: 'magenta',
-        4: 'yellow',
-        5: 'green',
-        6: 'red',
-        7: 'grey',
-        8: 'light_blue',
-        9: 'light_magenta',
-        PADDING_VALUE: 'black'
-    }
-    return color_map.get(value, 'white')
 
 def ensure_2d_grid(grid):
     if grid.ndim == 1:
@@ -138,16 +123,6 @@ def ensure_2d_grid(grid):
         return grid.reshape(grid.shape[0], -1)
     return grid
 
-def print_grid(gt_grid, pred_grid):
-    for gt_row, pred_row in zip(gt_grid, pred_grid):
-        gt_line = []
-        pred_line = []
-        for gt_cell, pred_cell in zip(gt_row, pred_row):
-            if gt_cell != PADDING_VALUE:
-                gt_line.append(colored(str(int(gt_cell)), color_for_value(int(gt_cell))))
-            if pred_cell != PADDING_VALUE:
-                pred_line.append(colored(str(int(pred_cell)), color_for_value(int(pred_cell))))
-        print(" ".join(gt_line) + "    " + " ".join(pred_line))
 
 def exact_match_accuracy(outputs, targets):
     predicted = outputs.argmax(dim=-1)
@@ -212,6 +187,49 @@ def train_model(model, train_loader, val_loader, num_epochs, device):
 
         torch.save(model.state_dict(), f"tokenized_grid_transformer_epoch_{epoch+1}.pth")
 
+
+
+def color_for_value(value):
+    color_map = {
+        0: 'white',
+        1: 'red',
+        2: 'green',
+        3: 'yellow',
+        4: 'blue',
+        5: 'magenta',
+        6: 'cyan',
+        7: 'grey',
+        8: 'light_red',
+        9: 'light_green',
+        10: 'light_yellow'  # Assuming 10 is your padding value
+    }
+    return color_map.get(value, 'white')
+
+def print_grid(gt_grid, pred_grid):
+    max_height = max(gt_grid.shape[0], pred_grid.shape[0])
+    max_width = max(gt_grid.shape[1], pred_grid.shape[1])
+    
+    print("Ground Truth" + " " * (max_width * 3 - 5) + "Predicted")
+    print("-" * (max_width * 3 - 1) + "   " + "-" * (max_width * 3 - 1))
+    
+    for i in range(max_height):
+        gt_line = []
+        pred_line = []
+        for j in range(max_width):
+            if i < gt_grid.shape[0] and j < gt_grid.shape[1]:
+                gt_value = gt_grid[i, j]
+                gt_line.append(colored(f"{gt_value:2d}", color_for_value(gt_value)))
+            else:
+                gt_line.append("  ")
+            
+            if i < pred_grid.shape[0] and j < pred_grid.shape[1]:
+                pred_value = pred_grid[i, j]
+                pred_line.append(colored(f"{pred_value:2d}", color_for_value(pred_value)))
+            else:
+                pred_line.append("  ")
+        
+        print(" ".join(gt_line) + "   " + " ".join(pred_line))
+
 def visualize_examples(model, val_loader, device):
     model.eval()
     with torch.no_grad():
@@ -232,16 +250,13 @@ def visualize_examples(model, val_loader, device):
         print("Token counts:", counts.tolist())
         
         predicted_grid = model.tokenizer.detokenize(predicted_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE))
-        predicted_grid = ensure_2d_grid(predicted_grid)
-        
         target_grid = model.tokenizer.detokenize(target_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE))
-        target_grid = ensure_2d_grid(target_grid)
         
-        print(colored("Ground Truth vs Predicted", 'yellow'))
+        print(colored("\nGround Truth vs Predicted", 'yellow'))
         print(f"Target shape: {target_grid.shape}, Predicted shape: {predicted_grid.shape}")
         print_grid(target_grid, predicted_grid)
         
-        print("\n" + "-" * 20 + "\n")  # Separator between examples
+        print("\n" + "-" * 40 + "\n")  # Separator between examples
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
