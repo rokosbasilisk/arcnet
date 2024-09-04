@@ -1,16 +1,10 @@
-import pygame
 import random
-import sys
-import json
-import copy
-
-# Initialize Pygame
-pygame.init()
+import pygame
+from typing import List, Tuple, FrozenSet
+from arc_dsl.dsl import *  # Import all DSL functions
 
 # Constants
-GRID_SIZE = 30
 CELL_SIZE = 20
-SCREEN_SIZE = GRID_SIZE * CELL_SIZE
 FPS = 30
 
 # Colors
@@ -31,60 +25,49 @@ COLOR_MAP = [
     (0, 0, 128)     # 9: Navy
 ]
 
-def generate_random_shape():
-    shape_type = random.choice([
-        "tetromino", "complex", "pattern"
-    ])
-    
-    if shape_type == "tetromino":
-        return generate_tetromino()
-    elif shape_type == "complex":
-        return generate_complex_shape()
-    else:
-        return generate_pattern()
-
-def generate_tetromino():
-    shapes = [
-        [[1, 1, 1, 1]],  # I
-        [[1, 1], [1, 1]],  # O
-        [[1, 1, 1], [0, 1, 0]],  # T
-        [[1, 1, 1], [1, 0, 0]],  # L
-        [[1, 1, 1], [0, 0, 1]],  # J
-        [[1, 1, 0], [0, 1, 1]],  # S
-        [[0, 1, 1], [1, 1, 0]]   # Z
-    ]
-    shape = random.choice(shapes)
-    color = random.randint(1, 9)
-    return {"shape": shape, "colors": [color]}
-
-def generate_complex_shape():
-    size = random.randint(3, 5)
-    shape = [[random.randint(0, 1) for _ in range(size)] for _ in range(size)]
-    colors = [random.randint(1, 9) for _ in range(random.randint(1, 3))]
-    return {"shape": shape, "colors": colors}
-
-def generate_pattern():
-    patterns = [
-        {"shape": [[1, 0, 1], [0, 1, 0], [1, 0, 1]], "colors": [random.randint(1, 9)]},  # X pattern
-        {"shape": [[1, 1, 1], [1, 0, 1], [1, 1, 1]], "colors": [random.randint(1, 9)]},  # O pattern
-        {"shape": [[1, 1, 1], [0, 0, 0], [1, 1, 1]], "colors": [random.randint(1, 9), random.randint(1, 9)]},  # = pattern
-    ]
-    return random.choice(patterns)
-
 class Tetris:
-    def __init__(self):
-        self.grid = [[0 for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+    def __init__(self, grid_size=30):
+        self.grid_size = grid_size
+        self.grid = [[0 for _ in range(self.grid_size)] for _ in range(self.grid_size)]
         self.current_piece = None
         self.current_colors = None
         self.current_position = None
         self.score = 0
         self.game_over = False
 
+    def generate_random_shape(self):
+        shape_type = random.choice(["tetromino", "complex", "pattern"])
+        
+        if shape_type == "tetromino":
+            shapes = [
+                [[1, 1, 1, 1]],  # I
+                [[1, 1], [1, 1]],  # O
+                [[1, 1, 1], [0, 1, 0]],  # T
+                [[1, 1, 1], [1, 0, 0]],  # L
+                [[1, 1, 1], [0, 0, 1]],  # J
+                [[1, 1, 0], [0, 1, 1]],  # S
+                [[0, 1, 1], [1, 1, 0]]   # Z
+            ]
+            shape = random.choice(shapes)
+        elif shape_type == "complex":
+            size = random.randint(3, 5)
+            shape = [[random.randint(0, 1) for _ in range(size)] for _ in range(size)]
+        else:  # pattern
+            patterns = [
+                [[1, 0, 1], [0, 1, 0], [1, 0, 1]],  # X pattern
+                [[1, 1, 1], [1, 0, 1], [1, 1, 1]],  # O pattern
+                [[1, 1, 1], [0, 0, 0], [1, 1, 1]],  # = pattern
+            ]
+            shape = random.choice(patterns)
+        
+        colors = [random.randint(1, 9) for _ in range(random.randint(1, 3))]
+        return {"shape": shape, "colors": colors}
+
     def new_piece(self):
-        piece_data = generate_random_shape()
+        piece_data = self.generate_random_shape()
         self.current_piece = piece_data["shape"]
         self.current_colors = piece_data["colors"]
-        self.current_position = [0, GRID_SIZE // 2 - len(self.current_piece[0]) // 2]
+        self.current_position = [0, self.grid_size // 2 - len(self.current_piece[0]) // 2]
         
         if not self.is_valid_position(self.current_position[0], self.current_position[1]):
             self.game_over = True
@@ -94,17 +77,16 @@ class Tetris:
     def move(self, dx, dy):
         if self.current_piece is None or self.current_position is None:
             return False
-        new_x = self.current_position[0] + dx
-        new_y = self.current_position[1] + dy
-        if self.is_valid_position(new_x, new_y):
-            self.current_position = [new_x, new_y]
+        new_position = add((self.current_position[0], self.current_position[1]), (dx, dy))
+        if self.is_valid_position(new_position[0], new_position[1]):
+            self.current_position = list(new_position)
             return True
         return False
 
     def rotate(self):
         if self.current_piece is None:
             return
-        rotated_piece = list(zip(*self.current_piece[::-1]))
+        rotated_piece = rot90(self.current_piece)
         if self.is_valid_position(self.current_position[0], self.current_position[1], rotated_piece):
             self.current_piece = rotated_piece
 
@@ -114,9 +96,9 @@ class Tetris:
         for i, row in enumerate(piece):
             for j, cell in enumerate(row):
                 if cell:
-                    if (x + i < 0 or x + i >= GRID_SIZE or
-                        y + j < 0 or y + j >= GRID_SIZE or
-                        self.grid[x + i][y + j] != 0):
+                    grid_pos = add((x, y), (i, j))
+                    if not (0 <= grid_pos[0] < self.grid_size and 0 <= grid_pos[1] < self.grid_size) or \
+                       self.grid[grid_pos[0]][grid_pos[1]] != 0:
                         return False
         return True
 
@@ -126,8 +108,9 @@ class Tetris:
         for i, row in enumerate(self.current_piece):
             for j, cell in enumerate(row):
                 if cell:
+                    grid_pos = add((self.current_position[0], self.current_position[1]), (i, j))
                     color_index = (i * len(self.current_piece[0]) + j) % len(self.current_colors)
-                    self.grid[self.current_position[0] + i][self.current_position[1] + j] = self.current_colors[color_index]
+                    self.grid[grid_pos[0]][grid_pos[1]] = self.current_colors[color_index]
 
     def update(self):
         if self.current_piece is None:
@@ -137,85 +120,71 @@ class Tetris:
         if not self.move(1, 0):
             self.merge_piece()
             self.clear_lines()
-            self.apply_random_transformation()
+            self.apply_dsl_transformation()
             self.current_piece = None
 
     def clear_lines(self):
-        lines_to_clear = [i for i in range(GRID_SIZE) if all(self.grid[i])]
+        lines_to_clear = [i for i in range(self.grid_size) if all(self.grid[i])]
         for line in lines_to_clear:
             del self.grid[line]
-            self.grid.insert(0, [0 for _ in range(GRID_SIZE)])
+            self.grid.insert(0, [0 for _ in range(self.grid_size)])
         self.score += len(lines_to_clear) * 100
 
-    def apply_random_transformation(self):
-        transformation = random.choice(["multiply", "flood_fill", "zoom", "color_change", "color_inversion"])
+    def apply_dsl_transformation(self):
+        transformation = random.choice(["rotate", "mirror", "color_change", "scale", "shift", "invert"])
         
-        if transformation == "multiply":
-            self.multiply_objects()
-        elif transformation == "flood_fill":
-            self.flood_fill()
-        elif transformation == "zoom":
-            self.zoom()
+        if transformation == "rotate":
+            self.rotate_grid()
+        elif transformation == "mirror":
+            self.mirror_grid()
         elif transformation == "color_change":
-            self.color_change()
-        elif transformation == "color_inversion":
-            self.color_inversion()
+            self.change_colors()
+        elif transformation == "scale":
+            self.scale_grid()
+        elif transformation == "shift":
+            self.shift_grid()
+        elif transformation == "invert":
+            self.invert_grid()
 
-    def multiply_objects(self):
-        for i in range(GRID_SIZE):
-            for j in range(GRID_SIZE):
-                if self.grid[i][j] != 0 and random.random() < 0.1:  # 10% chance to multiply
-                    for di, dj in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
-                        ni, nj = i + di, j + dj
-                        if 0 <= ni < GRID_SIZE and 0 <= nj < GRID_SIZE and self.grid[ni][nj] == 0:
-                            self.grid[ni][nj] = self.grid[i][j]
+    def rotate_grid(self):
+        self.grid = rot90(self.grid)
 
-    def flood_fill(self):
-        start_i, start_j = random.randint(0, GRID_SIZE-1), random.randint(0, GRID_SIZE-1)
-        color = random.randint(1, 9)
-        self._flood_fill_recursive(start_i, start_j, self.grid[start_i][start_j], color)
+    def mirror_grid(self):
+        axis = random.choice(["horizontal", "vertical"])
+        if axis == "horizontal":
+            self.grid = hmirror(self.grid)
+        else:
+            self.grid = vmirror(self.grid)
 
-    def _flood_fill_recursive(self, i, j, target_color, replacement_color):
-        if i < 0 or i >= GRID_SIZE or j < 0 or j >= GRID_SIZE:
-            return
-        if self.grid[i][j] != target_color:
-            return
-        self.grid[i][j] = replacement_color
-        self._flood_fill_recursive(i+1, j, target_color, replacement_color)
-        self._flood_fill_recursive(i-1, j, target_color, replacement_color)
-        self._flood_fill_recursive(i, j+1, target_color, replacement_color)
-        self._flood_fill_recursive(i, j-1, target_color, replacement_color)
-
-    def zoom(self):
-        zoom_in = random.choice([True, False])
-        factor = 2 if zoom_in else 0.5
-        center_i, center_j = GRID_SIZE // 2, GRID_SIZE // 2
-        new_grid = [[0 for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
-        
-        for i in range(GRID_SIZE):
-            for j in range(GRID_SIZE):
-                source_i = int((i - center_i) * factor + center_i)
-                source_j = int((j - center_j) * factor + center_j)
-                if 0 <= source_i < GRID_SIZE and 0 <= source_j < GRID_SIZE:
-                    new_grid[i][j] = self.grid[source_i][source_j]
-        
-        self.grid = new_grid
-
-    def color_change(self):
-        for i in range(GRID_SIZE):
-            for j in range(GRID_SIZE):
+    def change_colors(self):
+        color_map = {i: random.randint(1, 9) for i in range(1, 10)}
+        for i in range(self.grid_size):
+            for j in range(self.grid_size):
                 if self.grid[i][j] != 0:
-                    self.grid[i][j] = random.randint(1, 9)
+                    self.grid[i][j] = color_map[self.grid[i][j]]
 
-    def color_inversion(self):
-        for i in range(GRID_SIZE):
-            for j in range(GRID_SIZE):
+    def scale_grid(self):
+        scale_factor = random.choice([0.5, 2])
+        new_size = int(self.grid_size * scale_factor)
+        if scale_factor > 1:
+            self.grid = upscale(self.grid, int(scale_factor))
+        else:
+            self.grid = downscale(self.grid, int(1/scale_factor))
+        self.grid_size = new_size
+
+    def shift_grid(self):
+        direction = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+        self.grid = shift(self.grid, direction)
+
+    def invert_grid(self):
+        for i in range(self.grid_size):
+            for j in range(self.grid_size):
                 if self.grid[i][j] != 0:
-                    self.grid[i][j] = 10 - self.grid[i][j]  # Invert color (1 becomes 9, 2 becomes 8, etc.)
+                    self.grid[i][j] = invert(self.grid[i][j])
 
     def draw(self, screen):
-        for i in range(GRID_SIZE):
-            for j in range(GRID_SIZE):
+        for i in range(self.grid_size):
+            for j in range(self.grid_size):
                 pygame.draw.rect(screen, COLOR_MAP[self.grid[i][j]], (j*CELL_SIZE, i*CELL_SIZE, CELL_SIZE, CELL_SIZE))
                 pygame.draw.rect(screen, WHITE, (j*CELL_SIZE, i*CELL_SIZE, CELL_SIZE, CELL_SIZE), 1)
 
@@ -224,9 +193,9 @@ class Tetris:
                 for j, cell in enumerate(row):
                     if cell:
                         color_index = (i * len(self.current_piece[0]) + j) % len(self.current_colors)
+                        grid_pos = add((self.current_position[0], self.current_position[1]), (i, j))
                         pygame.draw.rect(screen, COLOR_MAP[self.current_colors[color_index]],
-                                         ((self.current_position[1] + j) * CELL_SIZE,
-                                          (self.current_position[0] + i) * CELL_SIZE,
+                                         (grid_pos[1] * CELL_SIZE, grid_pos[0] * CELL_SIZE,
                                           CELL_SIZE, CELL_SIZE))
 
         font = pygame.font.Font(None, 36)
