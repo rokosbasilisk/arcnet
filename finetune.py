@@ -173,7 +173,7 @@ def train_model(model, train_loader, val_loader, num_epochs, device):
         visualize_examples(model, val_loader, device)
 
         # Save the model after each epoch
-        torch.save(model.state_dict(), f"tokenized_grid_transformer_epoch_{epoch+1}.pth")
+        #torch.save(model.state_dict(), f"tokenized_grid_transformer_epoch_{epoch+1}.pth")
 
 def visualize_examples(model, val_loader, device):
     model.eval()
@@ -185,9 +185,9 @@ def visualize_examples(model, val_loader, device):
         
         output_sample = model(input_sample)
         
-        print("Raw model output shape:", output_sample.shape)
-        print("Raw model output min:", output_sample.min().item())
-        print("Raw model output max:", output_sample.max().item())
+        #print("Raw model output shape:", output_sample.shape)
+        #print("Raw model output min:", output_sample.min().item())
+        #print("Raw model output max:", output_sample.max().item())
         
         # Use temperature sampling
         temperature = 0.8
@@ -195,9 +195,9 @@ def visualize_examples(model, val_loader, device):
         output_probs = torch.softmax(output_sample, dim=-1)
         predicted_sample = torch.multinomial(output_probs.view(-1, output_probs.size(-1)), num_samples=1).squeeze()
         
-        print("Predicted sample shape:", predicted_sample.shape)
-        print("Predicted sample min:", predicted_sample.min().item())
-        print("Predicted sample max:", predicted_sample.max().item())
+        #print("Predicted sample shape:", predicted_sample.shape)
+        #print("Predicted sample min:", predicted_sample.min().item())
+        #print("Predicted sample max:", predicted_sample.max().item())
         
         # Debug: Print unique predicted tokens and their counts
         unique_tokens, counts = torch.unique(predicted_sample, return_counts=True)
