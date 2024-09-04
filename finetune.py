@@ -71,15 +71,6 @@ class ARCDataset(Dataset):
         return (torch.tensor(input_tokens, dtype=torch.long),
                 torch.tensor(target_tokens, dtype=torch.long))
 
-def exact_match_accuracy(outputs, targets):
-    predicted = outputs.argmax(dim=-1)
-    correct = (predicted == targets).all(dim=1).float()
-    return correct.mean().item()
-
-def cell_accuracy(outputs, targets):
-    predicted = outputs.argmax(dim=-1)
-    correct = (predicted == targets).float()
-    return correct.mean().item()
 
 def color_for_value(value):
     """ Returns a color based on the value for grid cells ranging from 0 to 9. """
@@ -106,33 +97,6 @@ def ensure_2d_grid(grid):
         return grid.reshape(grid.shape[0], -1)
     return grid
 
-def visualize_examples(model, val_loader, device):
-    model.eval()
-    with torch.no_grad():
-        # Select a random sample from the entire validation loader
-        inputs, targets = next(iter(val_loader))
-        # Randomly sample one input-target pair
-        idx = random.randint(0, targets.size(0) - 1)
-        input_sample = inputs[idx].unsqueeze(0).to(device)
-        target_sample = targets[idx].to(device)
-        # Run the model on the sampled input
-        output_sample = model(input_sample)
-        predicted_sample = output_sample.argmax(dim=-1).squeeze(0)
-        
-        # Detokenize the predicted sample and ensure it's a 2D grid
-        predicted_grid = model.tokenizer.detokenize(predicted_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE))
-        predicted_grid = ensure_2d_grid(predicted_grid)
-        
-        # Detokenize the target sample and ensure it's a 2D grid
-        target_grid = model.tokenizer.detokenize(target_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE))
-        target_grid = ensure_2d_grid(target_grid)
-        
-        print(colored("Ground Truth vs Predicted", 'yellow'))
-        print(f"Target shape: {target_grid.shape}, Predicted shape: {predicted_grid.shape}")
-        print_grid(target_grid, predicted_grid)
-        
-        print("\n" + "-" * 20 + "\n")  # Separator between examples
-
 def print_grid(gt_grid, pred_grid):
     """ Helper function to print two grids side by side in the terminal. """
     for gt_row, pred_row in zip(gt_grid, pred_grid):
@@ -146,6 +110,15 @@ def print_grid(gt_grid, pred_grid):
         print(" ".join(gt_line) + "    " + " ".join(pred_line))
 
 
+def exact_match_accuracy(outputs, targets):
+    predicted = outputs.argmax(dim=-1)
+    correct = (predicted == targets).all(dim=-1).float()
+    return correct.mean().item()
+
+def cell_accuracy(outputs, targets):
+    predicted = outputs.argmax(dim=-1)
+    correct = (predicted == targets).float()
+    return correct.mean().item()
 
 def train_model(model, train_loader, val_loader, num_epochs, device):
     criterion = nn.CrossEntropyLoss()
@@ -201,6 +174,50 @@ def train_model(model, train_loader, val_loader, num_epochs, device):
 
         # Save the model after each epoch
         torch.save(model.state_dict(), f"tokenized_grid_transformer_epoch_{epoch+1}.pth")
+
+def visualize_examples(model, val_loader, device):
+    model.eval()
+    with torch.no_grad():
+        inputs, targets = next(iter(val_loader))
+        idx = random.randint(0, targets.size(0) - 1)
+        input_sample = inputs[idx].unsqueeze(0).to(device)
+        target_sample = targets[idx].to(device)
+        
+        output_sample = model(input_sample)
+        
+        print("Raw model output shape:", output_sample.shape)
+        print("Raw model output min:", output_sample.min().item())
+        print("Raw model output max:", output_sample.max().item())
+        
+        # Use temperature sampling
+        temperature = 0.8
+        output_sample = output_sample / temperature
+        output_probs = torch.softmax(output_sample, dim=-1)
+        predicted_sample = torch.multinomial(output_probs.view(-1, output_probs.size(-1)), num_samples=1).squeeze()
+        
+        print("Predicted sample shape:", predicted_sample.shape)
+        print("Predicted sample min:", predicted_sample.min().item())
+        print("Predicted sample max:", predicted_sample.max().item())
+        
+        # Debug: Print unique predicted tokens and their counts
+        unique_tokens, counts = torch.unique(predicted_sample, return_counts=True)
+        print("Unique predicted tokens:", unique_tokens.tolist())
+        print("Token counts:", counts.tolist())
+        
+        # Detokenize the predicted sample
+        predicted_grid = model.tokenizer.detokenize(predicted_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE))
+        predicted_grid = ensure_2d_grid(predicted_grid)
+        
+        # Detokenize the target sample
+        target_grid = model.tokenizer.detokenize(target_sample.cpu().numpy(), (GRID_SIZE, GRID_SIZE))
+        target_grid = ensure_2d_grid(target_grid)
+        
+        print(colored("Ground Truth vs Predicted", 'yellow'))
+        print(f"Target shape: {target_grid.shape}, Predicted shape: {predicted_grid.shape}")
+        print_grid(target_grid, predicted_grid)
+        
+        print("\n" + "-" * 20 + "\n")  # Separator between examples
+
 
 
 def main():
