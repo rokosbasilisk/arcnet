@@ -13,11 +13,11 @@ from tokenized_grid_transformer import TokenizedGridTransformer, ARCTokenizer, G
 # Constants
 BATCH_SIZE = 64
 NUM_EPOCHS = 100
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 5e-4
 NUM_LAYERS = 8
 EMBED_DIM = 64
 NUM_HEADS = 8
-FF_DIM = 128
+FF_DIM = 64
 PADDING_VALUE = 10
 
 import numpy as np
