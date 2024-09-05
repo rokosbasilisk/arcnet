@@ -205,25 +205,29 @@ class ARCDataset(Dataset):
 
 def prepare_arc_data(train_file, eval_file, batch_size, padding_value=10, val_fraction=0.1, remap_colors=False, replace_colors=False):
     # Load both datasets
-    full_dataset = ARCDataset(train_file, train_file.replace('challenges', 'solutions'), 
+    train_dataset = ARCDataset(train_file, train_file.replace('challenges', 'solutions'), 
                               padding_value=padding_value, remap_colors=remap_colors, replace_colors=replace_colors)
-    full_dataset.data.extend(ARCDataset(eval_file, eval_file.replace('challenges', 'solutions'), 
-                                        padding_value=padding_value, remap_colors=remap_colors, replace_colors=replace_colors).data)
+
+
+    val_dataset = ARCDataset(eval_file, eval_file.replace('challenges', 'solutions'), 
+                                        padding_value=padding_value, remap_colors=remap_colors, replace_colors=replace_colors)
 
     # Shuffle the combined dataset
-    random.shuffle(full_dataset.data)
-    
+    #random.shuffle(train_dataset.data)
+    #random.shuffle(val_dataset.data)
+
+
     # Calculate the split
-    dataset_size = len(full_dataset)
-    val_size = int(dataset_size * val_fraction)
-    train_size = dataset_size - val_size
+    #dataset_size = len(full_dataset)
+    #val_size = int(dataset_size * val_fraction)
+    #train_size = dataset_size - val_size
     
     # Split the dataset
-    train_dataset, val_dataset = torch.utils.data.random_split(full_dataset, [train_size, val_size])
+    #train_dataset, val_dataset = torch.utils.data.random_split(full_dataset, [train_size, val_size])
     
     # Create DataLoaders
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
     
     print(f"Total samples: {dataset_size}")
     print(f"Training samples: {train_size}")
