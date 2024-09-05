@@ -12,7 +12,7 @@ import torch.optim as optim
 # Constants
 MAX_GRID_SIZE = 30
 CONTEXT_LENGTH = 8
-BATCH_SIZE = 64
+BATCH_SIZE = 100
 NUM_EPOCHS = 100
 LEARNING_RATE = 5e-4
 NUM_LAYERS = 8
@@ -294,7 +294,7 @@ def prepare_arc_data(train_file, eval_file, batch_size, padding_value=10, val_fr
     
     # Calculate the split
     dataset_size = len(full_dataset)
-    val_size = int(dataset_size * val_fraction)
+    val_size = max(int(dataset_size * val_fraction), 1)  # Ensure at least one validation sample
     train_size = dataset_size - val_size
     
     # Split the dataset
@@ -302,13 +302,50 @@ def prepare_arc_data(train_file, eval_file, batch_size, padding_value=10, val_fr
     
     # Create DataLoaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size)
+    val_loader = DataLoader(val_dataset, batch_size=min(batch_size, val_size))
     
-    print(f"Total samples: {dataset_size}")
-    print(f"Training samples: {train_size}")
-    print(f"Validation samples: {val_size}")
+    print(f"Full dataset size: {dataset_size}")
+    print(f"Training samples: {len(train_dataset)}")
+    print(f"Validation samples: {len(val_dataset)}")
     
     return train_loader, val_loader
+
+def visualize_examples(model, val_loader, device):
+    model.eval()
+    with torch.no_grad():
+        try:
+            inputs, targets, original_sizes = next(iter(val_loader))
+        except StopIteration:
+            print("Validation set is empty. Skipping visualization.")
+            return
+
+        if inputs.size(0) == 0:
+            print("No samples in the batch. Skipping visualization.")
+            return
+
+        idx = random.randint(0, inputs.size(0) - 1)
+        input_sample = inputs[idx].unsqueeze(0).to(device)
+        target_sample = targets[idx].to(device)
+        
+        output_sample = model(input_sample)
+        
+        temperature = 0.8
+        output_sample = output_sample / temperature
+        output_probs = torch.softmax(output_sample, dim=-1)
+        predicted_sample = torch.multinomial(output_probs.view(-1, output_probs.size(-1)), num_samples=1).squeeze()
+        
+        unique_tokens, counts = torch.unique(predicted_sample, return_counts=True)
+        print("Unique predicted tokens:", unique_tokens.tolist())
+        print("Token counts:", counts.tolist())
+        
+        predicted_grid = model.tokenizer.detokenize(predicted_sample.cpu().numpy(), (MAX_GRID_SIZE, MAX_GRID_SIZE))
+        target_grid = model.tokenizer.detokenize(target_sample.cpu().numpy(), (MAX_GRID_SIZE, MAX_GRID_SIZE))
+        
+        print(colored("\nGround Truth vs Predicted", 'yellow'))
+        print(f"Target shape: {target_grid.shape}, Predicted shape: {predicted_grid.shape}")
+        print_grid(target_grid, predicted_grid)
+        
+        print("\n" + "-" * 40 + "\n")  # Separator between examples
 
 def ensure_2d_grid(grid):
     if grid.ndim == 1:
@@ -434,34 +471,6 @@ def print_grid(gt_grid, pred_grid):
                 pred_line.append("  ")
         
         print(" ".join(gt_line) + "   " + " ".join(pred_line))
-
-def visualize_examples(model, val_loader, device):
-    model.eval()
-    with torch.no_grad():
-        inputs, targets = next(iter(val_loader))
-        idx = random.randint(0, targets.size(0) - 1)
-        input_sample = inputs[idx].unsqueeze(0).to(device)
-        target_sample = targets[idx].to(device)
-        
-        output_sample = model(input_sample)
-        
-        temperature = 0.8
-        output_sample = output_sample / temperature
-        output_probs = torch.softmax(output_sample, dim=-1)
-        predicted_sample = torch.multinomial(output_probs.view(-1, output_probs.size(-1)), num_samples=1).squeeze()
-        
-        unique_tokens, counts = torch.unique(predicted_sample, return_counts=True)
-        print("Unique predicted tokens:", unique_tokens.tolist())
-        print("Token counts:", counts.tolist())
-        
-        predicted_grid = model.tokenizer.detokenize(predicted_sample.cpu().numpy(), (MAX_GRID_SIZE, MAX_GRID_SIZE))
-        target_grid = model.tokenizer.detokenize(target_sample.cpu().numpy(), (MAX_GRID_SIZE, MAX_GRID_SIZE))
-        
-        print(colored("\nGround Truth vs Predicted", 'yellow'))
-        print(f"Target shape: {target_grid.shape}, Predicted shape: {predicted_grid.shape}")
-        print_grid(target_grid, predicted_grid)
-        
-        print("\n" + "-" * 40 + "\n")  # Separator between examples
 
 def main(remap_colors=False, replace_colors=False):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
