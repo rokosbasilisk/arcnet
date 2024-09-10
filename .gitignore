@@ -1,3 +1,4 @@
 trajectories/*
 data/*
 output/*
+*.pth

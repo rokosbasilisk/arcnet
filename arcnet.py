@@ -13,9 +13,9 @@ import torch.optim as optim
 MAX_GRID_SIZE = 30
 CONTEXT_LENGTH = 8
 BATCH_SIZE = 100
-NUM_EPOCHS = 100
+NUM_EPOCHS = 200
 LEARNING_RATE = 5e-4
-NUM_LAYERS = 8
+NUM_LAYERS = 10
 EMBED_DIM = 64
 NUM_HEADS = 8
 FF_DIM = 64
@@ -477,6 +477,7 @@ def print_grid(gt_grid, pred_grid):
         print(" ".join(gt_line) + "   " + " ".join(pred_line))
 
 def main(remap_colors=False, replace_colors=False):
+    print(f"remap_colors: {remap_colors} replace_colors: {replace_colors}")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     max_tokens_per_grid = (MAX_GRID_SIZE // 2) ** 2
