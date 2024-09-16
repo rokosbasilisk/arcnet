@@ -8,19 +8,23 @@ import random
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import argparse
+import math
+import matplotlib.pyplot as plt
+from datasets import load_metric
+from transformers import TrainerCallback, TrainingArguments, Trainer
 
 # Constants
 MAX_GRID_SIZE = 30
 CONTEXT_LENGTH = 8
 BATCH_SIZE = 100
-NUM_EPOCHS = 200
-LEARNING_RATE = 5e-4
-NUM_LAYERS = 10
-EMBED_DIM = 64
+NUM_EPOCHS = 100
+LEARNING_RATE = 1e-4
+NUM_LAYERS = 5
+EMBED_DIM = 64  # Adjusted to accommodate multi-scale embeddings
 NUM_HEADS = 8
 FF_DIM = 64
 PADDING_VALUE = 10
-
 
 class ARCTokenizer:
     def __init__(self, padding_value=10):
@@ -94,7 +98,6 @@ class ARCDataset(Dataset):
         self.max_tokens_per_grid = (self.max_grid_size // 2) ** 2
         
         self.process_data()
-
 
     def calculate_max_output_size(self):
         max_h, max_w = 0, 0
@@ -191,7 +194,6 @@ class ARCDataset(Dataset):
                 
                 self.data.append((input_tokens, output_tokens, output_grid.shape))
 
-
     def __len__(self):
         return len(self.data)
 
@@ -200,91 +202,6 @@ class ARCDataset(Dataset):
         return (torch.tensor(input_tokens, dtype=torch.long),
                 torch.tensor(output_tokens, dtype=torch.long),
                 torch.tensor(original_size, dtype=torch.long))
-
-
-
-def prepare_arc_data(train_file, eval_file, batch_size, padding_value=10, val_fraction=0.1, remap_colors=False, replace_colors=False):
-    # Load both datasets
-    train_dataset = ARCDataset(train_file, train_file.replace('challenges', 'solutions'), 
-                              padding_value=padding_value, remap_colors=remap_colors, replace_colors=replace_colors)
-
-
-    val_dataset = ARCDataset(eval_file, eval_file.replace('challenges', 'solutions'), 
-                                        padding_value=padding_value, remap_colors=remap_colors, replace_colors=replace_colors)
-
-    # Shuffle the combined dataset
-    #random.shuffle(train_dataset.data)
-    #random.shuffle(val_dataset.data)
-
-
-    # Calculate the split
-    #dataset_size = len(full_dataset)
-    #val_size = int(dataset_size * val_fraction)
-    #train_size = dataset_size - val_size
-    
-    # Split the dataset
-    #train_dataset, val_dataset = torch.utils.data.random_split(full_dataset, [train_size, val_size])
-    
-    # Create DataLoaders
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
-    
-    print(f"Total samples: {dataset_size}")
-    print(f"Training samples: {train_size}")
-    print(f"Validation samples: {val_size}")
-    
-    return train_loader, val_loader
-
-class TokenizedGridTransformer(nn.Module):
-    def __init__(self, num_layers, embed_dim, num_heads, ff_dim, context_length, max_tokens_per_grid, padding_value=10):
-        super().__init__()
-        self.tokenizer = ARCTokenizer(padding_value=padding_value)
-        self.embedding = nn.Embedding(self.tokenizer.vocab_size, embed_dim, padding_idx=self.tokenizer.padding_token)
-        self.pos_encoding = nn.Embedding(context_length * max_tokens_per_grid, embed_dim)
-        self.layers = nn.ModuleList([
-            nn.TransformerEncoderLayer(d_model=embed_dim, nhead=num_heads, dim_feedforward=ff_dim)
-            for _ in range(num_layers)
-        ])
-        self.final_layer = nn.Linear(embed_dim, self.tokenizer.vocab_size)
-        self.context_length = context_length
-        self.max_tokens_per_grid = max_tokens_per_grid
-
-    def forward(self, x):
-        # Print input shape for debugging
-        
-        # x shape: (batch_size, context_length, max_tokens_per_grid)
-        batch_size, context_length, tokens_per_grid = x.shape
-        x = x.reshape(batch_size, -1)  # Flatten the context and tokens
-
-        # Create position indices
-        positions = torch.arange(x.size(1), device=x.device).unsqueeze(0).expand(batch_size, -1)
-        
-        x = self.embedding(x) + self.pos_encoding(positions)
-
-        x = x.permute(1, 0, 2)  # Change to (seq_len, batch_size, embed_dim) for transformer
-        for layer in self.layers:
-            x = layer(x)
-        
-        x = x.permute(1, 0, 2)  # Change back to (batch_size, seq_len, embed_dim)
-        x = self.final_layer(x)
-        
-        # Reshape to (batch_size, context_length, max_tokens_per_grid, vocab_size)
-        x = x.reshape(batch_size, context_length, tokens_per_grid, -1)
-        
-        # Only return the prediction for the last frame
-        x = x[:, -1, :, :]
-
-        return x
-
-    def generate(self, input_sequence, max_new_tokens):
-        self.eval()
-        with torch.no_grad():
-            for _ in range(max_new_tokens):
-                predictions = self(input_sequence)
-                next_token = predictions.argmax(dim=-1).unsqueeze(1)
-                input_sequence = torch.cat([input_sequence[:, 1:], next_token], dim=1)
-        return input_sequence[:, -1]
-
 
 def prepare_arc_data(train_file, eval_file, batch_size, padding_value=10, val_fraction=0.1, remap_colors=False, replace_colors=False):
     # Load both datasets
@@ -314,71 +231,128 @@ def prepare_arc_data(train_file, eval_file, batch_size, padding_value=10, val_fr
     
     return train_loader, val_loader
 
-def visualize_examples(model, val_loader, device):
-    model.eval()
-    with torch.no_grad():
-        try:
-            inputs, targets, original_sizes = next(iter(val_loader))
-        except StopIteration:
-            print("Validation set is empty. Skipping visualization.")
-            return
-
-        if inputs.size(0) == 0:
-            print("No samples in the batch. Skipping visualization.")
-            return
-
-        idx = random.randint(0, inputs.size(0) - 1)
-        input_sample = inputs[idx].unsqueeze(0).to(device)
-        target_sample = targets[idx].to(device)
+class TokenizedGridTransformer(nn.Module):
+    def __init__(self, num_layers, embed_dim, num_heads, ff_dim, context_length, max_tokens_per_grid, padding_value=10, max_grid_size=30):
+        super().__init__()
+        self.tokenizer = ARCTokenizer(padding_value=padding_value)
+        self.embed_dim = embed_dim
+        self.embedding = nn.Embedding(self.tokenizer.vocab_size, embed_dim, padding_idx=self.tokenizer.padding_token)
         
-        output_sample = model(input_sample)
+        # Multi-Scale Positional Encoding
+        # Scale 1: Fine Scale (e.g., 15x15 for 30x30 grid with 2x2 tokens)
+        scale1_size = max_grid_size // 2  # 15
+        self.row_pos_encoding_scale1 = nn.Embedding(scale1_size, embed_dim // 2)
+        self.col_pos_encoding_scale1 = nn.Embedding(scale1_size, embed_dim // 2)
         
-        temperature = 0.8
-        output_sample = output_sample / temperature
-        output_probs = torch.softmax(output_sample, dim=-1)
-        predicted_sample = torch.multinomial(output_probs.view(-1, output_probs.size(-1)), num_samples=1).squeeze()
+        # Scale 2: Coarse Scale (e.g., 5x5 by grouping 3x3 tokens)
+        scale2_size = scale1_size // 3  # 5
+        self.row_pos_encoding_scale2 = nn.Embedding(scale2_size, embed_dim // 2)
+        self.col_pos_encoding_scale2 = nn.Embedding(scale2_size, embed_dim // 2)
         
-        unique_tokens, counts = torch.unique(predicted_sample, return_counts=True)
-        print("Unique predicted tokens:", unique_tokens.tolist())
-        print("Token counts:", counts.tolist())
-        
-        predicted_grid = model.tokenizer.detokenize(predicted_sample.cpu().numpy(), (MAX_GRID_SIZE, MAX_GRID_SIZE))
-        target_grid = model.tokenizer.detokenize(target_sample.cpu().numpy(), (MAX_GRID_SIZE, MAX_GRID_SIZE))
-        
-        print(colored("\nGround Truth vs Predicted", 'yellow'))
-        print(f"Target shape: {target_grid.shape}, Predicted shape: {predicted_grid.shape}")
-        print_grid(target_grid, predicted_grid)
-        
-        print("\n" + "-" * 40 + "\n")  # Separator between examples
+        self.layers = nn.ModuleList([
+            nn.TransformerEncoderLayer(d_model=embed_dim, nhead=num_heads, dim_feedforward=ff_dim)
+            for _ in range(num_layers)
+        ])
+        self.final_layer = nn.Linear(embed_dim, self.tokenizer.vocab_size)
+        self.context_length = context_length
+        self.max_tokens_per_grid = max_tokens_per_grid
 
-def ensure_2d_grid(grid):
-    if grid.ndim == 1:
-        side_length = int(np.sqrt(grid.shape[0]))
-        return grid.reshape(side_length, side_length)
-    elif grid.ndim > 2:
-        return grid.reshape(grid.shape[0], -1)
-    return grid
+    def forward(self, x):
+        # x shape: (batch_size, context_length, max_tokens_per_grid)
+        batch_size, context_length, tokens_per_grid = x.shape
+        x = x.reshape(batch_size, context_length * tokens_per_grid)  # Flatten context and tokens
 
-def exact_match_accuracy(outputs, targets, original_sizes):
-    predicted = outputs.argmax(dim=1)
-    correct = (predicted == targets).view(-1, 225)  # Reshape to [batch_size, max_tokens_per_grid]
-    exact_match = correct.all(dim=1).float()  # Check if all tokens in a sample match
-    return exact_match.mean().item()
+        # Compute token grid positions
+        grid_size_scale1 = self.max_tokens_per_grid // (self.max_tokens_per_grid // 15)  # 15
+        grid_size_scale2 = grid_size_scale1 // 3  # 5
 
-def cell_accuracy(outputs, targets, original_sizes):
-    predicted = outputs.argmax(dim=1)
-    correct = (predicted == targets).float()
-    return correct.mean().item()
+        # Compute row and column indices for each token at scale1
+        token_idx = torch.arange(tokens_per_grid, device=x.device).unsqueeze(0).expand(batch_size, -1)  # (batch_size, tokens_per_grid)
+        rows_scale1 = (token_idx // (tokens_per_grid // (self.max_tokens_per_grid // 15))) % 15  # (batch_size, tokens_per_grid)
+        cols_scale1 = token_idx % 15  # (batch_size, tokens_per_grid)
 
-def train_model(model, train_loader, val_loader, num_epochs, device):
+        # Compute row and column indices for each token at scale2
+        rows_scale2 = rows_scale1 // 3  # Integer division for coarse grouping
+        cols_scale2 = cols_scale1 // 3  # Integer division for coarse grouping
+
+        # Expand to match context_length
+        rows_scale1 = rows_scale1.unsqueeze(1).repeat(1, context_length, 1).reshape(batch_size, -1)  # (batch_size, context_length * tokens_per_grid)
+        cols_scale1 = cols_scale1.unsqueeze(1).repeat(1, context_length, 1).reshape(batch_size, -1)  # (batch_size, context_length * tokens_per_grid)
+        
+        rows_scale2 = rows_scale2.unsqueeze(1).repeat(1, context_length, 1).reshape(batch_size, -1)  # (batch_size, context_length * tokens_per_grid)
+        cols_scale2 = cols_scale2.unsqueeze(1).repeat(1, context_length, 1).reshape(batch_size, -1)  # (batch_size, context_length * tokens_per_grid)
+
+        # Get positional embeddings for both scales
+        row_emb_scale1 = self.row_pos_encoding_scale1(rows_scale1)  # (batch_size, context_length * tokens_per_grid, embed_dim//2)
+        col_emb_scale1 = self.col_pos_encoding_scale1(cols_scale1)  # (batch_size, context_length * tokens_per_grid, embed_dim//2)
+        
+        row_emb_scale2 = self.row_pos_encoding_scale2(rows_scale2)  # (batch_size, context_length * tokens_per_grid, embed_dim//2)
+        col_emb_scale2 = self.col_pos_encoding_scale2(cols_scale2)  # (batch_size, context_length * tokens_per_grid, embed_dim//2)
+
+        # Combine embeddings from both scales
+        pos_emb_scale1 = row_emb_scale1 + col_emb_scale1  # (batch_size, context_length * tokens_per_grid, embed_dim//2)
+        pos_emb_scale2 = row_emb_scale2 + col_emb_scale2  # (batch_size, context_length * tokens_per_grid, embed_dim//2)
+        
+        # Concatenate to form multi-scale positional encoding
+        pos_embeddings = torch.cat([pos_emb_scale1, pos_emb_scale2], dim=-1)  # (batch_size, context_length * tokens_per_grid, embed_dim)
+        
+        # Get token embeddings
+        token_embeddings = self.embedding(x)  # (batch_size, context_length * tokens_per_grid, embed_dim)
+        
+        # Add positional embeddings
+        embeddings = token_embeddings + pos_embeddings  # (batch_size, context_length * tokens_per_grid, embed_dim)
+        
+        # Prepare for Transformer: (seq_len, batch_size, embed_dim)
+        embeddings = embeddings.permute(1, 0, 2)
+        
+        # Pass through Transformer layers
+        for layer in self.layers:
+            embeddings = layer(embeddings)
+        
+        # Back to (batch_size, seq_len, embed_dim)
+        embeddings = embeddings.permute(1, 0, 2)
+        
+        # Final linear layer
+        outputs = self.final_layer(embeddings)  # (batch_size, seq_len, vocab_size)
+        
+        # Reshape to (batch_size, context_length, max_tokens_per_grid, vocab_size)
+        outputs = outputs.reshape(batch_size, context_length, self.max_tokens_per_grid, -1)
+        
+        # Only return the prediction for the last frame
+        outputs = outputs[:, -1, :, :]  # (batch_size, max_tokens_per_grid, vocab_size)
+        
+        return outputs
+
+    def generate(self, input_sequence, max_new_tokens):
+        self.eval()
+        with torch.no_grad():
+            for _ in range(max_new_tokens):
+                predictions = self(input_sequence)
+                next_token = predictions.argmax(dim=-1).unsqueeze(1)
+                input_sequence = torch.cat([input_sequence[:, 1:], next_token], dim=1)
+        return input_sequence[:, -1]
+
+def plot_train_val_curves(train_losses, val_losses):
+    """Plot the training and validation loss curves."""
+    epochs = range(1, len(train_losses) + 1)
+    plt.plot(epochs, train_losses, 'bo-', label='Training loss')
+    plt.plot(epochs, val_losses, 'ro-', label='Validation loss')
+    plt.title('Training and validation loss curves')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.show()
+
+def train_model(model, train_loader, val_loader, num_epochs, device, is_vis):
     criterion = nn.CrossEntropyLoss(ignore_index=PADDING_VALUE)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+    train_losses = []
+    val_losses = []
     
     for epoch in range(num_epochs):
         model.train()
         train_loss = 0.0
-        train_exact_acc = 0.0
-        train_cell_acc = 0.0
         for inputs, targets, original_sizes in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
             inputs, targets = inputs.to(device), targets.to(device)
             
@@ -386,107 +360,68 @@ def train_model(model, train_loader, val_loader, num_epochs, device):
             outputs = model(inputs)
             
             # Reshape outputs for loss calculation
-            outputs = outputs.contiguous().reshape(-1, model.tokenizer.vocab_size)
-            targets = targets.reshape(-1)
+            outputs_reshaped = outputs.contiguous().reshape(-1, model.tokenizer.vocab_size)
+            targets_reshaped = targets.reshape(-1)
             
-            loss = criterion(outputs, targets)
+            loss = criterion(outputs_reshaped, targets_reshaped)
             loss.backward()
             optimizer.step()
             
             train_loss += loss.item()
-            train_exact_acc += exact_match_accuracy(outputs, targets, original_sizes)
-            train_cell_acc += cell_accuracy(outputs, targets, original_sizes)
 
         train_loss /= len(train_loader)
-        train_exact_acc /= len(train_loader)
-        train_cell_acc /= len(train_loader)
+        train_losses.append(train_loss)
         
         # Validation
         model.eval()
         val_loss = 0.0
-        val_exact_acc = 0.0
-        val_cell_acc = 0.0
         with torch.no_grad():
             for inputs, targets, original_sizes in val_loader:
                 inputs, targets = inputs.to(device), targets.to(device)
                 outputs = model(inputs)
                 
                 # Reshape outputs for loss calculation
-                outputs = outputs.contiguous().reshape(-1, model.tokenizer.vocab_size)
-                targets = targets.reshape(-1)
+                outputs_reshaped = outputs.contiguous().reshape(-1, model.tokenizer.vocab_size)
+                targets_reshaped = targets.reshape(-1)
                 
-                loss = criterion(outputs, targets)
+                loss = criterion(outputs_reshaped, targets_reshaped)
                 val_loss += loss.item()
-                val_exact_acc += exact_match_accuracy(outputs, targets, original_sizes)
-                val_cell_acc += cell_accuracy(outputs, targets, original_sizes)
         
         val_loss /= len(val_loader)
-        val_exact_acc /= len(val_loader)
-        val_cell_acc /= len(val_loader)
+        val_losses.append(val_loss)
         
         print(f"Epoch {epoch+1}/{num_epochs}")
-        print(f"Train Loss: {train_loss:.4f}, Train Exact Acc: {train_exact_acc:.4f}, Train Cell Acc: {train_cell_acc:.4f}")
-        print(f"Val Loss: {val_loss:.4f}, Val Exact Acc: {val_exact_acc:.4f}, Val Cell Acc: {val_cell_acc:.4f}")
-
-        # You may want to add model saving logic here
-        # You may want to add model saving logic here
-
-        visualize_examples(model, val_loader, device)
-
-        #torch.save(model.state_dict(), f"tokenized_grid_transformer_epoch_{epoch+1}.pth")
-
-def color_for_value(value):
-    color_map = {
-        0: 'white',
-        1: 'red',
-        2: 'green',
-        3: 'yellow',
-        4: 'blue',
-        5: 'magenta',
-        6: 'cyan',
-        7: 'grey',
-        8: 'light_red',
-        9: 'light_green',
-        10: 'light_yellow'  # Assuming 10 is your padding value
-    }
-    return color_map.get(value, 'white')
-
-def print_grid(gt_grid, pred_grid):
-    max_height = max(gt_grid.shape[0], pred_grid.shape[0])
-    max_width = max(gt_grid.shape[1], pred_grid.shape[1])
-    
-    print("Ground Truth" + " " * (max_width * 3 - 5) + "Predicted")
-    print("-" * (max_width * 3 - 1) + "   " + "-" * (max_width * 3 - 1))
-    
-    for i in range(max_height):
-        gt_line = []
-        pred_line = []
-        for j in range(max_width):
-            if i < gt_grid.shape[0] and j < gt_grid.shape[1]:
-                gt_value = gt_grid[i, j]
-                gt_line.append(colored(f"{gt_value:2d}", color_for_value(gt_value)))
-            else:
-                gt_line.append("  ")
-            
-            if i < pred_grid.shape[0] and j < pred_grid.shape[1]:
-                pred_value = pred_grid[i, j]
-                pred_line.append(colored(f"{pred_value:2d}", color_for_value(pred_value)))
-            else:
-                pred_line.append("  ")
+        print(f"Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
         
-        print(" ".join(gt_line) + "   " + " ".join(pred_line))
+    # Plot loss curves
+    plot_train_val_curves(train_losses, val_losses)
 
-def main(remap_colors=False, replace_colors=False):
+def main(remap_colors=False, replace_colors=False, is_vis=False):
     print(f"remap_colors: {remap_colors} replace_colors: {replace_colors}")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     max_tokens_per_grid = (MAX_GRID_SIZE // 2) ** 2
 
-    model = TokenizedGridTransformer( num_layers=NUM_LAYERS, embed_dim=EMBED_DIM, num_heads=NUM_HEADS, ff_dim=FF_DIM, context_length=CONTEXT_LENGTH, max_tokens_per_grid=max_tokens_per_grid, padding_value=PADDING_VALUE ).to(device)
+    model = TokenizedGridTransformer(
+        num_layers=NUM_LAYERS, 
+        embed_dim=EMBED_DIM, 
+        num_heads=NUM_HEADS, 
+        ff_dim=FF_DIM, 
+        context_length=CONTEXT_LENGTH, 
+        max_tokens_per_grid=max_tokens_per_grid, 
+        padding_value=PADDING_VALUE,
+        max_grid_size=MAX_GRID_SIZE
+    ).to(device)
 
     if os.path.exists("tokenized_grid_transformer_finetuned.pth"):
         print("Loading pre-trained model...")
-        model.load_state_dict(torch.load("tokenized_grid_transformer_finetuned.pth"))
+        state_dict = torch.load("tokenized_grid_transformer_finetuned.pth")
+        # Load state_dict with strict=False to ignore missing and unexpected keys
+        missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
+        if missing_keys:
+            print(f"Warning: Missing keys in state_dict: {missing_keys}")
+        if unexpected_keys:
+            print(f"Warning: Unexpected keys in state_dict: {unexpected_keys}")
     else:
         print("Pre-trained model not found. Training from scratch...")
 
@@ -499,16 +434,17 @@ def main(remap_colors=False, replace_colors=False):
         replace_colors=replace_colors
     )
 
-    train_model(model, train_loader, val_loader, NUM_EPOCHS, device)
+    train_model(model, train_loader, val_loader, NUM_EPOCHS, device, is_vis)
 
     torch.save(model.state_dict(), "tokenized_grid_transformer_finetuned.pth")
     print("Final model saved as tokenized_grid_transformer_finetuned.pth")
 
 if __name__ == "__main__":
-    import argparse
     parser = argparse.ArgumentParser(description="Train the TokenizedGridTransformer model")
     parser.add_argument("--remap_colors", action="store_true", help="Remap colors to a canonical list")
     parser.add_argument("--replace_colors", action="store_true", help="Replace colors with random new colors")
+    parser.add_argument("--is_vis", action="store_true", help="Enable visualization after training")
     args = parser.parse_args()
 
-    main(remap_colors=args.remap_colors, replace_colors=args.replace_colors)
+    main(remap_colors=args.remap_colors, replace_colors=args.replace_colors, is_vis=args.is_vis)
+
