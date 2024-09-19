@@ -1,6 +1,3 @@
-from termcolor import colored
-from torch.utils.data import Dataset, DataLoader, Subset, random_split
-from tqdm import tqdm
 import json
 import numpy as np
 import os
@@ -9,26 +6,20 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import argparse
-import math
 import matplotlib.pyplot as plt
-from datasets import load_metric
-from transformers import TrainerCallback, TrainingArguments, Trainer
+from torch.utils.data import Dataset, DataLoader, random_split
+from tqdm import tqdm
+from itertools import product  # For generating hyperparameter combinations
 
-# Constants
+# Constants (Adjusted)
 MAX_GRID_SIZE = 30
-CONTEXT_LENGTH = 8
-BATCH_SIZE = 100
-NUM_EPOCHS = 100
-LEARNING_RATE = 1e-4
-NUM_LAYERS = 5
-EMBED_DIM = 64  # Adjusted to accommodate multi-scale embeddings
-NUM_HEADS = 8
-FF_DIM = 64
+CONTEXT_LENGTH = 9
 PADDING_VALUE = 10
+NUM_EPOCHS = 100
 
 class ARCTokenizer:
     def __init__(self, padding_value=10):
-        self.vocab_size = 10**4 + 1  # 10,000 possible tokens (10x10x10x10) + 1 for padding
+        self.vocab_size = 10**4 + 1  # 10,000 possible tokens + 1 for padding
         self.padding_value = padding_value
         self.padding_token = self.vocab_size - 1  # Use the last token as padding token
         self.token_to_grid = {i: self._index_to_grid(i) for i in range(self.vocab_size - 1)}
@@ -171,6 +162,11 @@ class ARCDataset(Dataset):
         
         return np.array(padded_sequence, dtype=np.int64)
 
+    def augment_grid(self, grid):
+        # Example augmentation: random rotation
+        rotations = [np.rot90(grid, k) for k in range(4)]
+        return random.choice(rotations)
+
     def process_data(self):
         for challenge_id in self.challenges:
             challenge = self.challenges[challenge_id]
@@ -183,16 +179,20 @@ class ARCDataset(Dataset):
                 if self.remap_colors or self.replace_colors:
                     input_sequence, output_grid = self.process_colors(input_sequence, output_grid)
                 
+                # Apply augmentation
+                augmented_input_sequence = [self.augment_grid(grid) for grid in input_sequence]
+                augmented_output_grid = self.augment_grid(output_grid)
+                
                 # Pad and tokenize input sequence
-                input_tokens = self.pad_and_tokenize_sequence(input_sequence)
+                input_tokens = self.pad_and_tokenize_sequence(augmented_input_sequence)
                 
                 # Pad and tokenize output grid
-                output_padded = self.tokenizer.pad_grid(output_grid)
+                output_padded = self.tokenizer.pad_grid(augmented_output_grid)
                 output_tokens = self.tokenizer.tokenize(output_padded)
                 # Pad or truncate output tokens to max_tokens_per_grid
                 output_tokens = output_tokens[:self.max_tokens_per_grid] + [self.tokenizer.padding_token] * (self.max_tokens_per_grid - len(output_tokens))
                 
-                self.data.append((input_tokens, output_tokens, output_grid.shape))
+                self.data.append((input_tokens, output_tokens, augmented_output_grid.shape))
 
     def __len__(self):
         return len(self.data)
@@ -203,54 +203,39 @@ class ARCDataset(Dataset):
                 torch.tensor(output_tokens, dtype=torch.long),
                 torch.tensor(original_size, dtype=torch.long))
 
-def prepare_arc_data(train_file, eval_file, batch_size, padding_value=10, val_fraction=0.1, remap_colors=False, replace_colors=False):
-    # Load both datasets
-    full_dataset = ARCDataset(train_file, train_file.replace('challenges', 'solutions'), 
-                              padding_value=padding_value, remap_colors=remap_colors, replace_colors=replace_colors)
-    full_dataset.data.extend(ARCDataset(eval_file, eval_file.replace('challenges', 'solutions'), 
-                                        padding_value=padding_value, remap_colors=remap_colors, replace_colors=replace_colors).data)
-
-    # Shuffle the combined dataset
-    random.shuffle(full_dataset.data)
+def prepare_arc_data(train_file, eval_file, batch_size, padding_value=10, remap_colors=False, replace_colors=False):
+    # Load training dataset
+    train_dataset = ARCDataset(train_file, train_file.replace('challenges', 'solutions'), 
+                               context_length=CONTEXT_LENGTH,
+                               padding_value=padding_value, remap_colors=remap_colors, replace_colors=replace_colors)
     
-    # Calculate the split
-    dataset_size = len(full_dataset)
-    val_size = max(int(dataset_size * val_fraction), 1)  # Ensure at least one validation sample
-    train_size = dataset_size - val_size
-    
-    # Split the dataset
-    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
+    # Load evaluation dataset for validation
+    val_dataset = ARCDataset(eval_file, eval_file.replace('challenges', 'solutions'), 
+                             context_length=CONTEXT_LENGTH,
+                             padding_value=padding_value, remap_colors=remap_colors, replace_colors=replace_colors)
     
     # Create DataLoaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=min(batch_size, val_size))
+    val_loader = DataLoader(val_dataset, batch_size=min(batch_size, len(val_dataset)))
     
-    print(f"Full dataset size: {dataset_size}")
     print(f"Training samples: {len(train_dataset)}")
     print(f"Validation samples: {len(val_dataset)}")
     
     return train_loader, val_loader
 
+
 class TokenizedGridTransformer(nn.Module):
-    def __init__(self, num_layers, embed_dim, num_heads, ff_dim, context_length, max_tokens_per_grid, padding_value=10, max_grid_size=30):
+    def __init__(self, num_layers, embed_dim, num_heads, ff_dim, context_length, max_tokens_per_grid, padding_value=10):
         super().__init__()
         self.tokenizer = ARCTokenizer(padding_value=padding_value)
         self.embed_dim = embed_dim
         self.embedding = nn.Embedding(self.tokenizer.vocab_size, embed_dim, padding_idx=self.tokenizer.padding_token)
         
-        # Multi-Scale Positional Encoding
-        # Scale 1: Fine Scale (e.g., 15x15 for 30x30 grid with 2x2 tokens)
-        scale1_size = max_grid_size // 2  # 15
-        self.row_pos_encoding_scale1 = nn.Embedding(scale1_size, embed_dim // 2)
-        self.col_pos_encoding_scale1 = nn.Embedding(scale1_size, embed_dim // 2)
-        
-        # Scale 2: Coarse Scale (e.g., 5x5 by grouping 3x3 tokens)
-        scale2_size = scale1_size // 3  # 5
-        self.row_pos_encoding_scale2 = nn.Embedding(scale2_size, embed_dim // 2)
-        self.col_pos_encoding_scale2 = nn.Embedding(scale2_size, embed_dim // 2)
+        # Positional Encoding
+        self.pos_encoder = nn.Parameter(torch.zeros(1, context_length * max_tokens_per_grid, embed_dim))
         
         self.layers = nn.ModuleList([
-            nn.TransformerEncoderLayer(d_model=embed_dim, nhead=num_heads, dim_feedforward=ff_dim)
+            nn.TransformerEncoderLayer(d_model=embed_dim, nhead=num_heads, dim_feedforward=ff_dim, dropout=0.5)
             for _ in range(num_layers)
         ])
         self.final_layer = nn.Linear(embed_dim, self.tokenizer.vocab_size)
@@ -262,45 +247,11 @@ class TokenizedGridTransformer(nn.Module):
         batch_size, context_length, tokens_per_grid = x.shape
         x = x.reshape(batch_size, context_length * tokens_per_grid)  # Flatten context and tokens
 
-        # Compute token grid positions
-        grid_size_scale1 = self.max_tokens_per_grid // (self.max_tokens_per_grid // 15)  # 15
-        grid_size_scale2 = grid_size_scale1 // 3  # 5
-
-        # Compute row and column indices for each token at scale1
-        token_idx = torch.arange(tokens_per_grid, device=x.device).unsqueeze(0).expand(batch_size, -1)  # (batch_size, tokens_per_grid)
-        rows_scale1 = (token_idx // (tokens_per_grid // (self.max_tokens_per_grid // 15))) % 15  # (batch_size, tokens_per_grid)
-        cols_scale1 = token_idx % 15  # (batch_size, tokens_per_grid)
-
-        # Compute row and column indices for each token at scale2
-        rows_scale2 = rows_scale1 // 3  # Integer division for coarse grouping
-        cols_scale2 = cols_scale1 // 3  # Integer division for coarse grouping
-
-        # Expand to match context_length
-        rows_scale1 = rows_scale1.unsqueeze(1).repeat(1, context_length, 1).reshape(batch_size, -1)  # (batch_size, context_length * tokens_per_grid)
-        cols_scale1 = cols_scale1.unsqueeze(1).repeat(1, context_length, 1).reshape(batch_size, -1)  # (batch_size, context_length * tokens_per_grid)
-        
-        rows_scale2 = rows_scale2.unsqueeze(1).repeat(1, context_length, 1).reshape(batch_size, -1)  # (batch_size, context_length * tokens_per_grid)
-        cols_scale2 = cols_scale2.unsqueeze(1).repeat(1, context_length, 1).reshape(batch_size, -1)  # (batch_size, context_length * tokens_per_grid)
-
-        # Get positional embeddings for both scales
-        row_emb_scale1 = self.row_pos_encoding_scale1(rows_scale1)  # (batch_size, context_length * tokens_per_grid, embed_dim//2)
-        col_emb_scale1 = self.col_pos_encoding_scale1(cols_scale1)  # (batch_size, context_length * tokens_per_grid, embed_dim//2)
-        
-        row_emb_scale2 = self.row_pos_encoding_scale2(rows_scale2)  # (batch_size, context_length * tokens_per_grid, embed_dim//2)
-        col_emb_scale2 = self.col_pos_encoding_scale2(cols_scale2)  # (batch_size, context_length * tokens_per_grid, embed_dim//2)
-
-        # Combine embeddings from both scales
-        pos_emb_scale1 = row_emb_scale1 + col_emb_scale1  # (batch_size, context_length * tokens_per_grid, embed_dim//2)
-        pos_emb_scale2 = row_emb_scale2 + col_emb_scale2  # (batch_size, context_length * tokens_per_grid, embed_dim//2)
-        
-        # Concatenate to form multi-scale positional encoding
-        pos_embeddings = torch.cat([pos_emb_scale1, pos_emb_scale2], dim=-1)  # (batch_size, context_length * tokens_per_grid, embed_dim)
-        
         # Get token embeddings
         token_embeddings = self.embedding(x)  # (batch_size, context_length * tokens_per_grid, embed_dim)
         
         # Add positional embeddings
-        embeddings = token_embeddings + pos_embeddings  # (batch_size, context_length * tokens_per_grid, embed_dim)
+        embeddings = token_embeddings + self.pos_encoder  # (batch_size, context_length * tokens_per_grid, embed_dim)
         
         # Prepare for Transformer: (seq_len, batch_size, embed_dim)
         embeddings = embeddings.permute(1, 0, 2)
@@ -316,7 +267,7 @@ class TokenizedGridTransformer(nn.Module):
         outputs = self.final_layer(embeddings)  # (batch_size, seq_len, vocab_size)
         
         # Reshape to (batch_size, context_length, max_tokens_per_grid, vocab_size)
-        outputs = outputs.reshape(batch_size, context_length, self.max_tokens_per_grid, -1)
+        outputs = outputs.reshape(batch_size, self.context_length, self.max_tokens_per_grid, -1)
         
         # Only return the prediction for the last frame
         outputs = outputs[:, -1, :, :]  # (batch_size, max_tokens_per_grid, vocab_size)
@@ -343,12 +294,17 @@ def plot_train_val_curves(train_losses, val_losses):
     plt.legend()
     plt.show()
 
-def train_model(model, train_loader, val_loader, num_epochs, device, is_vis):
+def train_model(model, train_loader, val_loader, num_epochs, device, is_vis, hyperparams):
     criterion = nn.CrossEntropyLoss(ignore_index=PADDING_VALUE)
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
-
+    optimizer = optim.Adam(model.parameters(), lr=hyperparams['LEARNING_RATE'], weight_decay=1e-5)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2, factor=0.5)
+    
     train_losses = []
     val_losses = []
+    
+    best_val_loss = float('inf')
+    patience = 5  # Number of epochs to wait before early stopping
+    patience_counter = 0
     
     for epoch in range(num_epochs):
         model.train()
@@ -365,6 +321,10 @@ def train_model(model, train_loader, val_loader, num_epochs, device, is_vis):
             
             loss = criterion(outputs_reshaped, targets_reshaped)
             loss.backward()
+            
+            # Apply gradient clipping
+            nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            
             optimizer.step()
             
             train_loss += loss.item()
@@ -390,11 +350,27 @@ def train_model(model, train_loader, val_loader, num_epochs, device, is_vis):
         val_loss /= len(val_loader)
         val_losses.append(val_loss)
         
-        print(f"Epoch {epoch+1}/{num_epochs}")
-        print(f"Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
+        scheduler.step(val_loss)
         
+        print(f"Epoch {epoch+1}/{num_epochs}")
+        print(f"Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}, Overfit: {(val_loss-train_loss):.4f}")
+        
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            patience_counter = 0
+            # Save the best model
+            torch.save(model.state_dict(), "best_model.pth")
+        else:
+            patience_counter += 1
+            if patience_counter >= patience:
+                print("Early stopping triggered.")
+                break
+    
     # Plot loss curves
-    plot_train_val_curves(train_losses, val_losses)
+    if is_vis:
+        plot_train_val_curves(train_losses, val_losses)
+    
+    return best_val_loss
 
 def main(remap_colors=False, replace_colors=False, is_vis=False):
     print(f"remap_colors: {remap_colors} replace_colors: {replace_colors}")
@@ -402,49 +378,68 @@ def main(remap_colors=False, replace_colors=False, is_vis=False):
     print(f"Using device: {device}")
     max_tokens_per_grid = (MAX_GRID_SIZE // 2) ** 2
 
-    model = TokenizedGridTransformer(
-        num_layers=NUM_LAYERS, 
-        embed_dim=EMBED_DIM, 
-        num_heads=NUM_HEADS, 
-        ff_dim=FF_DIM, 
-        context_length=CONTEXT_LENGTH, 
-        max_tokens_per_grid=max_tokens_per_grid, 
-        padding_value=PADDING_VALUE,
-        max_grid_size=MAX_GRID_SIZE
-    ).to(device)
+    # Define hyperparameter ranges
+    num_layers_list = [3, 5, 7]
+    embed_dim_list = [32, 64]
+    ff_dim_list = [64, 128]
+    num_heads_list = [2, 4]
+    learning_rate_list = [1e-4, 3e-4]
+    batch_size_list = [16, 32]
 
-    if os.path.exists("tokenized_grid_transformer_finetuned.pth"):
-        print("Loading pre-trained model...")
-        state_dict = torch.load("tokenized_grid_transformer_finetuned.pth")
-        # Load state_dict with strict=False to ignore missing and unexpected keys
-        missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
-        if missing_keys:
-            print(f"Warning: Missing keys in state_dict: {missing_keys}")
-        if unexpected_keys:
-            print(f"Warning: Unexpected keys in state_dict: {unexpected_keys}")
-    else:
-        print("Pre-trained model not found. Training from scratch...")
+    # Generate all combinations of hyperparameters
+    hyperparams_combinations = list(product(num_layers_list, embed_dim_list, ff_dim_list, num_heads_list, learning_rate_list, batch_size_list))
 
-    train_loader, val_loader = prepare_arc_data(
-        "data/arc-agi_training_challenges.json",
-        "data/arc-agi_evaluation_challenges.json",
-        batch_size=BATCH_SIZE,
-        padding_value=PADDING_VALUE,
-        remap_colors=remap_colors,
-        replace_colors=replace_colors
-    )
+    best_val_loss = float('inf')
+    best_hyperparams = None
 
-    train_model(model, train_loader, val_loader, NUM_EPOCHS, device, is_vis)
+    for hyperparams_values in hyperparams_combinations:
+        hyperparams = {
+            'NUM_LAYERS': hyperparams_values[0],
+            'EMBED_DIM': hyperparams_values[1],
+            'FF_DIM': hyperparams_values[2],
+            'NUM_HEADS': hyperparams_values[3],
+            'LEARNING_RATE': hyperparams_values[4],
+            'BATCH_SIZE': hyperparams_values[5]
+        }
+        print(f"\nTraining with hyperparameters: {hyperparams}")
 
-    torch.save(model.state_dict(), "tokenized_grid_transformer_finetuned.pth")
-    print("Final model saved as tokenized_grid_transformer_finetuned.pth")
+        model = TokenizedGridTransformer(
+            num_layers=hyperparams['NUM_LAYERS'],
+            embed_dim=hyperparams['EMBED_DIM'],
+            num_heads=hyperparams['NUM_HEADS'],
+            ff_dim=hyperparams['FF_DIM'],
+            context_length=CONTEXT_LENGTH,
+            max_tokens_per_grid=max_tokens_per_grid,
+            padding_value=PADDING_VALUE
+        ).to(device)
+
+        train_loader, val_loader = prepare_arc_data(
+            "data/arc-agi_training_challenges.json",
+            "data/arc-agi_evaluation_challenges.json",
+            batch_size=hyperparams['BATCH_SIZE'],
+            padding_value=PADDING_VALUE,
+            remap_colors=remap_colors,
+            replace_colors=replace_colors
+        )
+
+        val_loss = train_model(model, train_loader, val_loader, NUM_EPOCHS, device, is_vis, hyperparams)
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_hyperparams = hyperparams
+            # Save the best model
+            torch.save(model.state_dict(), "best_model.pth")
+
+    print(f"\nBest validation loss: {best_val_loss:.4f} with hyperparameters: {best_hyperparams}")
+    print("Best model saved as best_model.pth")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train the TokenizedGridTransformer model")
+    parser = argparse.ArgumentParser(description="Train the TokenizedGridTransformer model with hyperparameter sweep")
     parser.add_argument("--remap_colors", action="store_true", help="Remap colors to a canonical list")
     parser.add_argument("--replace_colors", action="store_true", help="Replace colors with random new colors")
     parser.add_argument("--is_vis", action="store_true", help="Enable visualization after training")
     args = parser.parse_args()
 
     main(remap_colors=args.remap_colors, replace_colors=args.replace_colors, is_vis=args.is_vis)
+
 
