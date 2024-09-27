@@ -15,6 +15,10 @@ from termcolor import colored
 MAX_ROW = 30
 MAX_COL = 30
 NUM_COLORS = 11  # Colors from 0 to 10
+MAX_SEQ_LEN = 2048  # Maximum sequence length after chunking
+SEP_TOKEN = 9900  # Separator token ID
+PAD_TOKEN = 9901  # Padding token ID
+VOCAB_SIZE = PAD_TOKEN + 1  # Total vocabulary size
 
 # Define the Action type
 Action = Tuple[int, int, int]  # (row, column, value)
@@ -38,8 +42,6 @@ def id_to_action(action_id: int) -> Action:
     val = remainder % NUM_COLORS
     return (row, col, val)
 
-# -------------------- Helper Functions --------------------
-
 def get_actions_from_grid(grid: List[List[int]]) -> List[int]:
     """
     Converts a grid into a list of action IDs representing the grid.
@@ -61,24 +63,20 @@ def reconstruct_grid_from_actions(action_ids: List[int]) -> List[List[int]]:
     """
     grid = [[0]*MAX_COL for _ in range(MAX_ROW)]
     for action_id in action_ids:
-        if action_id >= MAX_ACTION_ID:
+        if action_id >= SEP_TOKEN:
             continue  # Skip special tokens
         action = id_to_action(action_id)
         i, j, v = action
         if i < MAX_ROW and j < MAX_COL:
             grid[i][j] = v
     # Trim the grid to non-zero rows and columns
-    # Find the max row and column where there's a non-zero value
     max_row = 0
     max_col = 0
     for i in range(MAX_ROW):
         for j in range(MAX_COL):
             if grid[i][j] != 0:
-                if i > max_row:
-                    max_row = i
-                if j > max_col:
-                    max_col = j
-    # Trim the grid
+                max_row = max(max_row, i)
+                max_col = max(max_col, j)
     trimmed_grid = [row[:max_col+1] for row in grid[:max_row+1]]
     return trimmed_grid
 
@@ -117,8 +115,7 @@ def test_action_token_conversion(dataset_entry: Dict):
     tokens_input = dataset_entry['input']
     tokens_target = dataset_entry['target']
 
-    # Since the input is a concatenation of multiple grids and separators,
-    # we need to split it back to individual grids for reconstruction.
+    # Split input sequence into grids based on SEP_TOKEN
     grids = []
     current_actions = []
     for token in tokens_input:
@@ -145,16 +142,6 @@ def test_action_token_conversion(dataset_entry: Dict):
     print("Reconstructed Target Grid:")
     print_grid(target_grid)
 
-# -------------------- Constants --------------------
-
-MAX_ACTION_ID = (MAX_ROW * MAX_COL * NUM_COLORS) - 1  # 98999
-VOCAB_SIZE = MAX_ACTION_ID + 1 + 2  # +1 for MAX_ACTION_ID, +2 for SEP_TOKEN and PAD_TOKEN
-SEP_TOKEN = VOCAB_SIZE - 2  # Assign second last index for SEP_TOKEN
-PAD_TOKEN = VOCAB_SIZE - 1  # Assign last index for PAD_TOKEN
-
-# Update VOCAB_SIZE to include PAD_TOKEN
-VOCAB_SIZE = PAD_TOKEN + 1  # Ensure VOCAB_SIZE is correct
-
 # -------------------- Data Preparation --------------------
 
 def prepare_dataset(challenges_path: str, solutions_path: str) -> List[Dict]:
@@ -165,8 +152,10 @@ def prepare_dataset(challenges_path: str, solutions_path: str) -> List[Dict]:
     The target is the action IDs representing the test output.
     """
     dataset = []
-    challenges = json.load(open(challenges_path, 'r'))
-    solutions = json.load(open(solutions_path, 'r'))
+    with open(challenges_path, 'r') as f:
+        challenges = json.load(f)
+    with open(solutions_path, 'r') as f:
+        solutions = json.load(f)
 
     for key in tqdm(challenges.keys(), desc=f"Processing {os.path.basename(challenges_path)}"):
         challenge = challenges[key]
@@ -220,7 +209,7 @@ def prepare_dataset(challenges_path: str, solutions_path: str) -> List[Dict]:
 # -------------------- Dataset Class --------------------
 
 class ActionDataset(Dataset):
-    def __init__(self, data: List[Dict], max_length: int = 2048):
+    def __init__(self, data: List[Dict], max_length: int = MAX_SEQ_LEN):
         self.inputs = [torch.tensor(entry['input'], dtype=torch.long) for entry in data]
         self.targets = [torch.tensor(entry['target'], dtype=torch.long) for entry in data]
         self.max_length = max_length
@@ -248,12 +237,12 @@ def collate_fn(batch):
 # -------------------- Transformer Model --------------------
 
 class TransformerModel(nn.Module):
-    def __init__(self, vocab_size, padding_idx, d_model=256, nhead=8, num_encoder_layers=3, num_decoder_layers=3, dim_feedforward=512, dropout=0.1):
+    def __init__(self, vocab_size, padding_idx, d_model=256, nhead=8, num_encoder_layers=4, num_decoder_layers=4, dim_feedforward=256, dropout=0.2):
         super(TransformerModel, self).__init__()
         self.model_type = 'Transformer'
         self.src_embedding = nn.Embedding(vocab_size, d_model, padding_idx=padding_idx)
         self.tgt_embedding = nn.Embedding(vocab_size, d_model, padding_idx=padding_idx)
-        self.pos_encoder = PositionalEncoding(d_model, dropout)
+        self.pos_encoder = PositionalEncoding(d_model, dropout, max_len=MAX_SEQ_LEN)
         self.transformer = nn.Transformer(d_model, nhead, num_encoder_layers, num_decoder_layers, dim_feedforward, dropout)
         self.generator = nn.Linear(d_model, vocab_size)
 
@@ -271,12 +260,12 @@ class TransformerModel(nn.Module):
         return output
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, dropout=0.1, max_len=2048):
+    def __init__(self, d_model, dropout=0.1, max_len=MAX_SEQ_LEN):
         super(PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
 
         pe = torch.zeros(max_len, d_model).float()
-        pe.require_grad = False
+        pe.requires_grad = False
 
         position = torch.arange(0, max_len).float().unsqueeze(1)
         div_term = (torch.arange(0, d_model, 2).float() * -(torch.log(torch.tensor(10000.0)) / d_model)).exp()
@@ -291,6 +280,11 @@ class PositionalEncoding(nn.Module):
         self.register_buffer('pe', pe)
 
     def forward(self, x):
+        if x.size(1) > self.pe.size(1):
+            # Expand positional encoding if sequence length exceeds current max_len
+            extra_pe = torch.zeros(1, x.size(1) - self.pe.size(1), self.pe.size(2)).to(x.device)
+            pe = torch.cat((self.pe, extra_pe), dim=1)
+            self.pe = pe
         x = x + self.pe[:, :x.size(1), :]
         return self.dropout(x)
 
@@ -314,10 +308,11 @@ def train_epoch(model, dataloader, optimizer, criterion, device):
         tgt_key_padding_mask = (tgt_input == PAD_TOKEN)
 
         # Assertions to check token IDs
-        assert src.max() < VOCAB_SIZE, f"Invalid token ID in src: max {src.max().item()} >= vocab_size {VOCAB_SIZE}"
-        assert tgt_input.max() < VOCAB_SIZE, f"Invalid token ID in tgt_input: max {tgt_input.max().item()} >= vocab_size {VOCAB_SIZE}"
-        assert src.min() >= 0, f"Negative token ID in src: min {src.min().item()} < 0"
-        assert tgt_input.min() >= 0, f"Negative token ID in tgt_input: min {tgt_input.min().item()} < 0"
+        if src.numel() > 0 and tgt_input.numel() > 0:
+            assert src.max().item() < VOCAB_SIZE, f"Invalid token ID in src: max {src.max().item()} >= vocab_size {VOCAB_SIZE}"
+            assert tgt_input.max().item() < VOCAB_SIZE, f"Invalid token ID in tgt_input: max {tgt_input.max().item()} >= vocab_size {VOCAB_SIZE}"
+            assert src.min().item() >= 0, f"Negative token ID in src: min {src.min().item()} < 0"
+            assert tgt_input.min().item() >= 0, f"Negative token ID in tgt_input: min {tgt_input.min().item()} < 0"
 
         optimizer.zero_grad()
         output = model(src, tgt_input, src_key_padding_mask=src_key_padding_mask, tgt_key_padding_mask=tgt_key_padding_mask)
@@ -347,10 +342,11 @@ def evaluate(model, dataloader, criterion, device):
             tgt_key_padding_mask = (tgt_input == PAD_TOKEN)
 
             # Assertions to check token IDs
-            assert src.max() < VOCAB_SIZE, f"Invalid token ID in src: max {src.max().item()} >= vocab_size {VOCAB_SIZE}"
-            assert tgt_input.max() < VOCAB_SIZE, f"Invalid token ID in tgt_input: max {tgt_input.max().item()} >= vocab_size {VOCAB_SIZE}"
-            assert src.min() >= 0, f"Negative token ID in src: min {src.min().item()} < 0"
-            assert tgt_input.min() >= 0, f"Negative token ID in tgt_input: min {tgt_input.min().item()} < 0"
+            if src.numel() > 0 and tgt_input.numel() > 0:
+                assert src.max().item() < VOCAB_SIZE, f"Invalid token ID in src: max {src.max().item()} >= vocab_size {VOCAB_SIZE}"
+                assert tgt_input.max().item() < VOCAB_SIZE, f"Invalid token ID in tgt_input: max {tgt_input.max().item()} >= vocab_size {VOCAB_SIZE}"
+                assert src.min().item() >= 0, f"Negative token ID in src: min {src.min().item()} < 0"
+                assert tgt_input.min().item() >= 0, f"Negative token ID in tgt_input: min {tgt_input.min().item()} < 0"
 
             output = model(src, tgt_input, src_key_padding_mask=src_key_padding_mask, tgt_key_padding_mask=tgt_key_padding_mask)
             loss = criterion(output.view(-1, output.size(-1)), tgt_output.reshape(-1))
@@ -393,7 +389,7 @@ def main():
     val_data = ActionDataset(val_dataset)
 
     # Create DataLoaders
-    batch_size = 16
+    batch_size = 32  # Adjust based on GPU memory
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
     val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
 
@@ -403,7 +399,7 @@ def main():
     model.to(device)
 
     # Define optimizer and loss function
-    optimizer = optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = optim.Adam(model.parameters(), lr=3e-4)
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_TOKEN)
 
     # Training loop
@@ -419,7 +415,7 @@ def main():
         val_losses.append(val_loss)
         print(f"Train Loss: {train_loss:.4f} | Validation Loss: {val_loss:.4f}")
 
-        # You can add early stopping or model checkpointing here if needed
+        # Optional: Implement Early Stopping or Model Checkpointing here
 
     # Plot losses
     plot_losses(train_losses, val_losses)
