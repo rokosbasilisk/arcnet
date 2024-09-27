@@ -61,6 +61,8 @@ def reconstruct_grid_from_actions(action_ids: List[int]) -> List[List[int]]:
     """
     grid = [[0]*MAX_COL for _ in range(MAX_ROW)]
     for action_id in action_ids:
+        if action_id >= MAX_ACTION_ID:
+            continue  # Skip special tokens
         action = id_to_action(action_id)
         i, j, v = action
         if i < MAX_ROW and j < MAX_COL:
@@ -145,9 +147,13 @@ def test_action_token_conversion(dataset_entry: Dict):
 
 # -------------------- Constants --------------------
 
-PAD_TOKEN = 0  # Padding token ID
-SEP_TOKEN = 9900  # Separator token ID
-VOCAB_SIZE = 9901  # Total number of action IDs (0 to 9,899) + 1 for SEP_TOKEN
+MAX_ACTION_ID = (MAX_ROW * MAX_COL * NUM_COLORS) - 1  # 9899
+VOCAB_SIZE = MAX_ACTION_ID + 1 + 2  # +1 for MAX_ACTION_ID, +2 for SEP_TOKEN and PAD_TOKEN
+SEP_TOKEN = VOCAB_SIZE - 2  # Assign second last index for SEP_TOKEN
+PAD_TOKEN = VOCAB_SIZE - 1  # Assign last index for PAD_TOKEN
+
+# Update VOCAB_SIZE to include PAD_TOKEN
+VOCAB_SIZE = VOCAB_SIZE
 
 # -------------------- Data Preparation --------------------
 
@@ -234,9 +240,9 @@ class ActionDataset(Dataset):
 
 def collate_fn(batch):
     inputs, targets = zip(*batch)
-    # Pad sequences
+    # Pad sequences with PAD_TOKEN
     inputs_padded = nn.utils.rnn.pad_sequence(inputs, batch_first=True, padding_value=PAD_TOKEN)
-    targets_padded = nn.utils.rnn.pad_sequence(targets, batch_first=True, padding_value=-100)  # For CrossEntropyLoss
+    targets_padded = nn.utils.rnn.pad_sequence(targets, batch_first=True, padding_value=PAD_TOKEN)
     return inputs_padded, targets_padded
 
 # -------------------- Transformer Model --------------------
@@ -301,6 +307,12 @@ def train_epoch(model, dataloader, optimizer, criterion, device):
         src_key_padding_mask = (src == PAD_TOKEN)
         tgt_key_padding_mask = (tgt_input == PAD_TOKEN)
 
+        # Assertions to check token IDs
+        assert src.max() < VOCAB_SIZE, f"Invalid token ID in src: max {src.max().item()} >= vocab_size {VOCAB_SIZE}"
+        assert tgt_input.max() < VOCAB_SIZE, f"Invalid token ID in tgt_input: max {tgt_input.max().item()} >= vocab_size {VOCAB_SIZE}"
+        assert src.min() >= 0, f"Negative token ID in src: min {src.min().item()} < 0"
+        assert tgt_input.min() >= 0, f"Negative token ID in tgt_input: min {tgt_input.min().item()} < 0"
+
         optimizer.zero_grad()
         output = model(src, tgt_input, src_key_padding_mask=src_key_padding_mask, tgt_key_padding_mask=tgt_key_padding_mask)
         loss = criterion(output.view(-1, output.size(-1)), tgt_output.reshape(-1))
@@ -321,6 +333,13 @@ def evaluate(model, dataloader, criterion, device):
 
             src_key_padding_mask = (src == PAD_TOKEN)
             tgt_key_padding_mask = (tgt_input == PAD_TOKEN)
+
+
+            # Assertions to check token IDs
+            assert src.max() < VOCAB_SIZE, f"Invalid token ID in src: max {src.max().item()} >= vocab_size {VOCAB_SIZE}"
+            assert tgt_input.max() < VOCAB_SIZE, f"Invalid token ID in tgt_input: max {tgt_input.max().item()} >= vocab_size {VOCAB_SIZE}"
+            assert src.min() >= 0, f"Negative token ID in src: min {src.min().item()} < 0"
+            assert tgt_input.min() >= 0, f"Negative token ID in tgt_input: min {tgt_input.min().item()} < 0"
 
             output = model(src, tgt_input, src_key_padding_mask=src_key_padding_mask, tgt_key_padding_mask=tgt_key_padding_mask)
             loss = criterion(output.view(-1, output.size(-1)), tgt_output.reshape(-1))
@@ -368,16 +387,16 @@ def main():
     val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
 
     # Initialize model
-    model = TransformerModel(vocab_size=VOCAB_SIZE+1, padding_idx=PAD_TOKEN)  # +1 to include SEP_TOKEN
+    model = TransformerModel(vocab_size=VOCAB_SIZE, padding_idx=PAD_TOKEN)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
 
     # Define optimizer and loss function
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
-    criterion = nn.CrossEntropyLoss(ignore_index=-100)
+    criterion = nn.CrossEntropyLoss(ignore_index=PAD_TOKEN)
 
     # Training loop
-    num_epochs = 5
+    num_epochs = 100
     train_losses = []
     val_losses = []
 
