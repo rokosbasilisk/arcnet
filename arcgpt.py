@@ -42,16 +42,29 @@ def id_to_action(action_id: int) -> Action:
     val = remainder % NUM_COLORS
     return (row, col, val)
 
-def get_actions_from_grid(grid: List[List[int]]) -> List[int]:
+# -------------------- Helper Functions --------------------
+
+def is_initial_state(grid: List[List[int]]) -> bool:
+    """
+    Checks if the given grid is the initial state (i.e., all cells are black (0)).
+    """
+    return all(cell == 0 for row in grid for cell in row)
+
+def get_actions_from_grid(grid: List[List[int]], is_initial: bool = False) -> List[int]:
     """
     Converts a grid into a list of action IDs representing the grid.
+    If `is_initial` is True, it skips black (0) cells as they are the default initial state.
     """
     action_ids = []
     for i in range(len(grid)):
         for j in range(len(grid[0])):
             val = grid[i][j]
+            # Skip black cells (0) only if it's the initial state
+            if is_initial and val == 0:
+                continue
+            # Skip invalid positions or values
             if i >= MAX_ROW or j >= MAX_COL or val >= NUM_COLORS:
-                continue  # Skip invalid positions or values
+                continue
             action = (i, j, val)
             action_id = action_to_id(action)
             action_ids.append(action_id)
@@ -60,15 +73,19 @@ def get_actions_from_grid(grid: List[List[int]]) -> List[int]:
 def reconstruct_grid_from_actions(action_ids: List[int]) -> List[List[int]]:
     """
     Reconstructs a grid from a list of action IDs.
+    Starts with a default black grid (0s) and applies non-black actions.
     """
+    # Initialize the grid with all black (0)
     grid = [[0]*MAX_COL for _ in range(MAX_ROW)]
+    
     for action_id in action_ids:
         if action_id >= SEP_TOKEN:
             continue  # Skip special tokens
         action = id_to_action(action_id)
         i, j, v = action
         if i < MAX_ROW and j < MAX_COL:
-            grid[i][j] = v
+            grid[i][j] = v  # Apply actions (including possibly turning cells back to black)
+    
     # Trim the grid to non-zero rows and columns
     max_row = 0
     max_col = 0
@@ -79,6 +96,7 @@ def reconstruct_grid_from_actions(action_ids: List[int]) -> List[List[int]]:
                 max_col = max(max_col, j)
     trimmed_grid = [row[:max_col+1] for row in grid[:max_row+1]]
     return trimmed_grid
+
 
 # -------------------- Test Case and Grid Printing --------------------
 
@@ -147,15 +165,12 @@ def test_action_token_conversion(dataset_entry: Dict):
 def prepare_dataset(challenges_path: str, solutions_path: str) -> List[Dict]:
     """
     Prepares the dataset by encoding the grids into sequences of action IDs.
-    Each dataset entry corresponds to one challenge.
-    The input is the concatenation of action IDs representing the training inputs and outputs, separated by SEP_TOKEN, and the test input.
-    The target is the action IDs representing the test output.
+    The input is the concatenation of action IDs representing the training inputs and outputs, 
+    separated by SEP_TOKEN, and the test input. The target is the action IDs representing the test output.
     """
     dataset = []
-    with open(challenges_path, 'r') as f:
-        challenges = json.load(f)
-    with open(solutions_path, 'r') as f:
-        solutions = json.load(f)
+    challenges = json.load(open(challenges_path, 'r'))
+    solutions = json.load(open(solutions_path, 'r'))
 
     for key in tqdm(challenges.keys(), desc=f"Processing {os.path.basename(challenges_path)}"):
         challenge = challenges[key]
@@ -172,39 +187,38 @@ def prepare_dataset(challenges_path: str, solutions_path: str) -> List[Dict]:
             input_grid = train_entry['input']
             output_grid = train_entry['output']
 
-            # Actions representing the input grid
-            tokens_input_grid = get_actions_from_grid(input_grid)
+            # Actions representing the input grid (skip black if it's initial)
+            tokens_input_grid = get_actions_from_grid(input_grid, is_initial=is_initial_state(input_grid))
             input_sequence.extend(tokens_input_grid)
             input_sequence.append(SEP_TOKEN)
 
-            # Actions representing the output grid
-            tokens_output_grid = get_actions_from_grid(output_grid)
+            # Actions representing the output grid (no skipping black cells here)
+            tokens_output_grid = get_actions_from_grid(output_grid, is_initial=False)
             input_sequence.extend(tokens_output_grid)
             input_sequence.append(SEP_TOKEN)
 
         # Add test input grid
         for test_entry in test_entries:
             input_grid = test_entry['input']
-            tokens_test_input = get_actions_from_grid(input_grid)
+            tokens_test_input = get_actions_from_grid(input_grid, is_initial=is_initial_state(input_grid))
             input_sequence.extend(tokens_test_input)
             input_sequence.append(SEP_TOKEN)
 
         # Build target sequence (test output)
         tokens_test_output = []
-        # Some solutions may have multiple outputs (list of grids), take corresponding one
         for idx, test_entry in enumerate(test_entries):
             if isinstance(solution, list) and len(solution) > idx:
                 output_grid = solution[idx]
             else:
                 output_grid = solution
-            tokens_test_output.extend(get_actions_from_grid(output_grid))
-            # Assuming only one test output per challenge, so break after first
+            tokens_test_output.extend(get_actions_from_grid(output_grid, is_initial=False))
             break
 
         # Add to dataset
         dataset.append({'input': input_sequence, 'target': tokens_test_output})
 
     return dataset
+
 
 # -------------------- Dataset Class --------------------
 

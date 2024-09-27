@@ -45,16 +45,27 @@ def id_to_action(action_id: int) -> Action:
 
 # -------------------- Data Preparation --------------------
 
-def get_actions_from_grid(grid: List[List[int]]) -> List[int]:
+def is_initial_state(grid: List[List[int]]) -> bool:
+    """
+    Checks if the given grid is the initial state (i.e., all cells are black (0)).
+    """
+    return all(cell == 0 for row in grid for cell in row)
+
+def get_actions_from_grid(grid: List[List[int]], is_initial: bool = False) -> List[int]:
     """
     Converts a grid into a list of action IDs representing the grid.
+    If `is_initial` is True, it skips black (0) cells as they are the default initial state.
     """
     action_ids = []
     for i in range(len(grid)):
         for j in range(len(grid[0])):
             val = grid[i][j]
+            # Skip black cells (0) only if it's the initial state
+            if is_initial and val == 0:
+                continue
+            # Skip invalid positions or values
             if i >= MAX_ROW or j >= MAX_COL or val >= NUM_COLORS:
-                continue  # Skip invalid positions or values
+                continue
             action = (i, j, val)
             action_id = action_to_id(action)
             action_ids.append(action_id)
@@ -63,15 +74,19 @@ def get_actions_from_grid(grid: List[List[int]]) -> List[int]:
 def reconstruct_grid_from_actions(action_ids: List[int]) -> List[List[int]]:
     """
     Reconstructs a grid from a list of action IDs.
+    Starts with a default black grid (0s) and applies non-black actions.
     """
+    # Initialize the grid with all black (0)
     grid = [[0]*MAX_COL for _ in range(MAX_ROW)]
+    
     for action_id in action_ids:
         if action_id >= SEP_TOKEN:
             continue  # Skip special tokens
         action = id_to_action(action_id)
         i, j, v = action
         if i < MAX_ROW and j < MAX_COL:
-            grid[i][j] = v
+            grid[i][j] = v  # Apply actions (including possibly turning cells back to black)
+    
     # Trim the grid to non-zero rows and columns
     max_row = 0
     max_col = 0
@@ -82,6 +97,7 @@ def reconstruct_grid_from_actions(action_ids: List[int]) -> List[List[int]]:
                 max_col = max(max_col, j)
     trimmed_grid = [row[:max_col+1] for row in grid[:max_row+1]]
     return trimmed_grid
+
 
 # -------------------- Dataset Class --------------------
 
@@ -242,11 +258,11 @@ def main():
     model.to(device)
 
     # Define optimizer and loss function
-    optimizer = optim.Adam(model.parameters(), lr=3e-5)
+    optimizer = optim.Adam(model.parameters(), lr=1e-4)
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_TOKEN)
 
     # Training loop
-    num_epochs = 10  # Adjust as needed
+    num_epochs = 100  # Adjust as needed
     train_losses = []
     val_losses = []
 

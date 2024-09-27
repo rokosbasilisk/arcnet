@@ -2,3 +2,4 @@ trajectories/*
 data/*
 output/*
 *.pth
+fine_tuned_pythia/
