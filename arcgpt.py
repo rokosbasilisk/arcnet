@@ -147,13 +147,13 @@ def test_action_token_conversion(dataset_entry: Dict):
 
 # -------------------- Constants --------------------
 
-MAX_ACTION_ID = (MAX_ROW * MAX_COL * NUM_COLORS) - 1  # 9899
+MAX_ACTION_ID = (MAX_ROW * MAX_COL * NUM_COLORS) - 1  # 98999
 VOCAB_SIZE = MAX_ACTION_ID + 1 + 2  # +1 for MAX_ACTION_ID, +2 for SEP_TOKEN and PAD_TOKEN
 SEP_TOKEN = VOCAB_SIZE - 2  # Assign second last index for SEP_TOKEN
 PAD_TOKEN = VOCAB_SIZE - 1  # Assign last index for PAD_TOKEN
 
 # Update VOCAB_SIZE to include PAD_TOKEN
-VOCAB_SIZE = VOCAB_SIZE
+VOCAB_SIZE = PAD_TOKEN + 1  # Ensure VOCAB_SIZE is correct
 
 # -------------------- Data Preparation --------------------
 
@@ -274,22 +274,22 @@ class PositionalEncoding(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=2048):
         super(PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
-        
+
         pe = torch.zeros(max_len, d_model).float()
         pe.require_grad = False
-        
+
         position = torch.arange(0, max_len).float().unsqueeze(1)
         div_term = (torch.arange(0, d_model, 2).float() * -(torch.log(torch.tensor(10000.0)) / d_model)).exp()
-        
+
         pe[:, 0::2] = torch.sin(position * div_term)
-        if d_model %2 ==0:
+        if d_model % 2 == 0:
             pe[:, 1::2] = torch.cos(position * div_term)
         else:
             pe[:, 1::2] = torch.cos(position * div_term[:(d_model//2)+1])
-        
+
         pe = pe.unsqueeze(0)
         self.register_buffer('pe', pe)
-        
+
     def forward(self, x):
         x = x + self.pe[:, :x.size(1), :]
         return self.dropout(x)
@@ -301,6 +301,12 @@ def train_epoch(model, dataloader, optimizer, criterion, device):
     total_loss = 0
     for src, tgt in tqdm(dataloader, desc="Training"):
         src, tgt = src.to(device), tgt.to(device)
+
+        if tgt.size(1) <= 1:
+            # Skip this batch due to short target sequence
+            print("Skipping batch due to short target sequence.")
+            continue
+
         tgt_input = tgt[:, :-1]
         tgt_output = tgt[:, 1:]
 
@@ -328,12 +334,17 @@ def evaluate(model, dataloader, criterion, device):
     with torch.no_grad():
         for src, tgt in tqdm(dataloader, desc="Evaluating"):
             src, tgt = src.to(device), tgt.to(device)
+
+            if tgt.size(1) <= 1:
+                # Skip this batch due to short target sequence
+                print("Skipping batch due to short target sequence.")
+                continue
+
             tgt_input = tgt[:, :-1]
             tgt_output = tgt[:, 1:]
 
             src_key_padding_mask = (src == PAD_TOKEN)
             tgt_key_padding_mask = (tgt_input == PAD_TOKEN)
-
 
             # Assertions to check token IDs
             assert src.max() < VOCAB_SIZE, f"Invalid token ID in src: max {src.max().item()} >= vocab_size {VOCAB_SIZE}"
@@ -382,7 +393,7 @@ def main():
     val_data = ActionDataset(val_dataset)
 
     # Create DataLoaders
-    batch_size = 2  # Decreased batch size due to longer sequences
+    batch_size = 16
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
     val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
 
@@ -396,7 +407,7 @@ def main():
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_TOKEN)
 
     # Training loop
-    num_epochs = 100
+    num_epochs = 100  # Adjust as needed
     train_losses = []
     val_losses = []
 
@@ -407,6 +418,8 @@ def main():
         train_losses.append(train_loss)
         val_losses.append(val_loss)
         print(f"Train Loss: {train_loss:.4f} | Validation Loss: {val_loss:.4f}")
+
+        # You can add early stopping or model checkpointing here if needed
 
     # Plot losses
     plot_losses(train_losses, val_losses)
