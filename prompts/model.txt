@@ -1,0 +1,86 @@
+now use this to read the training examples and solutions from the training data,
+the training examples and solutions can be read as follows:
+
+In [6]: import json
+
+In [7]: import os
+
+In [8]: grid = json.loads(open('data/arc-agi_training_challenges.json','r').read
+   ...: ())
+
+In [9]: list(grid.values())[0]
+Out[9]: 
+{'test': [{'input': [[7, 0, 7], [7, 0, 7], [7, 7, 0]]}],
+ 'train': [{'input': [[0, 7, 7], [7, 7, 7], [0, 7, 7]],
+   'output': [[0, 0, 0, 0, 7, 7, 0, 7, 7],
+    [0, 0, 0, 7, 7, 7, 7, 7, 7],
+    [0, 0, 0, 0, 7, 7, 0, 7, 7],
+    [0, 7, 7, 0, 7, 7, 0, 7, 7],
+    [7, 7, 7, 7, 7, 7, 7, 7, 7],
+    [0, 7, 7, 0, 7, 7, 0, 7, 7],
+    [0, 0, 0, 0, 7, 7, 0, 7, 7],
+    [0, 0, 0, 7, 7, 7, 7, 7, 7],
+    [0, 0, 0, 0, 7, 7, 0, 7, 7]]},
+  {'input': [[4, 0, 4], [0, 0, 0], [0, 4, 0]],
+   'output': [[4, 0, 4, 0, 0, 0, 4, 0, 4],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 4, 0, 0, 0, 0, 0, 4, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 4, 0, 4, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 4, 0, 0, 0, 0]]},
+  {'input': [[0, 0, 0], [0, 0, 2], [2, 0, 2]],
+   'output': [[0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 2],
+    [0, 0, 0, 0, 0, 0, 2, 0, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 2, 0, 0, 0, 0, 0, 2],
+    [2, 0, 2, 0, 0, 0, 2, 0, 2]]},
+  {'input': [[6, 6, 0], [6, 0, 0], [0, 6, 6]],
+   'output': [[6, 6, 0, 6, 6, 0, 0, 0, 0],
+    [6, 0, 0, 6, 0, 0, 0, 0, 0],
+    [0, 6, 6, 0, 6, 6, 0, 0, 0],
+    [6, 6, 0, 0, 0, 0, 0, 0, 0],
+    [6, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 6, 6, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 6, 6, 0, 6, 6, 0],
+    [0, 0, 0, 6, 0, 0, 6, 0, 0],
+    [0, 0, 0, 0, 6, 6, 0, 6, 6]]},
+  {'input': [[2, 2, 2], [0, 0, 0], [0, 2, 2]],
+   'output': [[2, 2, 2, 2, 2, 2, 2, 2, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 2, 2, 0, 2, 2, 0, 2, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 2, 2, 2, 2, 2, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 2, 2, 0, 2, 2]]}]}
+
+In [10]: solutions = json.loads(open('data/arc-agi_training_solutions.json','r').read())
+
+In [11]: list(solutions.values())[0]
+Out[11]: 
+[[[7, 0, 7, 0, 0, 0, 7, 0, 7],
+  [7, 0, 7, 0, 0, 0, 7, 0, 7],
+  [7, 7, 0, 0, 0, 0, 7, 7, 0],
+  [7, 0, 7, 0, 0, 0, 7, 0, 7],
+  [7, 0, 7, 0, 0, 0, 7, 0, 7],
+  [7, 7, 0, 0, 0, 0, 7, 7, 0],
+  [7, 0, 7, 7, 0, 7, 0, 0, 0],
+  [7, 0, 7, 7, 0, 7, 0, 0, 0],
+  [7, 7, 0, 7, 7, 0, 0, 0, 0]]]
+
+
+similarly for the validation set, you can read by arc-agi_evaluation_challenges.json and arc-agi_evaluation_solutions.json respectively
+
+
+now create separate datasets based on the above information, where the list of actions can be treated as token numbers for a  transformer model to be trained, and the input will be given as action(token) list from the black-state to the initial input state, followed by a separator token and then the output state.
+
+- write the code for creating as dataset in this manner, save the datasets of train and val to files, also if possible write a testcase to test if this converted action-to-token dataset can be reconverted to the original and it matches
+- and train a simple transformer model on this and plot the train and val loss

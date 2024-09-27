@@ -1,0 +1,77 @@
+create a python class for the following description along with appropriate testcases from the specific datasource: use python turtle graphics to create a class which will have one function called draw_state, 
+the class will also keep the state of the current grid,
+the grid here is a matrix wholes values range from 0 to 9, and 10 the max size of the grid is 30x30 where the number of rows and columns can range between 1 to 30. 
+now given a input/output grid state from the ARC dataset, the draw_state(initial_state, final_state) = > action_list function will take the initial grid state and final grid state representation and returns the list of actions that wil transform the initial state to the final state.
+The default initial state is a matrix 30x30 full of zeros.
+if the given board state is less than 30x30 dimension, then you need to pad it with the padding value which is 10, pad it symmetrically for all the tasks.
+also include another helper function which will print and show the grid state with colors for 0 means black and so on.
+now the initial set of possible atomic actions are something like this:
+- given a board coordinate it and a color, color that coordinate accordingly.
+- if possible use the python turtle graphics package to create these set of atomic functions.
+
+for testing, read the arc-grid data from: data/arc-agi_training_challenges.json
+
+this json will have a dictionary, whose values will be in the following format:
+
+In [6]: import json
+
+In [7]: import os
+
+In [8]: grid = json.loads(open('data/arc-agi_training_challenges.json','r').read
+   ...: ())
+
+In [9]: list(grid.values())[0]
+Out[9]: 
+{'test': [{'input': [[7, 0, 7], [7, 0, 7], [7, 7, 0]]}],
+ 'train': [{'input': [[0, 7, 7], [7, 7, 7], [0, 7, 7]],
+   'output': [[0, 0, 0, 0, 7, 7, 0, 7, 7],
+    [0, 0, 0, 7, 7, 7, 7, 7, 7],
+    [0, 0, 0, 0, 7, 7, 0, 7, 7],
+    [0, 7, 7, 0, 7, 7, 0, 7, 7],
+    [7, 7, 7, 7, 7, 7, 7, 7, 7],
+    [0, 7, 7, 0, 7, 7, 0, 7, 7],
+    [0, 0, 0, 0, 7, 7, 0, 7, 7],
+    [0, 0, 0, 7, 7, 7, 7, 7, 7],
+    [0, 0, 0, 0, 7, 7, 0, 7, 7]]},
+  {'input': [[4, 0, 4], [0, 0, 0], [0, 4, 0]],
+   'output': [[4, 0, 4, 0, 0, 0, 4, 0, 4],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 4, 0, 0, 0, 0, 0, 4, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 4, 0, 4, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 4, 0, 0, 0, 0]]},
+  {'input': [[0, 0, 0], [0, 0, 2], [2, 0, 2]],
+   'output': [[0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 2],
+    [0, 0, 0, 0, 0, 0, 2, 0, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 2, 0, 0, 0, 0, 0, 2],
+    [2, 0, 2, 0, 0, 0, 2, 0, 2]]},
+  {'input': [[6, 6, 0], [6, 0, 0], [0, 6, 6]],
+   'output': [[6, 6, 0, 6, 6, 0, 0, 0, 0],
+    [6, 0, 0, 6, 0, 0, 0, 0, 0],
+    [0, 6, 6, 0, 6, 6, 0, 0, 0],
+    [6, 6, 0, 0, 0, 0, 0, 0, 0],
+    [6, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 6, 6, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 6, 6, 0, 6, 6, 0],
+    [0, 0, 0, 6, 0, 0, 6, 0, 0],
+    [0, 0, 0, 0, 6, 6, 0, 6, 6]]},
+  {'input': [[2, 2, 2], [0, 0, 0], [0, 2, 2]],
+   'output': [[2, 2, 2, 2, 2, 2, 2, 2, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 2, 2, 0, 2, 2, 0, 2, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 2, 2, 2, 2, 2, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 2, 2, 0, 2, 2]]}]}
+
+
