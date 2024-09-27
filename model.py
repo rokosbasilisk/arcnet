@@ -9,96 +9,154 @@ import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
 import random
+from termcolor import colored
+
+# Define the constants
+MAX_ROW = 30
+MAX_COL = 30
+NUM_COLORS = 11  # Colors from 0 to 10
 
 # Define the Action type
 Action = Tuple[int, int, int]  # (row, column, value)
 
-# -------------------- Action Encoder --------------------
+# -------------------- Helper Functions --------------------
 
-class ActionEncoder:
-    def __init__(self):
-        """
-        Initializes the ActionEncoder with empty mappings.
-        """
-        self.action_to_token: Dict[Action, int] = {}
-        self.token_to_action: Dict[int, Action] = {}
-        self.next_token_id: int = 1  # Start token IDs from 1
-        self.SEP_TOKEN = 0  # Use 0 as the separator token
+def action_to_id(action: Action) -> int:
+    """
+    Encodes an action tuple into a unique integer ID.
+    """
+    row, col, val = action
+    return row * MAX_COL * NUM_COLORS + col * NUM_COLORS + val
 
-    def encode_action(self, action: Action) -> int:
-        """
-        Encodes an action tuple into a unique token ID.
-        """
-        if action not in self.action_to_token:
-            token_id = self.next_token_id
-            self.action_to_token[action] = token_id
-            self.token_to_action[token_id] = action
-            self.next_token_id += 1
-        else:
-            token_id = self.action_to_token[action]
-        return token_id
-
-    def decode_token(self, token_id: int) -> Action:
-        """
-        Decodes a token ID back to its action tuple.
-        """
-        if token_id == self.SEP_TOKEN:
-            return None  # Separator token
-        return self.token_to_action.get(token_id, (0, 0, 0))  # Default to (0,0,0) if not found
-
-    def encode_actions(self, actions: List[Action]) -> List[int]:
-        """
-        Encodes a list of action tuples into a list of token IDs.
-        """
-        return [self.encode_action(action) for action in actions]
-
-    def decode_tokens(self, token_ids: List[int]) -> List[Action]:
-        """
-        Decodes a list of token IDs back to their action tuples.
-        """
-        return [self.decode_token(token_id) for token_id in token_ids if token_id != self.SEP_TOKEN]
+def id_to_action(action_id: int) -> Action:
+    """
+    Decodes an action ID back to an action tuple.
+    """
+    row = action_id // (MAX_COL * NUM_COLORS)
+    remainder = action_id % (MAX_COL * NUM_COLORS)
+    col = remainder // NUM_COLORS
+    val = remainder % NUM_COLORS
+    return (row, col, val)
 
 # -------------------- Helper Functions --------------------
 
-def get_actions_from_to(initial_grid: List[List[int]], final_grid: List[List[int]]) -> List[Action]:
+def get_actions_from_grid(grid: List[List[int]]) -> List[int]:
     """
-    Computes the list of actions required to transform the initial grid to the final grid.
+    Converts a grid into a list of action IDs representing the grid.
     """
-    h = max(len(initial_grid), len(final_grid))
-    w = max(len(initial_grid[0]) if initial_grid else 0, len(final_grid[0]) if final_grid else 0)
-    # Pad grids to size h x w
-    padded_initial = [[0]*w for _ in range(h)]
-    padded_final = [[0]*w for _ in range(h)]
-    for i in range(len(initial_grid)):
-        for j in range(len(initial_grid[0])):
-            padded_initial[i][j] = initial_grid[i][j]
-    for i in range(len(final_grid)):
-        for j in range(len(final_grid[0])):
-            padded_final[i][j] = final_grid[i][j]
-    # Compute actions
-    actions = []
-    for i in range(h):
-        for j in range(w):
-            if padded_initial[i][j] != padded_final[i][j]:
-                actions.append((i, j, padded_final[i][j]))
-    return actions
+    action_ids = []
+    for i in range(len(grid)):
+        for j in range(len(grid[0])):
+            val = grid[i][j]
+            if i >= MAX_ROW or j >= MAX_COL or val >= NUM_COLORS:
+                continue  # Skip invalid positions or values
+            action = (i, j, val)
+            action_id = action_to_id(action)
+            action_ids.append(action_id)
+    return action_ids
 
-def reconstruct_grid_from_actions(actions: List[Action]) -> List[List[int]]:
+def reconstruct_grid_from_actions(action_ids: List[int]) -> List[List[int]]:
     """
-    Reconstructs a grid from a list of actions.
+    Reconstructs a grid from a list of action IDs.
     """
-    h = max(action[0] for action in actions) + 1 if actions else 0
-    w = max(action[1] for action in actions) + 1 if actions else 0
-    grid = [[0]*w for _ in range(h)]
-    for (i, j, v) in actions:
-        grid[i][j] = v
-    return grid
+    grid = [[0]*MAX_COL for _ in range(MAX_ROW)]
+    for action_id in action_ids:
+        action = id_to_action(action_id)
+        i, j, v = action
+        if i < MAX_ROW and j < MAX_COL:
+            grid[i][j] = v
+    # Trim the grid to non-zero rows and columns
+    # Find the max row and column where there's a non-zero value
+    max_row = 0
+    max_col = 0
+    for i in range(MAX_ROW):
+        for j in range(MAX_COL):
+            if grid[i][j] != 0:
+                if i > max_row:
+                    max_row = i
+                if j > max_col:
+                    max_col = j
+    # Trim the grid
+    trimmed_grid = [row[:max_col+1] for row in grid[:max_row+1]]
+    return trimmed_grid
+
+# -------------------- Test Case and Grid Printing --------------------
+
+def print_grid(grid: List[List[int]]):
+    """
+    Prints the grid to the console with color representations using termcolor.
+    """
+    color_mapping = {
+        0: 'on_white',
+        1: 'on_red',
+        2: 'on_green',
+        3: 'on_yellow',
+        4: 'on_blue',
+        5: 'on_magenta',
+        6: 'on_cyan',
+        7: 'on_grey',
+        8: 'on_white',
+        9: 'on_red',
+        10: 'on_green'
+    }
+    for row in grid:
+        row_str = ''
+        for cell in row:
+            color = color_mapping.get(cell % 11, 'on_white')
+            row_str += colored('  ', 'grey', color)
+        print(row_str)
+    print("\n")
+
+def test_action_token_conversion(dataset_entry: Dict):
+    """
+    Tests if the action-to-token conversion and back works correctly.
+    Also reconstructs the grids and prints them.
+    """
+    tokens_input = dataset_entry['input']
+    tokens_target = dataset_entry['target']
+
+    # Since the input is a concatenation of multiple grids and separators,
+    # we need to split it back to individual grids for reconstruction.
+    grids = []
+    current_actions = []
+    for token in tokens_input:
+        if token == SEP_TOKEN:
+            if current_actions:
+                grid = reconstruct_grid_from_actions(current_actions)
+                grids.append(grid)
+                current_actions = []
+        else:
+            current_actions.append(token)
+    if current_actions:
+        grid = reconstruct_grid_from_actions(current_actions)
+        grids.append(grid)
+
+    # Reconstruct target grid
+    target_grid = reconstruct_grid_from_actions(tokens_target)
+
+    # Print results
+    print("Reconstructed Grids from Input:")
+    for idx, grid in enumerate(grids):
+        print(f"Grid {idx+1}:")
+        print_grid(grid)
+
+    print("Reconstructed Target Grid:")
+    print_grid(target_grid)
+
+# -------------------- Constants --------------------
+
+PAD_TOKEN = 0  # Padding token ID
+SEP_TOKEN = 9900  # Separator token ID
+VOCAB_SIZE = 9901  # Total number of action IDs (0 to 9,899) + 1 for SEP_TOKEN
 
 # -------------------- Data Preparation --------------------
 
-def prepare_dataset(challenges_path: str, solutions_path: str, action_encoder: ActionEncoder) -> List[Dict]:
+def prepare_dataset(challenges_path: str, solutions_path: str) -> List[Dict]:
     """
-    Prepares the dataset by encoding the actions into token sequences.
+    Prepares the dataset by encoding the grids into sequences of action IDs.
+    Each dataset entry corresponds to one challenge.
+    The input is the concatenation of action IDs representing the training inputs and outputs, separated by SEP_TOKEN, and the test input.
+    The target is the action IDs representing the test output.
     """
     dataset = []
     challenges = json.load(open(challenges_path, 'r'))
@@ -113,84 +171,50 @@ def prepare_dataset(challenges_path: str, solutions_path: str, action_encoder: A
         train_entries = challenge.get('train', [])
         test_entries = challenge.get('test', [])
 
-        # Process train entries
+        # Build input sequence
+        input_sequence = []
         for train_entry in train_entries:
             input_grid = train_entry['input']
             output_grid = train_entry['output']
 
-            # Actions to go from blank grid to input grid
-            actions_input = get_actions_from_to([], input_grid)
+            # Actions representing the input grid
+            tokens_input_grid = get_actions_from_grid(input_grid)
+            input_sequence.extend(tokens_input_grid)
+            input_sequence.append(SEP_TOKEN)
 
-            # Actions to go from input grid to output grid
-            actions_target = get_actions_from_to(input_grid, output_grid)
+            # Actions representing the output grid
+            tokens_output_grid = get_actions_from_grid(output_grid)
+            input_sequence.extend(tokens_output_grid)
+            input_sequence.append(SEP_TOKEN)
 
-            # Encode actions
-            tokens_input = action_encoder.encode_actions(actions_input)
-            tokens_target = action_encoder.encode_actions(actions_target)
-
-            # Add SEP token
-            tokens_input += [action_encoder.SEP_TOKEN]
-
-            # Add to dataset
-            dataset.append({'input': tokens_input, 'target': tokens_target})
-
-        # Process test entries
-        for idx, test_entry in enumerate(test_entries):
+        # Add test input grid
+        for test_entry in test_entries:
             input_grid = test_entry['input']
-            # Some solutions may have multiple outputs (list of grids), take corresponding one
-            output_grid = solution[idx] if isinstance(solution, list) and idx < len(solution) else solution
+            tokens_test_input = get_actions_from_grid(input_grid)
+            input_sequence.extend(tokens_test_input)
+            input_sequence.append(SEP_TOKEN)
 
-            # Actions to go from blank grid to input grid
-            actions_input = get_actions_from_to([], input_grid)
+        # Build target sequence (test output)
+        tokens_test_output = []
+        # Some solutions may have multiple outputs (list of grids), take corresponding one
+        for idx, test_entry in enumerate(test_entries):
+            if isinstance(solution, list) and len(solution) > idx:
+                output_grid = solution[idx]
+            else:
+                output_grid = solution
+            tokens_test_output.extend(get_actions_from_grid(output_grid))
+            # Assuming only one test output per challenge, so break after first
+            break
 
-            # Actions to go from input grid to output grid
-            actions_target = get_actions_from_to(input_grid, output_grid)
-
-            # Encode actions
-            tokens_input = action_encoder.encode_actions(actions_input)
-            tokens_target = action_encoder.encode_actions(actions_target)
-
-            # Add SEP token
-            tokens_input += [action_encoder.SEP_TOKEN]
-
-            # Add to dataset
-            dataset.append({'input': tokens_input, 'target': tokens_target})
+        # Add to dataset
+        dataset.append({'input': input_sequence, 'target': tokens_test_output})
 
     return dataset
-
-# -------------------- Test Case --------------------
-
-def test_action_token_conversion(action_encoder: ActionEncoder, dataset_entry: Dict):
-    """
-    Tests if the action-to-token conversion and back works correctly.
-    """
-    tokens_input = dataset_entry['input']
-    tokens_target = dataset_entry['target']
-
-    # Decode tokens back to actions
-    actions_input = action_encoder.decode_tokens(tokens_input)
-    actions_target = action_encoder.decode_tokens(tokens_target)
-
-    # Reconstruct grids from actions
-    input_grid_reconstructed = reconstruct_grid_from_actions(actions_input)
-    target_grid_reconstructed = reconstruct_grid_from_actions(actions_target)
-
-    # Print results
-    print("Decoded Actions Input:", actions_input)
-    print("Decoded Actions Target:", actions_target)
-    print("Reconstructed Input Grid:")
-    for row in input_grid_reconstructed:
-        print(row)
-    print("Reconstructed Target Grid:")
-    for row in target_grid_reconstructed:
-        print(row)
-
-    # You can compare with the original grids if you store them in the dataset
 
 # -------------------- Dataset Class --------------------
 
 class ActionDataset(Dataset):
-    def __init__(self, data: List[Dict], max_length: int = 512):
+    def __init__(self, data: List[Dict], max_length: int = 2048):
         self.inputs = [torch.tensor(entry['input'], dtype=torch.long) for entry in data]
         self.targets = [torch.tensor(entry['target'], dtype=torch.long) for entry in data]
         self.max_length = max_length
@@ -211,23 +235,24 @@ class ActionDataset(Dataset):
 def collate_fn(batch):
     inputs, targets = zip(*batch)
     # Pad sequences
-    inputs_padded = nn.utils.rnn.pad_sequence(inputs, batch_first=True, padding_value=0)
-    targets_padded = nn.utils.rnn.pad_sequence(targets, batch_first=True, padding_value=-100)  # Use -100 for ignored index in CrossEntropyLoss
+    inputs_padded = nn.utils.rnn.pad_sequence(inputs, batch_first=True, padding_value=PAD_TOKEN)
+    targets_padded = nn.utils.rnn.pad_sequence(targets, batch_first=True, padding_value=-100)  # For CrossEntropyLoss
     return inputs_padded, targets_padded
 
 # -------------------- Transformer Model --------------------
 
 class TransformerModel(nn.Module):
-    def __init__(self, vocab_size, d_model=256, nhead=8, num_encoder_layers=3, num_decoder_layers=3, dim_feedforward=512, dropout=0.1):
+    def __init__(self, vocab_size, padding_idx, d_model=256, nhead=8, num_encoder_layers=3, num_decoder_layers=3, dim_feedforward=512, dropout=0.1):
         super(TransformerModel, self).__init__()
         self.model_type = 'Transformer'
-        self.src_embedding = nn.Embedding(vocab_size, d_model, padding_idx=0)
-        self.tgt_embedding = nn.Embedding(vocab_size, d_model, padding_idx=0)
+        self.src_embedding = nn.Embedding(vocab_size, d_model, padding_idx=padding_idx)
+        self.tgt_embedding = nn.Embedding(vocab_size, d_model, padding_idx=padding_idx)
         self.pos_encoder = PositionalEncoding(d_model, dropout)
         self.transformer = nn.Transformer(d_model, nhead, num_encoder_layers, num_decoder_layers, dim_feedforward, dropout)
         self.generator = nn.Linear(d_model, vocab_size)
 
         self.d_model = d_model
+        self.padding_idx = padding_idx
 
     def forward(self, src, tgt, src_key_padding_mask, tgt_key_padding_mask):
         src_emb = self.src_embedding(src) * (self.d_model ** 0.5)
@@ -240,7 +265,7 @@ class TransformerModel(nn.Module):
         return output
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, dropout=0.1, max_len=512):
+    def __init__(self, d_model, dropout=0.1, max_len=2048):
         super(PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
         
@@ -260,7 +285,7 @@ class PositionalEncoding(nn.Module):
         self.register_buffer('pe', pe)
         
     def forward(self, x):
-        x = x + self.pe[:, :x.size(1)]
+        x = x + self.pe[:, :x.size(1), :]
         return self.dropout(x)
 
 # -------------------- Training and Evaluation Functions --------------------
@@ -273,8 +298,8 @@ def train_epoch(model, dataloader, optimizer, criterion, device):
         tgt_input = tgt[:, :-1]
         tgt_output = tgt[:, 1:]
 
-        src_key_padding_mask = (src == 0)
-        tgt_key_padding_mask = (tgt_input == 0)
+        src_key_padding_mask = (src == PAD_TOKEN)
+        tgt_key_padding_mask = (tgt_input == PAD_TOKEN)
 
         optimizer.zero_grad()
         output = model(src, tgt_input, src_key_padding_mask=src_key_padding_mask, tgt_key_padding_mask=tgt_key_padding_mask)
@@ -294,8 +319,8 @@ def evaluate(model, dataloader, criterion, device):
             tgt_input = tgt[:, :-1]
             tgt_output = tgt[:, 1:]
 
-            src_key_padding_mask = (src == 0)
-            tgt_key_padding_mask = (tgt_input == 0)
+            src_key_padding_mask = (src == PAD_TOKEN)
+            tgt_key_padding_mask = (tgt_input == PAD_TOKEN)
 
             output = model(src, tgt_input, src_key_padding_mask=src_key_padding_mask, tgt_key_padding_mask=tgt_key_padding_mask)
             loss = criterion(output.view(-1, output.size(-1)), tgt_output.reshape(-1))
@@ -316,14 +341,11 @@ def plot_losses(train_losses: List[float], val_losses: List[float]):
 # -------------------- Main Function --------------------
 
 def main():
-    # Initialize ActionEncoder
-    action_encoder = ActionEncoder()
-
     # Prepare datasets
     print("Preparing training dataset...")
-    train_dataset = prepare_dataset('data/arc-agi_training_challenges.json', 'data/arc-agi_training_solutions.json', action_encoder)
+    train_dataset = prepare_dataset('data/arc-agi_training_challenges.json', 'data/arc-agi_training_solutions.json')
     print("Preparing validation dataset...")
-    val_dataset = prepare_dataset('data/arc-agi_evaluation_challenges.json', 'data/arc-agi_evaluation_solutions.json', action_encoder)
+    val_dataset = prepare_dataset('data/arc-agi_evaluation_challenges.json', 'data/arc-agi_evaluation_solutions.json')
 
     # Save datasets
     with open('train_dataset.pkl', 'wb') as f:
@@ -331,27 +353,22 @@ def main():
     with open('val_dataset.pkl', 'wb') as f:
         pickle.dump(val_dataset, f)
 
-    # Save action mappings
-    with open('action_mappings.pkl', 'wb') as f:
-        pickle.dump({'action_to_token': action_encoder.action_to_token, 'token_to_action': action_encoder.token_to_action}, f)
-
-    # Test action-token conversion
+    # Test action-token conversion and print grids
     print("Testing action-token conversion on a sample...")
     sample_entry = random.choice(train_dataset)
-    test_action_token_conversion(action_encoder, sample_entry)
+    test_action_token_conversion(sample_entry)
 
     # Create PyTorch datasets
     train_data = ActionDataset(train_dataset)
     val_data = ActionDataset(val_dataset)
 
     # Create DataLoaders
-    batch_size = 32
+    batch_size = 2  # Decreased batch size due to longer sequences
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
     val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
 
     # Initialize model
-    vocab_size = action_encoder.next_token_id  # Total number of tokens
-    model = TransformerModel(vocab_size=vocab_size)
+    model = TransformerModel(vocab_size=VOCAB_SIZE+1, padding_idx=PAD_TOKEN)  # +1 to include SEP_TOKEN
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
 
