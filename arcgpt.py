@@ -251,7 +251,7 @@ def collate_fn(batch):
 # -------------------- Transformer Model --------------------
 
 class TransformerModel(nn.Module):
-    def __init__(self, vocab_size, padding_idx, d_model=256, nhead=8, num_encoder_layers=4, num_decoder_layers=4, dim_feedforward=256, dropout=0.2):
+    def __init__(self, vocab_size, padding_idx, d_model=256, nhead=4, num_encoder_layers=6, num_decoder_layers=6, dim_feedforward=256, dropout=0.3):
         super(TransformerModel, self).__init__()
         self.model_type = 'Transformer'
         self.src_embedding = nn.Embedding(vocab_size, d_model, padding_idx=padding_idx)

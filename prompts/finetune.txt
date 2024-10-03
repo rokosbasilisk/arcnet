@@ -1,0 +1,90 @@
+the arc_training_codes.json file has the following structure:
+
+{
+    "007bbfb7": "x0 = palette(I)\n    x1 = other(x0, ZERO)\n    x2 = shape(I)\n    x3 = multiply(x2, x2)\n    x4 = canvas(ZERO, x3)\n    x5 = ofcolor(I, x1)\n    x6 = lbind(shift, x5)\n    x7 = shape(I)\n    x8 = rbind(multiply, x7)\n    x9 = apply(x8, x5)\n    x10 = mapply(x6, x9)\n    x11 = fill(x4, x1, x10)\n    return x11",
+    "00d62c1b": "x0 = objects(I, T, F, F)\n    x1 = mostcolor(I)\n    x2 = colorfilter(x0, x1)\n    x3 = rbind(bordering, I)\n    x4 = compose(flip, x3)\n    x5 = mfilter(x2, x4)\n    x6 = fill(I, FOUR, x5)\n    return x6",
+    "017c7c7b": "x0 = palette(I)\n    x1 = other(x0, ZERO)\n    x2 = ofcolor(I, x1)\n    x3 = asobject(I)\n    x4 = vperiod(x3)\n    x5 = height(I)\n    x6 = halve(x5)\n    x7 = add(x5, x6)\n    x8 = width(I)\n    x9 = astuple(x7, x8)\n    x10 = canvas(ZERO, x9)\n    x11 = increment(x7)\n    x12 = interval(ZERO, x11, x4)\n    x13 = lbind(shift, x2)\n    x14 = apply(toivec, x12)\n    x15 = mapply(x13, x14)\n    x16 = fill(x10, TWO, x15)\n    return x16"
+    
+}
+
+
+read this data from the data folder just like the training challenges and create a data set where
+
+the input prompt will have a string representation of one or more training inputs + training output grids in string form
+and then the this is used to predict the comletion provided in code form in the arc_training_codes.json file.
+
+you need to use the keys in the arc_training_codes.json and the training challenges to map accordingly 
+
+the prompt would be stringform-of-training-input-grid + separator token + stringform-of-training-input-grid
+and the corresponding completion would be its code from the codes json.
+
+theere should be 400 such entries based on the training dataset, and then keep 5 percent of it as a validation dataset.
+
+finetune a transformer model on this to do the completion and measure the validation loss, essengially its a SFT task now.
+
+the training data structure for the challenges containing input and output grids is as follows: 
+
+import os
+
+grid = json.loads(open('data/arc-agi_training_challenges.json','r').read())
+
+
+list(grid.keys())[0]
+'007bbfb7'
+list(grid.values())[0]
+
+{'test': [{'input': [[7, 0, 7], [7, 0, 7], [7, 7, 0]]}],
+ 'train': [{'input': [[0, 7, 7], [7, 7, 7], [0, 7, 7]],
+   'output': [[0, 0, 0, 0, 7, 7, 0, 7, 7],
+    [0, 0, 0, 7, 7, 7, 7, 7, 7],
+    [0, 0, 0, 0, 7, 7, 0, 7, 7],
+    [0, 7, 7, 0, 7, 7, 0, 7, 7],
+    [7, 7, 7, 7, 7, 7, 7, 7, 7],
+    [0, 7, 7, 0, 7, 7, 0, 7, 7],
+    [0, 0, 0, 0, 7, 7, 0, 7, 7],
+    [0, 0, 0, 7, 7, 7, 7, 7, 7],
+    [0, 0, 0, 0, 7, 7, 0, 7, 7]]},
+  {'input': [[4, 0, 4], [0, 0, 0], [0, 4, 0]],
+   'output': [[4, 0, 4, 0, 0, 0, 4, 0, 4],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 4, 0, 0, 0, 0, 0, 4, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 4, 0, 4, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 4, 0, 0, 0, 0]]},
+  {'input': [[0, 0, 0], [0, 0, 2], [2, 0, 2]],
+   'output': [[0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 2],
+    [0, 0, 0, 0, 0, 0, 2, 0, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 2, 0, 0, 0, 0, 0, 2],
+    [2, 0, 2, 0, 0, 0, 2, 0, 2]]},
+  {'input': [[6, 6, 0], [6, 0, 0], [0, 6, 6]],
+   'output': [[6, 6, 0, 6, 6, 0, 0, 0, 0],
+    [6, 0, 0, 6, 0, 0, 0, 0, 0],
+    [0, 6, 6, 0, 6, 6, 0, 0, 0],
+    [6, 6, 0, 0, 0, 0, 0, 0, 0],
+    [6, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 6, 6, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 6, 6, 0, 6, 6, 0],
+    [0, 0, 0, 6, 0, 0, 6, 0, 0],
+    [0, 0, 0, 0, 6, 6, 0, 6, 6]]},
+  {'input': [[2, 2, 2], [0, 0, 0], [0, 2, 2]],
+   'output': [[2, 2, 2, 2, 2, 2, 2, 2, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 2, 2, 0, 2, 2, 0, 2, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 2, 2, 2, 2, 2, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 2, 2, 0, 2, 2]]}]}
+
+
+use a small transformer model first to do this finetuning, print the entire code in one single codeblock.
+    
