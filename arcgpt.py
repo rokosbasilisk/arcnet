@@ -2,24 +2,33 @@ import os
 import json
 import random
 from pathlib import Path
+import warnings
+
+# ============================
+# Set NCCL environment variables
+# ============================
+os.environ["NCCL_P2P_DISABLE"] = "1"
+os.environ["NCCL_IB_DISABLE"] = "1"
 
 import torch
-from torch.utils.data import Dataset, random_split
+from torch.utils.data import Dataset, DataLoader, random_split
 from transformers import (
     GPT2Tokenizer,
     GPT2LMHeadModel,
     Trainer,
     TrainingArguments,
     DataCollatorForLanguageModeling,
+    TrainerCallback,
 )
+import numpy as np
 
-# Initialize tokenizer and model
-tokenizer = GPT2Tokenizer.from_pretrained('distilgpt2')
-tokenizer.pad_token = tokenizer.eos_token  # Set the EOS token as the padding token
+# Suppress specific warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 # Set random seed for reproducibility
 random.seed(42)
 torch.manual_seed(42)
+np.random.seed(42)
 
 # Define file paths
 DATA_DIR = 'data'
@@ -72,12 +81,12 @@ if len(dataset_entries) > 400:
     dataset_entries = random.sample(dataset_entries, 400)
 
 # Split into training and validation sets (95% train, 5% validation)
-train_size = int(0.8 * len(dataset_entries))
+train_size = int(0.95 * len(dataset_entries))
 val_size = len(dataset_entries) - train_size
 train_entries, val_entries = random_split(dataset_entries, [train_size, val_size])
 
 class ARCCodeDataset(Dataset):
-    def __init__(self, entries, tokenizer, max_length=1024):
+    def __init__(self, entries, tokenizer, max_length=900):
         self.entries = entries
         self.tokenizer = tokenizer
         self.max_length = max_length
@@ -106,7 +115,12 @@ class ARCCodeDataset(Dataset):
         attention_mask = encoding['attention_mask'].squeeze()
 
         # Labels are the same as input_ids, but we mask the prompt part
-        prompt_encoding = self.tokenizer(prompt, truncation=True, max_length=self.max_length, return_tensors='pt')
+        prompt_encoding = self.tokenizer(
+            prompt,
+            truncation=True,
+            max_length=self.max_length,
+            return_tensors='pt'
+        )
         prompt_length = prompt_encoding['input_ids'].shape[1]
 
         labels = input_ids.clone()
@@ -118,9 +132,55 @@ class ARCCodeDataset(Dataset):
             'labels': labels
         }
 
-# Initialize model
+class PrintSampleCallback(TrainerCallback):
+    """
+    A custom callback that prints a decoded validation prediction after each epoch.
+    """
+    def __init__(self, tokenizer, val_dataset, max_new_tokens=100, num_beams=5):
+        super().__init__()
+        self.tokenizer = tokenizer
+        self.val_dataset = val_dataset
+        self.max_new_tokens = max_new_tokens
+        self.num_beams = num_beams
+
+    def on_epoch_end(self, args, state, control, **kwargs):
+        # Select a random sample from the validation dataset
+        sample = random.choice(self.val_dataset)
+        prompt_ids = sample['input_ids'].unsqueeze(0).to(kwargs['model'].device)
+        attention_mask = sample['attention_mask'].unsqueeze(0).to(kwargs['model'].device)
+
+        # Generate prediction
+        with torch.no_grad():
+            output_ids = kwargs['model'].generate(
+                input_ids=prompt_ids,
+                attention_mask=attention_mask,
+                max_new_tokens=self.max_new_tokens,  # Use max_new_tokens instead of max_length
+                num_beams=self.num_beams,
+                early_stopping=True,
+                no_repeat_ngram_size=2,
+                pad_token_id=self.tokenizer.eos_token_id  # Ensure pad_token_id is set
+            )
+
+        # Decode the generated tokens, skip the prompt
+        generated_text = self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
+        prompt_text = self.tokenizer.decode(prompt_ids[0], skip_special_tokens=True)
+        completion_text = generated_text[len(prompt_text):].strip()
+
+        print("\n--- Sample Validation Prediction ---")
+        print(f"Prompt:\n{prompt_text}")
+        print(f"Generated Completion:\n{completion_text}")
+        print("-----------------------------------\n")
+
+# Initialize tokenizer and model
+tokenizer = GPT2Tokenizer.from_pretrained('distilgpt2')
+
+# ============================
+# Set the pad_token to eos_token
+# ============================
+tokenizer.pad_token = tokenizer.eos_token
+
 model = GPT2LMHeadModel.from_pretrained('distilgpt2')
-model.resize_token_embeddings(len(tokenizer))
+model.resize_token_embeddings(len(tokenizer))  # Important if pad_token is added
 
 # Create datasets
 train_dataset = ARCCodeDataset(train_entries, tokenizer)
@@ -132,7 +192,7 @@ data_collator = DataCollatorForLanguageModeling(
     mlm=False,
 )
 
-# Define training arguments
+# Define training arguments with updated `eval_strategy` and `ddp_find_unused_parameters`
 training_args = TrainingArguments(
     output_dir='./results',
     overwrite_output_dir=True,
@@ -141,11 +201,23 @@ training_args = TrainingArguments(
     per_device_eval_batch_size=4,
     eval_steps=100,
     save_steps=500,
-    evaluation_strategy='epoch',
+    eval_strategy='epoch',  # Updated from 'evaluation_strategy'
     logging_steps=50,
     learning_rate=5e-5,
     weight_decay=0.01,
     save_total_limit=2,
+    ddp_find_unused_parameters=False,  # Set to False to resolve DDP warning
+    # Additional arguments to optimize training on a single GPU
+    # Uncomment the following line if you're training on CPU
+    # no_cuda=True,
+)
+
+# Initialize custom callback
+print_callback = PrintSampleCallback(
+    tokenizer=tokenizer,
+    val_dataset=val_dataset,
+    max_new_tokens=100,  # Specify how many new tokens to generate
+    num_beams=5
 )
 
 # Initialize Trainer
@@ -155,60 +227,14 @@ trainer = Trainer(
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     data_collator=data_collator,
+    callbacks=[print_callback],  # Add the custom callback here
 )
 
-# Function to generate a completion for a random validation sample
-# Function to generate a completion for a random validation sample
-def generate_random_completion():
-    model.eval()  # Set model to evaluation mode
-    random_index = random.randint(0, len(val_dataset) - 1)
-    val_sample = val_dataset[random_index]
-    
-    # Decode the prompt
-    input_ids = val_sample['input_ids'].unsqueeze(0).to(model.device)
-    prompt_length = (val_sample['labels'] == -100).sum().item()  # Count masked tokens
-    prompt_ids = input_ids[:, :prompt_length]
+# Train the model
+trainer.train()
 
-    prompt_text = tokenizer.decode(prompt_ids.squeeze(), skip_special_tokens=True)
+# Evaluate on validation set
+eval_results = trainer.evaluate()
 
-    # Ensure that the total length (input + generated) does not exceed 1024
-    max_length = 1024
-    max_new_tokens = max_length - prompt_length  # Adjust new tokens based on the input length
-
-    # Cap the number of new tokens to ensure we stay within the limit
-    max_new_tokens = min(max_new_tokens, 200)  # Set a reasonable limit for new tokens
-
-    if max_new_tokens <= 0:
-        print("\n--- Random Validation Example ---")
-        print("Prompt:\n", prompt_text)
-        print("No room for completion generation, prompt is too long.")
-        return
-
-    # Generate completion with the adjusted number of tokens
-    output_ids = model.generate(
-        input_ids=prompt_ids,
-        max_new_tokens=max_new_tokens,  # Generate tokens while ensuring total length < 1024
-        num_return_sequences=1,
-        pad_token_id=tokenizer.eos_token_id
-    )
-    output_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
-
-    print("\n--- Random Validation Example ---")
-    print("Prompt:\n", prompt_text)
-    print("Completion:\n", output_text)
-
-# Training loop with custom logging after each epoch
-for epoch in range(training_args.num_train_epochs):
-    print(f"\nStarting epoch {epoch+1}/{training_args.num_train_epochs}...")
-    trainer.train()  # Train for one epoch
-
-    # Evaluate on validation set
-    eval_results = trainer.evaluate()
-    print(f"Epoch {epoch+1} Validation Loss: {eval_results['eval_loss']}")
-
-    # Print a random validation completion
-    generate_random_completion()
-
-# Save the model once the training is completed
-trainer.save_model("output_model")
+print(f"Validation Loss: {eval_results['eval_loss']}")
 
