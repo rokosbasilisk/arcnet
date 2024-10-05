@@ -4,7 +4,7 @@ import random
 from pathlib import Path
 
 import torch
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import Dataset, random_split
 from transformers import (
     GPT2Tokenizer,
     GPT2LMHeadModel,
@@ -72,7 +72,7 @@ if len(dataset_entries) > 400:
     dataset_entries = random.sample(dataset_entries, 400)
 
 # Split into training and validation sets (95% train, 5% validation)
-train_size = int(0.95 * len(dataset_entries))
+train_size = int(0.8 * len(dataset_entries))
 val_size = len(dataset_entries) - train_size
 train_entries, val_entries = random_split(dataset_entries, [train_size, val_size])
 
@@ -157,13 +157,57 @@ trainer = Trainer(
     data_collator=data_collator,
 )
 
-# Train the model
-trainer.train()
+# Function to generate a completion for a random validation sample
+# Function to generate a completion for a random validation sample
+def generate_random_completion():
+    model.eval()  # Set model to evaluation mode
+    random_index = random.randint(0, len(val_dataset) - 1)
+    val_sample = val_dataset[random_index]
+    
+    # Decode the prompt
+    input_ids = val_sample['input_ids'].unsqueeze(0).to(model.device)
+    prompt_length = (val_sample['labels'] == -100).sum().item()  # Count masked tokens
+    prompt_ids = input_ids[:, :prompt_length]
 
-# Evaluate on validation set
-eval_results = trainer.evaluate()
+    prompt_text = tokenizer.decode(prompt_ids.squeeze(), skip_special_tokens=True)
 
-print(f"Validation Loss: {eval_results['eval_loss']}")
+    # Ensure that the total length (input + generated) does not exceed 1024
+    max_length = 1024
+    max_new_tokens = max_length - prompt_length  # Adjust new tokens based on the input length
+
+    # Cap the number of new tokens to ensure we stay within the limit
+    max_new_tokens = min(max_new_tokens, 200)  # Set a reasonable limit for new tokens
+
+    if max_new_tokens <= 0:
+        print("\n--- Random Validation Example ---")
+        print("Prompt:\n", prompt_text)
+        print("No room for completion generation, prompt is too long.")
+        return
+
+    # Generate completion with the adjusted number of tokens
+    output_ids = model.generate(
+        input_ids=prompt_ids,
+        max_new_tokens=max_new_tokens,  # Generate tokens while ensuring total length < 1024
+        num_return_sequences=1,
+        pad_token_id=tokenizer.eos_token_id
+    )
+    output_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+
+    print("\n--- Random Validation Example ---")
+    print("Prompt:\n", prompt_text)
+    print("Completion:\n", output_text)
+
+# Training loop with custom logging after each epoch
+for epoch in range(training_args.num_train_epochs):
+    print(f"\nStarting epoch {epoch+1}/{training_args.num_train_epochs}...")
+    trainer.train()  # Train for one epoch
+
+    # Evaluate on validation set
+    eval_results = trainer.evaluate()
+    print(f"Epoch {epoch+1} Validation Loss: {eval_results['eval_loss']}")
+
+    # Print a random validation completion
+    generate_random_completion()
 
 # Save the model once the training is completed
 trainer.save_model("output_model")
