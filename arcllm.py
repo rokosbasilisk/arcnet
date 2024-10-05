@@ -13,6 +13,10 @@ from transformers import (
     DataCollatorForLanguageModeling,
 )
 
+# Initialize tokenizer and model
+tokenizer = GPT2Tokenizer.from_pretrained('distilgpt2')
+tokenizer.pad_token = tokenizer.eos_token  # Set the EOS token as the padding token
+
 # Set random seed for reproducibility
 random.seed(42)
 torch.manual_seed(42)
@@ -114,10 +118,7 @@ class ARCCodeDataset(Dataset):
             'labels': labels
         }
 
-# Initialize tokenizer and model
-tokenizer = GPT2Tokenizer.from_pretrained('distilgpt2')
-# Add a special token for separation if needed
-# tokenizer.add_special_tokens({'additional_special_tokens': [SEPARATOR]})
+# Initialize model
 model = GPT2LMHeadModel.from_pretrained('distilgpt2')
 model.resize_token_embeddings(len(tokenizer))
 
@@ -163,4 +164,7 @@ trainer.train()
 eval_results = trainer.evaluate()
 
 print(f"Validation Loss: {eval_results['eval_loss']}")
+
+# Save the model once the training is completed
+trainer.save_model("output_model")
 
