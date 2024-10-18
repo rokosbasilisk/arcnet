@@ -7,22 +7,32 @@ from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, DistributedSampler
 import torch.nn as nn
 import torch.optim as optim
+import torch.distributed as dist
+import torch.multiprocessing as mp
 
 # Constants
 MAX_GRID_SIZE = 30
 CONTEXT_LENGTH = 8
-BATCH_SIZE = 128
-NUM_EPOCHS = 10
-LEARNING_RATE = 1e-4
-NUM_LAYERS = 4
+BATCH_SIZE = 100
+NUM_EPOCHS = 200
+LEARNING_RATE = 5e-4
+NUM_LAYERS = 10
 EMBED_DIM = 64
 NUM_HEADS = 8
 FF_DIM = 64
 PADDING_VALUE = 10
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "garbage_collection_threshold:0.6,max_split_size_mb:128"
+
+# Paths to data
+TRAIN_TASKS_DIR = "re_arc/tasks"
+EVAL_CHALLENGES_FILE = "data/arc-agi_evaluation_challenges.json"
+EVAL_SOLUTIONS_FILE = "data/arc-agi_evaluation_solutions.json"
+
+# Paths to processed data
+PROCESSED_TRAIN_DATA = "train_data.pth"
+PROCESSED_VAL_DATA = "val_data.pth"
 
 class ARCTokenizer:
     def __init__(self, padding_value=10):
@@ -601,21 +611,27 @@ def prepare_arc_data(train_tasks_dir, eval_file, solutions_file, batch_size, pad
     # Initialize validation dataset
     val_dataset = ARCDataset(data=all_val_data)
 
+    # Save processed data to disk
+    print("Saving processed data to disk...")
+    torch.save(all_train_data, PROCESSED_TRAIN_DATA)
+    torch.save(all_val_data, PROCESSED_VAL_DATA)
+    print("Processed data saved.")
+
     # Create DataLoaders
     train_loader = DataLoader(
         train_dataset, 
         batch_size=batch_size, 
-        shuffle=True, 
+        shuffle=False,  # Shuffle is handled by DistributedSampler
+        sampler=DistributedSampler(train_dataset),
         num_workers=num_workers, 
         pin_memory=True
     )
     
-    # Ensure batch_size does not exceed the validation dataset size
-    val_batch_size = min(batch_size, len(val_dataset)) if len(val_dataset) > 0 else 1
     val_loader = DataLoader(
         val_dataset, 
-        batch_size=val_batch_size, 
+        batch_size=batch_size, 
         shuffle=False, 
+        sampler=DistributedSampler(val_dataset, shuffle=False),
         num_workers=num_workers, 
         pin_memory=True
     )
@@ -625,68 +641,186 @@ def prepare_arc_data(train_tasks_dir, eval_file, solutions_file, batch_size, pad
 
     return train_loader, val_loader
 
-def main(remap_colors=False, replace_colors=False):
-    print(f"remap_colors: {remap_colors} replace_colors: {replace_colors}")
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
-    max_tokens_per_grid = (MAX_GRID_SIZE // 2) ** 2
+def load_processed_data(train_loader, val_loader):
+    """
+    Loads the processed data from disk and returns DataLoaders with DistributedSampler.
 
+    Args:
+        train_loader (DataLoader): Placeholder for train_loader.
+        val_loader (DataLoader): Placeholder for val_loader.
+
+    Returns:
+        tuple: (train_loader, val_loader)
+    """
+    # Load processed data
+    print("Loading processed training data from disk...")
+    all_train_data = torch.load(PROCESSED_TRAIN_DATA)
+    print("Loading processed validation data from disk...")
+    all_val_data = torch.load(PROCESSED_VAL_DATA)
+
+    # Initialize datasets
+    train_dataset = ARCDataset(data=all_train_data)
+    val_dataset = ARCDataset(data=all_val_data)
+
+    # Create samplers
+    train_sampler = DistributedSampler(train_dataset)
+    val_sampler = DistributedSampler(val_dataset, shuffle=False)
+
+    # Create DataLoaders
+    train_loader = DataLoader(
+        train_dataset, 
+        batch_size=BATCH_SIZE, 
+        shuffle=False,  # Shuffle is handled by DistributedSampler
+        sampler=train_sampler,
+        num_workers=4, 
+        pin_memory=True
+    )
+    
+    val_loader = DataLoader(
+        val_dataset, 
+        batch_size=BATCH_SIZE, 
+        shuffle=False, 
+        sampler=val_sampler,
+        num_workers=4, 
+        pin_memory=True
+    )
+
+    print(f"Training samples: {len(train_dataset)}")
+    print(f"Validation samples: {len(val_dataset)}")
+
+    return train_loader, val_loader
+
+def main():
+    """
+    The main function to initialize distributed training and run the training loop.
+    """
+    # Initialize the process group
+    dist.init_process_group(backend='nccl')
+    rank = dist.get_rank()
+    world_size = dist.get_world_size()
+
+    # Assign GPUs 2,3,4,5 to ranks 0,1,2,3 respectively
+    gpu_ids = [2, 3, 4, 5]
+    if world_size > len(gpu_ids):
+        if rank == 0:
+            print(f"Error: Number of GPUs assigned ({len(gpu_ids)}) is less than world size ({world_size}).")
+        exit()
+
+    local_rank = rank  # Assuming single node
+    device_id = gpu_ids[local_rank]
+    torch.cuda.set_device(device_id)
+    device = torch.device(f"cuda:{device_id}")
+
+    # Only the master process (rank 0) processes and saves the data
+    if rank == 0:
+        print("Master process: Processing and saving data...")
+        train_loader, val_loader = prepare_arc_data(
+            train_tasks_dir=TRAIN_TASKS_DIR,
+            eval_file=EVAL_CHALLENGES_FILE,
+            solutions_file=EVAL_SOLUTIONS_FILE,
+            batch_size=BATCH_SIZE,
+            padding_value=PADDING_VALUE,
+            remap_colors=False,  # Set as needed
+            replace_colors=False,  # Set as needed
+            num_workers=4,
+            validation_subset='test'  # Change if needed
+        )
+    else:
+        # Other processes wait until data is processed
+        dist.barrier()
+        # Load processed data from disk
+        train_loader, val_loader = load_processed_data(None, None)
+
+    # Ensure all processes wait until data is ready
+    dist.barrier()
+
+    # Broadcast the number of training samples from master to all other processes
+    if rank == 0:
+        num_train_samples = len(torch.load(PROCESSED_TRAIN_DATA))
+        num_val_samples = len(torch.load(PROCESSED_VAL_DATA))
+    else:
+        num_train_samples = 0
+        num_val_samples = 0
+    dist.broadcast(torch.tensor(num_train_samples), src=0)
+    dist.broadcast(torch.tensor(num_val_samples), src=0)
+
+    # All processes load the data
+    if rank != 0:
+        train_loader, val_loader = load_processed_data(None, None)
+
+    # Load processed data for all processes
+    all_train_data = torch.load(PROCESSED_TRAIN_DATA)
+    all_val_data = torch.load(PROCESSED_VAL_DATA)
+
+    # Initialize datasets
+    train_dataset = ARCDataset(data=all_train_data)
+    val_dataset = ARCDataset(data=all_val_data)
+
+    # Create samplers
+    train_sampler = DistributedSampler(train_dataset)
+    val_sampler = DistributedSampler(val_dataset, shuffle=False)
+
+    # Create DataLoaders
+    train_loader = DataLoader(
+        train_dataset, 
+        batch_size=BATCH_SIZE, 
+        shuffle=False,  # Shuffle is handled by DistributedSampler
+        sampler=train_sampler,
+        num_workers=4, 
+        pin_memory=True
+    )
+    
+    val_loader = DataLoader(
+        val_dataset, 
+        batch_size=BATCH_SIZE, 
+        shuffle=False, 
+        sampler=val_sampler,
+        num_workers=4, 
+        pin_memory=True
+    )
+
+    print(f"Rank {rank}: Training samples: {len(train_dataset)}")
+    print(f"Rank {rank}: Validation samples: {len(val_dataset)}")
+
+    # Initialize the model
     model = TokenizedGridTransformer(
         num_layers=NUM_LAYERS,
         embed_dim=EMBED_DIM,
         num_heads=NUM_HEADS,
         ff_dim=FF_DIM,
         context_length=CONTEXT_LENGTH,
-        max_tokens_per_grid=max_tokens_per_grid,
+        max_tokens_per_grid=(MAX_GRID_SIZE // 2) ** 2,
         padding_value=PADDING_VALUE
     ).to(device)
 
+    # Wrap the model with DistributedDataParallel
+    model = nn.parallel.DistributedDataParallel(model, device_ids=[device_id])
+
+    # Optionally, load pre-trained weights
     if os.path.exists("tokenized_grid_transformer_finetuned.pth"):
-        print("Loading pre-trained model...")
-        model.load_state_dict(torch.load("tokenized_grid_transformer_finetuned.pth"))
+        print(f"Rank {rank}: Loading pre-trained model weights...")
+        model.load_state_dict(torch.load("tokenized_grid_transformer_finetuned.pth", map_location=device))
     else:
-        print("Pre-trained model not found. Training from scratch...")
-
-    train_tasks_dir = "re_arc/tasks"
-    eval_file = "data/arc-agi_evaluation_challenges.json"  # Ensure this path is correct
-    solutions_file = "data/arc-agi_evaluation_solutions.json"  # Path to the solutions JSON
-
-    # Specify which subset to use for validation
-    validation_subset = 'test'  # Change this if your JSON uses a different key, e.g., 'validation'
-
-    # Prepare data loaders
-    train_loader, val_loader = prepare_arc_data(
-        train_tasks_dir=train_tasks_dir,
-        eval_file=eval_file,
-        solutions_file=solutions_file,
-        batch_size=BATCH_SIZE,
-        padding_value=PADDING_VALUE,
-        remap_colors=remap_colors,
-        replace_colors=replace_colors,
-        num_workers=4,  # Adjust based on your CPU cores
-        validation_subset=validation_subset
-    )
-
-    # Verify that datasets are not empty
-    if len(train_loader.dataset) == 0:
-        raise ValueError("Training dataset is empty. Please check the training JSON files.")
-    if len(val_loader.dataset) == 0:
-        raise ValueError("Validation dataset is empty. Please check the evaluation JSON structure and subset.")
+        if rank == 0:
+            print("Pre-trained model not found. Training from scratch...")
 
     # Train the model
     train_model(model, train_loader, val_loader, NUM_EPOCHS, device)
 
-    # Save the final model
-    torch.save(model.state_dict(), "tokenized_grid_transformer_finetuned.pth")
-    print("Final model saved as tokenized_grid_transformer_finetuned.pth")
+    # Save the final model (only by master process)
+    if rank == 0:
+        torch.save(model.module.state_dict(), "tokenized_grid_transformer_finetuned.pth")
+        print("Final model saved as tokenized_grid_transformer_finetuned.pth")
+
+    # Cleanup
+    dist.destroy_process_group()
 
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="Train the TokenizedGridTransformer model")
-    parser.add_argument("--remap_colors", action="store_true", help="Remap colors to a canonical list")
-    parser.add_argument("--replace_colors", action="store_true", help="Replace colors with random new colors")
-    parser.add_argument("--validation_subset", type=str, default='test', help="Subset key to use for validation (e.g., 'test', 'validation')")
-    args = parser.parse_args()
+    # Set environment variables for distributed training if not using torchrun
+    # For example:
+    # os.environ['MASTER_ADDR'] = 'localhost'
+    # os.environ['MASTER_PORT'] = '12355'
 
-    main(remap_colors=args.remap_colors, replace_colors=args.replace_colors)
+    # Launch the main function
+    main()
 
