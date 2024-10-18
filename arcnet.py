@@ -1,14 +1,14 @@
-from termcolor import colored
-from torch.utils.data import Dataset, DataLoader, random_split
-from tqdm import tqdm
-import json
-import numpy as np
 import os
+import json
 import random
+import numpy as np
+from termcolor import colored
+from tqdm import tqdm
+
 import torch
+from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
 import torch.optim as optim
-from concurrent.futures import ProcessPoolExecutor, as_completed
 
 # Constants
 MAX_GRID_SIZE = 30
@@ -21,7 +21,6 @@ EMBED_DIM = 64
 NUM_HEADS = 8
 FF_DIM = 64
 PADDING_VALUE = 10
-
 
 class ARCTokenizer:
     def __init__(self, padding_value=10):
@@ -75,63 +74,27 @@ class ARCTokenizer:
         padded_grid[:h, :w] = grid
         return padded_grid
 
-
-def process_task_file(task_file, padding_value, max_grid_size, context_length, max_tokens_per_grid, remap_colors, replace_colors):
-    tokenizer = ARCTokenizer(padding_value=padding_value)
-    data = []
-    try:
-        with open(task_file, 'r') as f:
-            task_data = json.load(f)
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON from {task_file}: {e}")
-        return data
-
-    if not isinstance(task_data, list):
-        print(f"Warning: {task_file} does not contain a list of examples.")
-        return data
-
-    for example in task_data:
-        if 'input' not in example or 'output' not in example:
-            print(f"Warning: Example missing 'input' or 'output' in {task_file}. Skipping.")
-            continue
-
-        input_sequence = preprocess_grid(example['input'])
-        output_grid = preprocess_single_grid(example['output'])
-
-        if remap_colors or replace_colors:
-            input_sequence, output_grid = process_colors(input_sequence, output_grid, remap_colors, replace_colors)
-
-        # Pad and tokenize input sequence
-        input_tokens = pad_and_tokenize_sequence(input_sequence, tokenizer, max_grid_size, context_length, max_tokens_per_grid)
-
-        # Pad and tokenize output grid
-        output_padded = tokenizer.pad_grid(output_grid)
-        output_tokens = tokenizer.tokenize(output_padded)
-        # Pad or truncate output tokens to max_tokens_per_grid
-        output_tokens = output_tokens[:max_tokens_per_grid] + [tokenizer.padding_token] * (max_tokens_per_grid - len(output_tokens))
-
-        data.append((input_tokens, output_tokens, output_grid.shape))
-    return data
-
-
 def preprocess_grid(grid):
+    """
+    Converts the input grid to a list of numpy arrays.
+    If the grid is a single 2D grid, it's wrapped in a list.
+    If it's a sequence of grids, each is converted to a numpy array.
+    """
     if isinstance(grid, list) and all(isinstance(row, list) for row in grid):
         return [preprocess_single_grid(grid)]
     else:
         return [preprocess_single_grid(g) for g in grid]
 
-
 def preprocess_single_grid(grid):
     return np.array(grid, dtype=int)
 
-
-def process_colors(input_sequence, output_grid, remap_colors, replace_colors):
+def process_colors(input_sequence, output_grid, remap_colors, replace_colors, padding_value):
     all_colors = set()
     for grid in input_sequence:
         all_colors.update(np.unique(grid))
     all_colors.update(np.unique(output_grid))
     all_colors.discard(0)  # Exclude 0 (empty cell)
-    all_colors.discard(PADDING_VALUE)  # Exclude padding value
+    all_colors.discard(padding_value)  # Exclude padding value
 
     color_map = {}
     if remap_colors:
@@ -153,7 +116,7 @@ def process_colors(input_sequence, output_grid, remap_colors, replace_colors):
 
     # Ensure 0 and padding_value are not remapped
     color_map[0] = 0
-    color_map[PADDING_VALUE] = PADDING_VALUE
+    color_map[padding_value] = padding_value
 
     # Apply color mapping to input sequence
     processed_input = []
@@ -165,7 +128,6 @@ def process_colors(input_sequence, output_grid, remap_colors, replace_colors):
     processed_output = np.vectorize(lambda x: color_map.get(x, x))(output_grid)
 
     return processed_input, processed_output
-
 
 def pad_and_tokenize_sequence(sequence, tokenizer, max_grid_size, context_length, max_tokens_per_grid):
     padded_sequence = []
@@ -184,64 +146,95 @@ def pad_and_tokenize_sequence(sequence, tokenizer, max_grid_size, context_length
     
     return np.array(padded_sequence, dtype=np.int64)
 
-
 class ARCDataset(Dataset):
-    def __init__(self, task_files, max_grid_size=30, context_length=8, 
+    def __init__(self, task_files, subset=None, max_grid_size=30, context_length=8, 
                  padding_value=10, remap_colors=False, replace_colors=False):
+        """
+        Args:
+            task_files (list): List of file paths to JSON task files.
+            subset (str, optional): 'train' or 'test' for evaluation JSONs. None for training JSONs.
+            max_grid_size (int): Maximum grid size.
+            context_length (int): Number of frames in the context.
+            padding_value (int): Value used for padding.
+            remap_colors (bool): Whether to remap colors.
+            replace_colors (bool): Whether to replace colors with random new colors.
+        """
         self.data = []
         self.max_grid_size = max_grid_size
         self.context_length = context_length
         self.padding_value = padding_value
         self.remap_colors = remap_colors
         self.replace_colors = replace_colors
-
-        self.tokenizer = ARCTokenizer(padding_value=padding_value)
-        self.max_output_size = self.calculate_max_output_size(task_files)
         self.max_tokens_per_grid = (self.max_grid_size // 2) ** 2
 
+        self.tokenizer = ARCTokenizer(padding_value=padding_value)
+        
         print("Loading and processing task files...")
-        with ProcessPoolExecutor() as executor:
-            futures = [
-                executor.submit(
-                    process_task_file, 
-                    task_file, 
-                    padding_value, 
-                    max_grid_size, 
-                    context_length, 
-                    self.max_tokens_per_grid, 
-                    remap_colors, 
-                    replace_colors
-                )
-                for task_file in task_files
-            ]
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Processing tasks"):
-                self.data.extend(future.result())
-
-    def calculate_max_output_size(self, task_files):
-        max_h, max_w = 0, 0
-        for task_file in task_files:
+        for task_file in tqdm(task_files, desc="Processing Task Files"):
             try:
                 with open(task_file, 'r') as f:
                     task_data = json.load(f)
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as e:
+                print(f"Error decoding JSON from {task_file}: {e}")
                 continue
-            for example in task_data:
-                if 'output' in example:
-                    output_grid = example['output']
-                    max_h = max(max_h, len(output_grid))
-                    if len(output_grid) > 0:
-                        max_w = max(max_w, len(output_grid[0]))
-        return max(max_h, max_w)
+
+            if subset and isinstance(task_data, dict):
+                examples = task_data.get(subset, [])
+                if not examples:
+                    print(f"Warning: No examples found for subset '{subset}' in {task_file}.")
+                    continue
+            elif isinstance(task_data, list):
+                examples = task_data
+            else:
+                print(f"Warning: {task_file} has an unexpected format. Skipping.")
+                continue
+
+            for example in examples:
+                if 'input' not in example or 'output' not in example:
+                    print(f"Warning: Example missing 'input' or 'output' in {task_file}. Skipping.")
+                    continue
+
+                input_sequence = preprocess_grid(example['input'])
+                output_grid = preprocess_single_grid(example['output'])
+
+                if self.remap_colors or self.replace_colors:
+                    input_sequence, output_grid = process_colors(
+                        input_sequence, 
+                        output_grid, 
+                        self.remap_colors, 
+                        self.replace_colors, 
+                        self.padding_value
+                    )
+
+                # Pad and tokenize input sequence
+                input_tokens = pad_and_tokenize_sequence(
+                    input_sequence, 
+                    self.tokenizer, 
+                    self.max_grid_size, 
+                    self.context_length, 
+                    self.max_tokens_per_grid
+                )
+
+                # Pad and tokenize output grid
+                output_padded = self.tokenizer.pad_grid(output_grid)
+                output_tokens = self.tokenizer.tokenize(output_padded)
+                # Pad or truncate output tokens to max_tokens_per_grid
+                output_tokens = output_tokens[:self.max_tokens_per_grid] + [self.tokenizer.padding_token] * (self.max_tokens_per_grid - len(output_tokens))
+
+                self.data.append((input_tokens, output_tokens, output_grid.shape))
+        
+        print(f"Total samples loaded: {len(self.data)}")
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
         input_tokens, output_tokens, original_size = self.data[idx]
-        return (torch.tensor(input_tokens, dtype=torch.long),
-                torch.tensor(output_tokens, dtype=torch.long),
-                torch.tensor(original_size, dtype=torch.long))
-
+        return (
+            torch.tensor(input_tokens, dtype=torch.long),
+            torch.tensor(output_tokens, dtype=torch.long),
+            torch.tensor(original_size, dtype=torch.long)
+        )
 
 class TokenizedGridTransformer(nn.Module):
     def __init__(self, num_layers, embed_dim, num_heads, ff_dim, context_length, max_tokens_per_grid, padding_value=10):
@@ -291,7 +284,6 @@ class TokenizedGridTransformer(nn.Module):
                 input_sequence = torch.cat([input_sequence[:, 1:], next_token], dim=1)
         return input_sequence[:, -1]
 
-
 def visualize_examples(model, val_loader, device):
     model.eval()
     with torch.no_grad():
@@ -320,8 +312,9 @@ def visualize_examples(model, val_loader, device):
         print("Unique predicted tokens:", unique_tokens.tolist())
         print("Token counts:", counts.tolist())
         
-        predicted_grid = model.tokenizer.detokenize(predicted_sample.cpu().numpy(), (MAX_GRID_SIZE, MAX_GRID_SIZE))
-        target_grid = model.tokenizer.detokenize(target_sample.cpu().numpy(), (MAX_GRID_SIZE, MAX_GRID_SIZE))
+        tokenizer = model.tokenizer
+        predicted_grid = tokenizer.detokenize(predicted_sample.cpu().numpy(), (MAX_GRID_SIZE, MAX_GRID_SIZE))
+        target_grid = tokenizer.detokenize(target_sample.cpu().numpy(), (MAX_GRID_SIZE, MAX_GRID_SIZE))
         
         print(colored("\nGround Truth vs Predicted", 'yellow'))
         print(f"Target shape: {target_grid.shape}, Predicted shape: {predicted_grid.shape}")
@@ -329,15 +322,46 @@ def visualize_examples(model, val_loader, device):
         
         print("\n" + "-" * 40 + "\n")  # Separator between examples
 
+def color_for_value(value):
+    color_map = {
+        0: 'white',
+        1: 'red',
+        2: 'green',
+        3: 'yellow',
+        4: 'blue',
+        5: 'magenta',
+        6: 'cyan',
+        7: 'grey',
+        8: 'light_red',
+        9: 'light_green',
+        10: 'light_yellow'  # Assuming 10 is your padding value
+    }
+    return color_map.get(value, 'white')
 
-def ensure_2d_grid(grid):
-    if grid.ndim == 1:
-        side_length = int(np.sqrt(grid.shape[0]))
-        return grid.reshape(side_length, side_length)
-    elif grid.ndim > 2:
-        return grid.reshape(grid.shape[0], -1)
-    return grid
-
+def print_grid(gt_grid, pred_grid):
+    max_height = max(gt_grid.shape[0], pred_grid.shape[0])
+    max_width = max(gt_grid.shape[1], pred_grid.shape[1])
+    
+    print("Ground Truth" + " " * (max_width * 3 - 5) + "Predicted")
+    print("-" * (max_width * 3 - 1) + "   " + "-" * (max_width * 3 - 1))
+    
+    for i in range(max_height):
+        gt_line = []
+        pred_line = []
+        for j in range(max_width):
+            if i < gt_grid.shape[0] and j < gt_grid.shape[1]:
+                gt_value = gt_grid[i, j]
+                gt_line.append(colored(f"{gt_value:2d}", color_for_value(gt_value)))
+            else:
+                gt_line.append("  ")
+            
+            if i < pred_grid.shape[0] and j < pred_grid.shape[1]:
+                pred_value = pred_grid[i, j]
+                pred_line.append(colored(f"{pred_value:2d}", color_for_value(pred_value)))
+            else:
+                pred_line.append("  ")
+        
+        print(" ".join(gt_line) + "   " + " ".join(pred_line))
 
 def exact_match_accuracy(outputs, targets, original_sizes):
     predicted = outputs.argmax(dim=-1)
@@ -346,12 +370,10 @@ def exact_match_accuracy(outputs, targets, original_sizes):
     exact_match = correct.all(dim=1).float()  # Check if all tokens in a sample match
     return exact_match.mean().item()
 
-
 def cell_accuracy(outputs, targets, original_sizes):
     predicted = outputs.argmax(dim=-1)
     correct = (predicted == targets).float()
     return correct.mean().item()
-
 
 def train_model(model, train_loader, val_loader, num_epochs, device):
     criterion = nn.CrossEntropyLoss(ignore_index=PADDING_VALUE)
@@ -362,7 +384,7 @@ def train_model(model, train_loader, val_loader, num_epochs, device):
         train_loss = 0.0
         train_exact_acc = 0.0
         train_cell_acc = 0.0
-        for inputs, targets, original_sizes in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
+        for inputs, targets, original_sizes in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs} - Training"):
             inputs, targets = inputs.to(device), targets.to(device)
             
             optimizer.zero_grad()
@@ -390,7 +412,7 @@ def train_model(model, train_loader, val_loader, num_epochs, device):
         val_exact_acc = 0.0
         val_cell_acc = 0.0
         with torch.no_grad():
-            for inputs, targets, original_sizes in val_loader:
+            for inputs, targets, original_sizes in tqdm(val_loader, desc=f"Epoch {epoch+1}/{num_epochs} - Validation"):
                 inputs, targets = inputs.to(device), targets.to(device)
                 outputs = model(inputs)
                 
@@ -407,58 +429,96 @@ def train_model(model, train_loader, val_loader, num_epochs, device):
         val_exact_acc /= len(val_loader)
         val_cell_acc /= len(val_loader)
         
-        print(f"Epoch {epoch+1}/{num_epochs}")
+        print(f"\nEpoch {epoch+1}/{num_epochs}")
         print(f"Train Loss: {train_loss:.4f}, Train Exact Acc: {train_exact_acc:.4f}, Train Cell Acc: {train_cell_acc:.4f}")
         print(f"Val Loss: {val_loss:.4f}, Val Exact Acc: {val_exact_acc:.4f}, Val Cell Acc: {val_cell_acc:.4f}")
 
         visualize_examples(model, val_loader, device)
 
-        # You may want to add model saving logic here
-        # torch.save(model.state_dict(), f"tokenized_grid_transformer_epoch_{epoch+1}.pth")
+        # Optionally, save the model checkpoint every few epochs
+        # if (epoch + 1) % 10 == 0:
+        #     torch.save(model.state_dict(), f"tokenized_grid_transformer_epoch_{epoch+1}.pth")
 
+def prepare_arc_data(train_tasks_dir, eval_file, batch_size, padding_value=10, val_fraction=0.1, remap_colors=False, replace_colors=False, num_workers=0):
+    """
+    Args:
+        train_tasks_dir (str): Directory containing training JSON task files.
+        eval_file (str): Path to the evaluation JSON file.
+        batch_size (int): Batch size for DataLoader.
+        padding_value (int): Padding value.
+        val_fraction (float): Fraction of data to use for validation (not used here as validation is separate).
+        remap_colors (bool): Whether to remap colors.
+        replace_colors (bool): Whether to replace colors with random new colors.
+        num_workers (int): Number of subprocesses to use for data loading (set to 0 for debugging).
+    Returns:
+        train_loader, val_loader: DataLoaders for training and validation.
+    """
+    # Load training data from re_arc/tasks directory
+    train_challenges_files = [
+        os.path.join(train_tasks_dir, file) 
+        for file in os.listdir(train_tasks_dir) 
+        if file.endswith('.json')
+    ]
 
-def color_for_value(value):
-    color_map = {
-        0: 'white',
-        1: 'red',
-        2: 'green',
-        3: 'yellow',
-        4: 'blue',
-        5: 'magenta',
-        6: 'cyan',
-        7: 'grey',
-        8: 'light_red',
-        9: 'light_green',
-        10: 'light_yellow'  # Assuming 10 is your padding value
-    }
-    return color_map.get(value, 'white')
+    print(f"Number of training challenge files: {len(train_challenges_files)}")
 
+    if len(train_challenges_files) == 0:
+        raise ValueError("No training challenge files found. Please check the 're_arc/tasks' directory.")
 
-def print_grid(gt_grid, pred_grid):
-    max_height = max(gt_grid.shape[0], pred_grid.shape[0])
-    max_width = max(gt_grid.shape[1], pred_grid.shape[1])
+    # Initialize training dataset
+    train_dataset = ARCDataset(
+        task_files=train_challenges_files,
+        subset=None,  # 're_arc' tasks don't have 'train'/'test' subsets
+        max_grid_size=MAX_GRID_SIZE,
+        context_length=CONTEXT_LENGTH,
+        padding_value=padding_value,
+        remap_colors=remap_colors,
+        replace_colors=replace_colors
+    )
+
+    total_train_samples = len(train_dataset)
+    print(f"Total training samples loaded from tasks directory: {total_train_samples}")
+
+    # Load validation data
+    if not os.path.exists(eval_file):
+        raise ValueError(f"Validation challenge file {eval_file} does not exist.")
+
+    # Initialize validation dataset
+    val_dataset = ARCDataset(
+        task_files=[eval_file],
+        subset='test',  # Assuming you want to use the 'test' subset for validation
+        max_grid_size=MAX_GRID_SIZE,
+        context_length=CONTEXT_LENGTH,
+        padding_value=padding_value,
+        remap_colors=remap_colors,
+        replace_colors=replace_colors
+    )
+
+    print(f"Validation samples loaded from {eval_file}: {len(val_dataset)}")
+
+    # Create DataLoaders
+    train_loader = DataLoader(
+        train_dataset, 
+        batch_size=batch_size, 
+        shuffle=True, 
+        num_workers=num_workers, 
+        pin_memory=True
+    )
     
-    print("Ground Truth" + " " * (max_width * 3 - 5) + "Predicted")
-    print("-" * (max_width * 3 - 1) + "   " + "-" * (max_width * 3 - 1))
-    
-    for i in range(max_height):
-        gt_line = []
-        pred_line = []
-        for j in range(max_width):
-            if i < gt_grid.shape[0] and j < gt_grid.shape[1]:
-                gt_value = gt_grid[i, j]
-                gt_line.append(colored(f"{gt_value:2d}", color_for_value(gt_value)))
-            else:
-                gt_line.append("  ")
-            
-            if i < pred_grid.shape[0] and j < pred_grid.shape[1]:
-                pred_value = pred_grid[i, j]
-                pred_line.append(colored(f"{pred_value:2d}", color_for_value(pred_value)))
-            else:
-                pred_line.append("  ")
-        
-        print(" ".join(gt_line) + "   " + " ".join(pred_line))
+    # Ensure batch_size does not exceed the validation dataset size
+    val_batch_size = min(batch_size, len(val_dataset)) if len(val_dataset) > 0 else 1
+    val_loader = DataLoader(
+        val_dataset, 
+        batch_size=val_batch_size, 
+        shuffle=False, 
+        num_workers=num_workers, 
+        pin_memory=True
+    )
 
+    print(f"Training samples: {len(train_dataset)}")
+    print(f"Validation samples: {len(val_dataset)}")
+
+    return train_loader, val_loader
 
 def main(remap_colors=False, replace_colors=False):
     print(f"remap_colors: {remap_colors} replace_colors: {replace_colors}")
@@ -483,53 +543,29 @@ def main(remap_colors=False, replace_colors=False):
         print("Pre-trained model not found. Training from scratch...")
 
     train_tasks_dir = "re_arc/tasks"
-    eval_file = "data/arc-agi_evaluation_challenges.json"
+    eval_file = "arc-agi_evaluation_challenges.json"
 
-    # Gather all training task files
-    train_task_files = [os.path.join(train_tasks_dir, file) for file in os.listdir(train_tasks_dir) if file.endswith('.json')]
-
-    print(f"Number of training challenge files: {len(train_task_files)}")
-
-    # Initialize training dataset
-    train_dataset = ARCDataset(
-        task_files=train_task_files,
-        max_grid_size=MAX_GRID_SIZE,
-        context_length=CONTEXT_LENGTH,
+    # Prepare data loaders
+    train_loader, val_loader = prepare_arc_data(
+        train_tasks_dir=train_tasks_dir,
+        eval_file=eval_file,
+        batch_size=BATCH_SIZE,
         padding_value=PADDING_VALUE,
         remap_colors=remap_colors,
-        replace_colors=replace_colors
+        replace_colors=replace_colors,
+        num_workers=0  # Set to 0 for debugging; increase once confirmed working
     )
 
-    total_train_samples = len(train_dataset)
-    print(f"Total training samples loaded from tasks directory: {total_train_samples}")
+    # Check if validation dataset has samples
+    if len(val_loader.dataset) == 0:
+        raise ValueError("Validation dataset is empty. Please check the evaluation JSON structure and subset.")
 
-    # Initialize validation dataset
-    if not os.path.exists(eval_file):
-        raise ValueError(f"Validation challenge file {eval_file} does not exist.")
-
-    val_dataset = ARCDataset(
-        task_files=[eval_file],
-        max_grid_size=MAX_GRID_SIZE,
-        context_length=CONTEXT_LENGTH,
-        padding_value=PADDING_VALUE,
-        remap_colors=remap_colors,
-        replace_colors=replace_colors
-    )
-
-    print(f"Validation samples loaded from {eval_file}: {len(val_dataset)}")
-
-    # Create DataLoaders
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=min(BATCH_SIZE, len(val_dataset)), shuffle=False, num_workers=4, pin_memory=True)
-
-    print(f"Training samples: {len(train_dataset)}")
-    print(f"Validation samples: {len(val_dataset)}")
-
+    # Train the model
     train_model(model, train_loader, val_loader, NUM_EPOCHS, device)
 
+    # Save the final model
     torch.save(model.state_dict(), "tokenized_grid_transformer_finetuned.pth")
     print("Final model saved as tokenized_grid_transformer_finetuned.pth")
-
 
 if __name__ == "__main__":
     import argparse
