@@ -2,3 +2,4 @@ trajectories/*
 data/*
 output/*
 *.pth
+re_arc/*
