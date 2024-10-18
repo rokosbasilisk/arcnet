@@ -11,17 +11,35 @@ from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
 import torch.optim as optim
 
+# Enable Mixed Precision Training
+from torch.cuda.amp import GradScaler, autocast
+
+# Logging
+import logging
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
 # Constants
 MAX_GRID_SIZE = 30
 CONTEXT_LENGTH = 8
-BATCH_SIZE = 128
+BATCH_SIZE = 128  # Adjust based on GPU memory
 NUM_EPOCHS = 10
 LEARNING_RATE = 1e-4
-NUM_LAYERS = 4
+NUM_LAYERS = 4  # Reduced number of layers
 EMBED_DIM = 64
 NUM_HEADS = 8
-FF_DIM = 64
+FF_DIM = 256  # Increased feedforward dimension for better capacity
 PADDING_VALUE = 10
+
+# Optional: Set PyTorch CUDA allocation configurations to optimize memory usage
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "garbage_collection_threshold:0.6,max_split_size_mb:128"
 
 class ARCTokenizer:
@@ -105,7 +123,7 @@ def process_colors(input_sequence, output_grid, remap_colors, replace_colors, pa
         for i, color in enumerate(sorted_colors, start=1):
             color_map[color] = i
         if len(color_map) > 9:
-            print(f"Warning: More than 9 colors found ({len(color_map)}). Some colors will be reused.")
+            logger.warning(f"More than 9 colors found ({len(color_map)}). Some colors will be reused.")
     elif replace_colors:
         # Replace colors with random values from 1-9
         available_colors = list(range(1, 10))  # Colors 1-9
@@ -172,7 +190,7 @@ def process_task_file(task_file, subset, padding_value, max_grid_size, context_l
         with open(task_file, 'r') as f:
             task_data = json.load(f)
     except json.JSONDecodeError as e:
-        print(f"Error decoding JSON from {task_file}: {e}")
+        logger.error(f"Error decoding JSON from {task_file}: {e}")
         return data
 
     # Determine if the JSON is a list or dict with subsets
@@ -180,35 +198,35 @@ def process_task_file(task_file, subset, padding_value, max_grid_size, context_l
         # Iterate over all top-level keys
         for sub_key, sub_data in task_data.items():
             if not isinstance(sub_data, dict):
-                print(f"Warning: Sub-key '{sub_key}' in {task_file} does not contain a dictionary. Skipping.")
+                logger.warning(f"Sub-key '{sub_key}' in {task_file} does not contain a dictionary. Skipping.")
                 continue
 
             examples = sub_data.get(subset, [])
             if not examples:
-                print(f"Warning: No examples found for subset '{subset}' in {task_file}, sub_key '{sub_key}'. Available subsets: {list(sub_data.keys())}")
+                logger.warning(f"No examples found for subset '{subset}' in {task_file}, sub_key '{sub_key}'. Available subsets: {list(sub_data.keys())}")
                 continue
 
             for example in examples:
                 if 'input' not in example:
-                    print(f"Warning: Example missing 'input' in {task_file}, sub_key '{sub_key}'. Skipping.")
+                    logger.warning(f"Example missing 'input' in {task_file}, sub_key '{sub_key}'. Skipping.")
                     continue
 
                 if subset == 'test':
                     # Get 'output' from solutions_data
                     if not solutions_data:
-                        print(f"Error: solutions_data not provided for 'test' subset. Skipping.")
+                        logger.error(f"solutions_data not provided for 'test' subset. Skipping.")
                         continue
 
                     solution_grids = solutions_data.get(sub_key, [])
                     if not solution_grids:
-                        print(f"Warning: No solutions found for sub_key '{sub_key}'. Skipping.")
+                        logger.warning(f"No solutions found for sub_key '{sub_key}'. Skipping.")
                         continue
 
                     # Assuming one 'test' example per sub_key
                     output_grid = preprocess_single_grid(solution_grids[0])
                 else:
                     if 'output' not in example:
-                        print(f"Warning: Example missing 'output' in {task_file}, sub_key '{sub_key}'. Skipping.")
+                        logger.warning(f"Example missing 'output' in {task_file}, sub_key '{sub_key}'. Skipping.")
                         continue
                     output_grid = preprocess_single_grid(example['output'])
 
@@ -243,7 +261,7 @@ def process_task_file(task_file, subset, padding_value, max_grid_size, context_l
         # Process as training data
         for example in task_data:
             if 'input' not in example or 'output' not in example:
-                print(f"Warning: Example missing 'input' or 'output' in {task_file}. Skipping.")
+                logger.warning(f"Example missing 'input' or 'output' in {task_file}. Skipping.")
                 continue
 
             input_sequence = preprocess_grid(example['input'])
@@ -276,7 +294,7 @@ def process_task_file(task_file, subset, padding_value, max_grid_size, context_l
             data.append((input_tokens, output_tokens, output_grid.shape))
     else:
         available_keys = list(task_data.keys()) if isinstance(task_data, dict) else 'N/A'
-        print(f"Warning: {task_file} has an unexpected format. Available keys: {available_keys}")
+        logger.warning(f"{task_file} has an unexpected format. Available keys: {available_keys}")
         return data
 
     return data
@@ -354,11 +372,11 @@ def visualize_examples(model, val_loader, device):
         try:
             inputs, targets, original_sizes = next(iter(val_loader))
         except StopIteration:
-            print("Validation set is empty. Skipping visualization.")
+            logger.warning("Validation set is empty. Skipping visualization.")
             return
 
         if inputs.size(0) == 0:
-            print("No samples in the batch. Skipping visualization.")
+            logger.warning("No samples in the batch. Skipping visualization.")
             return
 
         idx = random.randint(0, inputs.size(0) - 1)
@@ -373,8 +391,8 @@ def visualize_examples(model, val_loader, device):
         predicted_sample = torch.multinomial(output_probs.view(-1, output_probs.size(-1)), num_samples=1).squeeze()
         
         unique_tokens, counts = torch.unique(predicted_sample, return_counts=True)
-        print("Unique predicted tokens:", unique_tokens.tolist())
-        print("Token counts:", counts.tolist())
+        logger.info(f"Unique predicted tokens: {unique_tokens.tolist()}")
+        logger.info(f"Token counts: {counts.tolist()}")
         
         tokenizer = model.tokenizer
         predicted_grid = tokenizer.detokenize(predicted_sample.cpu().numpy(), (MAX_GRID_SIZE, MAX_GRID_SIZE))
@@ -442,7 +460,12 @@ def cell_accuracy(outputs, targets, original_sizes):
 def train_model(model, train_loader, val_loader, num_epochs, device):
     criterion = nn.CrossEntropyLoss(ignore_index=PADDING_VALUE)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
-    
+    scaler = GradScaler()  # For mixed precision
+
+    best_val_loss = float('inf')
+    patience = 3
+    trigger_times = 0
+
     for epoch in range(num_epochs):
         model.train()
         train_loss = 0.0
@@ -452,15 +475,16 @@ def train_model(model, train_loader, val_loader, num_epochs, device):
             inputs, targets = inputs.to(device), targets.to(device)
             
             optimizer.zero_grad()
-            outputs = model(inputs)
+            with autocast():
+                outputs = model(inputs)
+                # Reshape outputs and targets for loss calculation
+                outputs = outputs.contiguous().view(-1, model.tokenizer.vocab_size)
+                targets = targets.contiguous().view(-1)
+                loss = criterion(outputs, targets)
             
-            # Reshape outputs for loss calculation
-            outputs = outputs.contiguous().reshape(-1, model.tokenizer.vocab_size)
-            targets = targets.reshape(-1)
-            
-            loss = criterion(outputs, targets)
-            loss.backward()
-            optimizer.step()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
             
             train_loss += loss.item()
             train_exact_acc += exact_match_accuracy(outputs, targets, original_sizes)
@@ -478,13 +502,13 @@ def train_model(model, train_loader, val_loader, num_epochs, device):
         with torch.no_grad():
             for inputs, targets, original_sizes in tqdm(val_loader, desc=f"Epoch {epoch+1}/{num_epochs} - Validation"):
                 inputs, targets = inputs.to(device), targets.to(device)
-                outputs = model(inputs)
+                with autocast():
+                    outputs = model(inputs)
+                    # Reshape outputs and targets for loss calculation
+                    outputs = outputs.contiguous().view(-1, model.tokenizer.vocab_size)
+                    targets = targets.contiguous().view(-1)
+                    loss = criterion(outputs, targets)
                 
-                # Reshape outputs for loss calculation
-                outputs = outputs.contiguous().reshape(-1, model.tokenizer.vocab_size)
-                targets = targets.reshape(-1)
-                
-                loss = criterion(outputs, targets)
                 val_loss += loss.item()
                 val_exact_acc += exact_match_accuracy(outputs, targets, original_sizes)
                 val_cell_acc += cell_accuracy(outputs, targets, original_sizes)
@@ -493,17 +517,32 @@ def train_model(model, train_loader, val_loader, num_epochs, device):
         val_exact_acc /= len(val_loader)
         val_cell_acc /= len(val_loader)
         
-        print(f"\nEpoch {epoch+1}/{num_epochs}")
-        print(f"Train Loss: {train_loss:.4f}, Train Exact Acc: {train_exact_acc:.4f}, Train Cell Acc: {train_cell_acc:.4f}")
-        print(f"Val Loss: {val_loss:.4f}, Val Exact Acc: {val_exact_acc:.4f}, Val Cell Acc: {val_cell_acc:.4f}")
+        logger.info(f"\nEpoch {epoch+1}/{num_epochs}")
+        logger.info(f"Train Loss: {train_loss:.4f}, Train Exact Acc: {train_exact_acc:.4f}, Train Cell Acc: {train_cell_acc:.4f}")
+        logger.info(f"Val Loss: {val_loss:.4f}, Val Exact Acc: {val_exact_acc:.4f}, Val Cell Acc: {val_cell_acc:.4f}")
 
+        # Early Stopping
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            trigger_times = 0
+            # Save the best model
+            torch.save(model.state_dict(), "best_tokenized_grid_transformer.pth")
+            logger.info("Validation loss decreased. Saving the best model.")
+        else:
+            trigger_times += 1
+            logger.info(f"No improvement in validation loss for {trigger_times} epoch(s).")
+            if trigger_times >= patience:
+                logger.info("Early stopping triggered.")
+                break
+
+        # Visualize examples
         visualize_examples(model, val_loader, device)
 
-        # Optionally, save the model checkpoint every few epochs
-        # if (epoch + 1) % 10 == 0:
-        #     checkpoint_path = f"tokenized_grid_transformer_epoch_{epoch+1}.pth"
-        #     torch.save(model.state_dict(), checkpoint_path)
-        #     print(f"Checkpoint saved at {checkpoint_path}")
+        # Checkpointing every few epochs
+        if (epoch + 1) % 5 == 0:
+            checkpoint_path = f"tokenized_grid_transformer_epoch_{epoch+1}.pth"
+            torch.save(model.state_dict(), checkpoint_path)
+            logger.info(f"Checkpoint saved at {checkpoint_path}")
 
 def prepare_arc_data(train_tasks_dir, eval_file, solutions_file, batch_size, padding_value=10, remap_colors=False, replace_colors=False, num_workers=4, validation_subset='test'):
     """
@@ -530,14 +569,14 @@ def prepare_arc_data(train_tasks_dir, eval_file, solutions_file, batch_size, pad
         if file.endswith('.json')
     ]
 
-    print(f"Number of training challenge files: {len(train_task_files)}")
+    logger.info(f"Number of training challenge files: {len(train_task_files)}")
 
     if len(train_task_files) == 0:
         raise ValueError("No training challenge files found. Please check the 're_arc/tasks' directory.")
 
     # Process training task files in parallel
     all_train_data = []
-    print("Processing training task files in parallel...")
+    logger.info("Processing training task files in parallel...")
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         futures = [
             executor.submit(
@@ -558,7 +597,7 @@ def prepare_arc_data(train_tasks_dir, eval_file, solutions_file, batch_size, pad
             result = future.result()
             all_train_data.extend(result)
 
-    print(f"Total training samples loaded: {len(all_train_data)}")
+    logger.info(f"Total training samples loaded: {len(all_train_data)}")
 
     # Initialize training dataset
     train_dataset = ARCDataset(data=all_train_data)
@@ -570,12 +609,13 @@ def prepare_arc_data(train_tasks_dir, eval_file, solutions_file, batch_size, pad
     if not os.path.exists(solutions_file):
         raise ValueError(f"Solutions file {solutions_file} does not exist.")
 
-    print("Loading solutions data...")
-    solutions_data = json.load(open(solutions_file, 'r'))
+    logger.info("Loading solutions data...")
+    with open(solutions_file, 'r') as f:
+        solutions_data = json.load(f)
 
     # Process evaluation file in parallel
     all_val_data = []
-    print("Processing validation task files in parallel...")
+    logger.info("Processing validation task files in parallel...")
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         futures = [
             executor.submit(
@@ -596,7 +636,7 @@ def prepare_arc_data(train_tasks_dir, eval_file, solutions_file, batch_size, pad
             result = future.result()
             all_val_data.extend(result)
 
-    print(f"Total validation samples loaded: {len(all_val_data)}")
+    logger.info(f"Total validation samples loaded: {len(all_val_data)}")
 
     # Initialize validation dataset
     val_dataset = ARCDataset(data=all_val_data)
@@ -620,15 +660,15 @@ def prepare_arc_data(train_tasks_dir, eval_file, solutions_file, batch_size, pad
         pin_memory=True
     )
 
-    print(f"Training samples: {len(train_dataset)}")
-    print(f"Validation samples: {len(val_dataset)}")
+    logger.info(f"Training samples: {len(train_dataset)}")
+    logger.info(f"Validation samples: {len(val_dataset)}")
 
     return train_loader, val_loader
 
 def main(remap_colors=False, replace_colors=False):
-    print(f"remap_colors: {remap_colors} replace_colors: {replace_colors}")
+    logger.info(f"remap_colors: {remap_colors} replace_colors: {replace_colors}")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
+    logger.info(f"Using device: {device}")
     max_tokens_per_grid = (MAX_GRID_SIZE // 2) ** 2
 
     model = TokenizedGridTransformer(
@@ -642,10 +682,10 @@ def main(remap_colors=False, replace_colors=False):
     ).to(device)
 
     if os.path.exists("tokenized_grid_transformer_finetuned.pth"):
-        print("Loading pre-trained model...")
+        logger.info("Loading pre-trained model...")
         model.load_state_dict(torch.load("tokenized_grid_transformer_finetuned.pth"))
     else:
-        print("Pre-trained model not found. Training from scratch...")
+        logger.info("Pre-trained model not found. Training from scratch...")
 
     train_tasks_dir = "re_arc/tasks"
     eval_file = "data/arc-agi_evaluation_challenges.json"  # Ensure this path is correct
@@ -673,12 +713,21 @@ def main(remap_colors=False, replace_colors=False):
     if len(val_loader.dataset) == 0:
         raise ValueError("Validation dataset is empty. Please check the evaluation JSON structure and subset.")
 
+    # Optional: Inspect a few training samples
+    logger.info("\nInspecting a few training samples:")
+    for i in range(min(3, len(train_loader.dataset))):
+        input_tokens, output_tokens, original_size = train_loader.dataset[i]
+        logger.info(f"Sample {i+1}:")
+        logger.info(f"Input Tokens Shape: {input_tokens.shape}")
+        logger.info(f"Output Tokens Shape: {output_tokens.shape}")
+        logger.info(f"Original Output Grid Size: {original_size}\n")
+
     # Train the model
     train_model(model, train_loader, val_loader, NUM_EPOCHS, device)
 
     # Save the final model
     torch.save(model.state_dict(), "tokenized_grid_transformer_finetuned.pth")
-    print("Final model saved as tokenized_grid_transformer_finetuned.pth")
+    logger.info("Final model saved as tokenized_grid_transformer_finetuned.pth")
 
 if __name__ == "__main__":
     import argparse
