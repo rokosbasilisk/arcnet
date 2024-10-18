@@ -4,6 +4,7 @@ import random
 import numpy as np
 from termcolor import colored
 from tqdm import tqdm
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -146,84 +147,146 @@ def pad_and_tokenize_sequence(sequence, tokenizer, max_grid_size, context_length
     
     return np.array(padded_sequence, dtype=np.int64)
 
-class ARCDataset(Dataset):
-    def __init__(self, task_files, subset=None, max_grid_size=30, context_length=8, 
-                 padding_value=10, remap_colors=False, replace_colors=False):
-        """
-        Args:
-            task_files (list): List of file paths to JSON task files.
-            subset (str, optional): 'train' or 'test' for evaluation JSONs. None for training JSONs.
-            max_grid_size (int): Maximum grid size.
-            context_length (int): Number of frames in the context.
-            padding_value (int): Value used for padding.
-            remap_colors (bool): Whether to remap colors.
-            replace_colors (bool): Whether to replace colors with random new colors.
-        """
-        self.data = []
-        self.max_grid_size = max_grid_size
-        self.context_length = context_length
-        self.padding_value = padding_value
-        self.remap_colors = remap_colors
-        self.replace_colors = replace_colors
-        self.max_tokens_per_grid = (self.max_grid_size // 2) ** 2
+def process_task_file(task_file, subset, padding_value, max_grid_size, context_length, max_tokens_per_grid, remap_colors, replace_colors, solutions_data=None):
+    """
+    Processes a single task file and returns a list of data samples.
 
-        self.tokenizer = ARCTokenizer(padding_value=padding_value)
-        
-        print("Loading and processing task files...")
-        for task_file in tqdm(task_files, desc="Processing Task Files"):
-            try:
-                with open(task_file, 'r') as f:
-                    task_data = json.load(f)
-            except json.JSONDecodeError as e:
-                print(f"Error decoding JSON from {task_file}: {e}")
+    Args:
+        task_file (str): Path to the task JSON file.
+        subset (str, optional): 'train' or 'test' for evaluation JSONs. None for training JSONs.
+        padding_value (int): Padding value.
+        max_grid_size (int): Maximum grid size.
+        context_length (int): Number of frames in the context.
+        max_tokens_per_grid (int): Maximum number of tokens per grid.
+        remap_colors (bool): Whether to remap colors.
+        replace_colors (bool): Whether to replace colors with random new colors.
+        solutions_data (dict, optional): Dictionary containing solutions for 'test' subset.
+
+    Returns:
+        list: List of tuples (input_tokens, output_tokens, output_grid_shape)
+    """
+    tokenizer = ARCTokenizer(padding_value=padding_value)
+    data = []
+    try:
+        with open(task_file, 'r') as f:
+            task_data = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON from {task_file}: {e}")
+        return data
+
+    # Determine if the JSON is a list or dict with subsets
+    if subset and isinstance(task_data, dict):
+        # Iterate over all top-level keys
+        for sub_key, sub_data in task_data.items():
+            if not isinstance(sub_data, dict):
+                print(f"Warning: Sub-key '{sub_key}' in {task_file} does not contain a dictionary. Skipping.")
                 continue
 
-            if subset and isinstance(task_data, dict):
-                examples = task_data.get(subset, [])
-                if not examples:
-                    print(f"Warning: No examples found for subset '{subset}' in {task_file}.")
-                    continue
-            elif isinstance(task_data, list):
-                examples = task_data
-            else:
-                print(f"Warning: {task_file} has an unexpected format. Skipping.")
+            examples = sub_data.get(subset, [])
+            if not examples:
+                print(f"Warning: No examples found for subset '{subset}' in {task_file}, sub_key '{sub_key}'. Available subsets: {list(sub_data.keys())}")
                 continue
 
             for example in examples:
-                if 'input' not in example or 'output' not in example:
-                    print(f"Warning: Example missing 'input' or 'output' in {task_file}. Skipping.")
+                if 'input' not in example:
+                    print(f"Warning: Example missing 'input' in {task_file}, sub_key '{sub_key}'. Skipping.")
                     continue
 
-                input_sequence = preprocess_grid(example['input'])
-                output_grid = preprocess_single_grid(example['output'])
+                if subset == 'test':
+                    # Get 'output' from solutions_data
+                    if not solutions_data:
+                        print(f"Error: solutions_data not provided for 'test' subset. Skipping.")
+                        continue
 
-                if self.remap_colors or self.replace_colors:
+                    solution_grids = solutions_data.get(sub_key, [])
+                    if not solution_grids:
+                        print(f"Warning: No solutions found for sub_key '{sub_key}'. Skipping.")
+                        continue
+
+                    # Assuming one 'test' example per sub_key
+                    output_grid = preprocess_single_grid(solution_grids[0])
+                else:
+                    if 'output' not in example:
+                        print(f"Warning: Example missing 'output' in {task_file}, sub_key '{sub_key}'. Skipping.")
+                        continue
+                    output_grid = preprocess_single_grid(example['output'])
+
+                input_sequence = preprocess_grid(example['input'])
+
+                if remap_colors or replace_colors:
                     input_sequence, output_grid = process_colors(
                         input_sequence, 
                         output_grid, 
-                        self.remap_colors, 
-                        self.replace_colors, 
-                        self.padding_value
+                        remap_colors, 
+                        replace_colors, 
+                        padding_value
                     )
 
                 # Pad and tokenize input sequence
                 input_tokens = pad_and_tokenize_sequence(
                     input_sequence, 
-                    self.tokenizer, 
-                    self.max_grid_size, 
-                    self.context_length, 
-                    self.max_tokens_per_grid
+                    tokenizer, 
+                    max_grid_size, 
+                    context_length, 
+                    max_tokens_per_grid
                 )
 
                 # Pad and tokenize output grid
-                output_padded = self.tokenizer.pad_grid(output_grid)
-                output_tokens = self.tokenizer.tokenize(output_padded)
+                output_padded = tokenizer.pad_grid(output_grid)
+                output_tokens = tokenizer.tokenize(output_padded)
                 # Pad or truncate output tokens to max_tokens_per_grid
-                output_tokens = output_tokens[:self.max_tokens_per_grid] + [self.tokenizer.padding_token] * (self.max_tokens_per_grid - len(output_tokens))
+                output_tokens = output_tokens[:max_tokens_per_grid] + [tokenizer.padding_token] * (max_tokens_per_grid - len(output_tokens))
 
-                self.data.append((input_tokens, output_tokens, output_grid.shape))
-        
-        print(f"Total samples loaded: {len(self.data)}")
+                data.append((input_tokens, output_tokens, output_grid.shape))
+    elif isinstance(task_data, list):
+        # Process as training data
+        for example in task_data:
+            if 'input' not in example or 'output' not in example:
+                print(f"Warning: Example missing 'input' or 'output' in {task_file}. Skipping.")
+                continue
+
+            input_sequence = preprocess_grid(example['input'])
+            output_grid = preprocess_single_grid(example['output'])
+
+            if remap_colors or replace_colors:
+                input_sequence, output_grid = process_colors(
+                    input_sequence, 
+                    output_grid, 
+                    remap_colors, 
+                    replace_colors, 
+                    padding_value
+                )
+
+            # Pad and tokenize input sequence
+            input_tokens = pad_and_tokenize_sequence(
+                input_sequence, 
+                tokenizer, 
+                max_grid_size, 
+                context_length, 
+                max_tokens_per_grid
+            )
+
+            # Pad and tokenize output grid
+            output_padded = tokenizer.pad_grid(output_grid)
+            output_tokens = tokenizer.tokenize(output_padded)
+            # Pad or truncate output tokens to max_tokens_per_grid
+            output_tokens = output_tokens[:max_tokens_per_grid] + [tokenizer.padding_token] * (max_tokens_per_grid - len(output_tokens))
+
+            data.append((input_tokens, output_tokens, output_grid.shape))
+    else:
+        available_keys = list(task_data.keys()) if isinstance(task_data, dict) else 'N/A'
+        print(f"Warning: {task_file} has an unexpected format. Available keys: {available_keys}")
+        return data
+
+    return data
+
+class ARCDataset(Dataset):
+    def __init__(self, data):
+        """
+        Args:
+            data (list): List of tuples (input_tokens, output_tokens, output_grid_shape)
+        """
+        self.data = data
 
     def __len__(self):
         return len(self.data)
@@ -437,64 +500,105 @@ def train_model(model, train_loader, val_loader, num_epochs, device):
 
         # Optionally, save the model checkpoint every few epochs
         # if (epoch + 1) % 10 == 0:
-        #     torch.save(model.state_dict(), f"tokenized_grid_transformer_epoch_{epoch+1}.pth")
+        #     checkpoint_path = f"tokenized_grid_transformer_epoch_{epoch+1}.pth"
+        #     torch.save(model.state_dict(), checkpoint_path)
+        #     print(f"Checkpoint saved at {checkpoint_path}")
 
-def prepare_arc_data(train_tasks_dir, eval_file, batch_size, padding_value=10, val_fraction=0.1, remap_colors=False, replace_colors=False, num_workers=0):
+def prepare_arc_data(train_tasks_dir, eval_file, solutions_file, batch_size, padding_value=10, remap_colors=False, replace_colors=False, num_workers=4, validation_subset='test'):
     """
+    Prepares the training and validation DataLoaders.
+
     Args:
         train_tasks_dir (str): Directory containing training JSON task files.
         eval_file (str): Path to the evaluation JSON file.
+        solutions_file (str): Path to the solutions JSON file.
         batch_size (int): Batch size for DataLoader.
         padding_value (int): Padding value.
-        val_fraction (float): Fraction of data to use for validation (not used here as validation is separate).
         remap_colors (bool): Whether to remap colors.
         replace_colors (bool): Whether to replace colors with random new colors.
-        num_workers (int): Number of subprocesses to use for data loading (set to 0 for debugging).
+        num_workers (int): Number of parallel workers.
+        validation_subset (str): Subset key to use for validation ('test', 'validation', etc.).
+
     Returns:
-        train_loader, val_loader: DataLoaders for training and validation.
+        tuple: (train_loader, val_loader)
     """
-    # Load training data from re_arc/tasks directory
-    train_challenges_files = [
+    # Gather all training task files
+    train_task_files = [
         os.path.join(train_tasks_dir, file) 
         for file in os.listdir(train_tasks_dir) 
         if file.endswith('.json')
     ]
 
-    print(f"Number of training challenge files: {len(train_challenges_files)}")
+    print(f"Number of training challenge files: {len(train_task_files)}")
 
-    if len(train_challenges_files) == 0:
+    if len(train_task_files) == 0:
         raise ValueError("No training challenge files found. Please check the 're_arc/tasks' directory.")
 
-    # Initialize training dataset
-    train_dataset = ARCDataset(
-        task_files=train_challenges_files,
-        subset=None,  # 're_arc' tasks don't have 'train'/'test' subsets
-        max_grid_size=MAX_GRID_SIZE,
-        context_length=CONTEXT_LENGTH,
-        padding_value=padding_value,
-        remap_colors=remap_colors,
-        replace_colors=replace_colors
-    )
+    # Process training task files in parallel
+    all_train_data = []
+    print("Processing training task files in parallel...")
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        futures = [
+            executor.submit(
+                process_task_file, 
+                task_file, 
+                subset=None,  # Training files don't have subsets
+                padding_value=padding_value, 
+                max_grid_size=MAX_GRID_SIZE, 
+                context_length=CONTEXT_LENGTH, 
+                max_tokens_per_grid=(MAX_GRID_SIZE // 2) ** 2, 
+                remap_colors=remap_colors, 
+                replace_colors=replace_colors,
+                solutions_data=None  # No solutions for training data
+            )
+            for task_file in train_task_files
+        ]
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Processing training task files"):
+            result = future.result()
+            all_train_data.extend(result)
 
-    total_train_samples = len(train_dataset)
-    print(f"Total training samples loaded from tasks directory: {total_train_samples}")
+    print(f"Total training samples loaded: {len(all_train_data)}")
+
+    # Initialize training dataset
+    train_dataset = ARCDataset(data=all_train_data)
 
     # Load validation data
     if not os.path.exists(eval_file):
         raise ValueError(f"Validation challenge file {eval_file} does not exist.")
 
-    # Initialize validation dataset
-    val_dataset = ARCDataset(
-        task_files=[eval_file],
-        subset='test',  # Assuming you want to use the 'test' subset for validation
-        max_grid_size=MAX_GRID_SIZE,
-        context_length=CONTEXT_LENGTH,
-        padding_value=padding_value,
-        remap_colors=remap_colors,
-        replace_colors=replace_colors
-    )
+    if not os.path.exists(solutions_file):
+        raise ValueError(f"Solutions file {solutions_file} does not exist.")
 
-    print(f"Validation samples loaded from {eval_file}: {len(val_dataset)}")
+    print("Loading solutions data...")
+    solutions_data = json.load(open(solutions_file, 'r'))
+
+    # Process evaluation file in parallel
+    all_val_data = []
+    print("Processing validation task files in parallel...")
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        futures = [
+            executor.submit(
+                process_task_file, 
+                task_file, 
+                subset=validation_subset,  # Use specified subset for validation
+                padding_value=padding_value, 
+                max_grid_size=MAX_GRID_SIZE, 
+                context_length=CONTEXT_LENGTH, 
+                max_tokens_per_grid=(MAX_GRID_SIZE // 2) ** 2, 
+                remap_colors=remap_colors, 
+                replace_colors=replace_colors,
+                solutions_data=solutions_data  # Pass solutions data
+            )
+            for task_file in [eval_file]
+        ]
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Processing validation task files"):
+            result = future.result()
+            all_val_data.extend(result)
+
+    print(f"Total validation samples loaded: {len(all_val_data)}")
+
+    # Initialize validation dataset
+    val_dataset = ARCDataset(data=all_val_data)
 
     # Create DataLoaders
     train_loader = DataLoader(
@@ -543,20 +647,28 @@ def main(remap_colors=False, replace_colors=False):
         print("Pre-trained model not found. Training from scratch...")
 
     train_tasks_dir = "re_arc/tasks"
-    eval_file = "arc-agi_evaluation_challenges.json"
+    eval_file = "data/arc-agi_evaluation_challenges.json"  # Ensure this path is correct
+    solutions_file = "data/arc-agi_evaluation_solutions.json"  # Path to the solutions JSON
+
+    # Specify which subset to use for validation
+    validation_subset = 'test'  # Change this if your JSON uses a different key, e.g., 'validation'
 
     # Prepare data loaders
     train_loader, val_loader = prepare_arc_data(
         train_tasks_dir=train_tasks_dir,
         eval_file=eval_file,
+        solutions_file=solutions_file,
         batch_size=BATCH_SIZE,
         padding_value=PADDING_VALUE,
         remap_colors=remap_colors,
         replace_colors=replace_colors,
-        num_workers=0  # Set to 0 for debugging; increase once confirmed working
+        num_workers=4,  # Adjust based on your CPU cores
+        validation_subset=validation_subset
     )
 
-    # Check if validation dataset has samples
+    # Verify that datasets are not empty
+    if len(train_loader.dataset) == 0:
+        raise ValueError("Training dataset is empty. Please check the training JSON files.")
     if len(val_loader.dataset) == 0:
         raise ValueError("Validation dataset is empty. Please check the evaluation JSON structure and subset.")
 
@@ -572,6 +684,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train the TokenizedGridTransformer model")
     parser.add_argument("--remap_colors", action="store_true", help="Remap colors to a canonical list")
     parser.add_argument("--replace_colors", action="store_true", help="Replace colors with random new colors")
+    parser.add_argument("--validation_subset", type=str, default='test', help="Subset key to use for validation (e.g., 'test', 'validation')")
     args = parser.parse_args()
 
     main(remap_colors=args.remap_colors, replace_colors=args.replace_colors)
