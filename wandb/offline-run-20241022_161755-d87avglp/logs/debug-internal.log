@@ -1,0 +1,16 @@
+{"time":"2024-10-22T16:17:55.620198228+05:30","level":"INFO","msg":"using version","core version":"0.18.3"}
+{"time":"2024-10-22T16:17:55.620213748+05:30","level":"INFO","msg":"created symlink","path":"/home/oppenheimer/projects/arcnet/wandb/offline-run-20241022_161755-d87avglp/logs/debug-core.log"}
+{"time":"2024-10-22T16:17:55.623440533+05:30","level":"INFO","msg":"created new stream","id":"d87avglp"}
+{"time":"2024-10-22T16:17:55.623469913+05:30","level":"INFO","msg":"stream: started","id":"d87avglp"}
+{"time":"2024-10-22T16:17:55.623495173+05:30","level":"INFO","msg":"sender: started","stream_id":{"value":"d87avglp"}}
+{"time":"2024-10-22T16:17:55.623505693+05:30","level":"INFO","msg":"handler: started","stream_id":{"value":"d87avglp"}}
+{"time":"2024-10-22T16:17:55.623486753+05:30","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"d87avglp"}}
+{"time":"2024-10-22T16:17:55.627857858+05:30","level":"INFO","msg":"wandb-core","!BADKEY":null}
+{"time":"2024-10-22T16:17:55.668469455+05:30","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-22T16:18:53.828830636+05:30","level":"INFO","msg":"stream: closing","id":"d87avglp"}
+{"time":"2024-10-22T16:18:53.828853096+05:30","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-22T16:18:53.831235144+05:30","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-22T16:18:53.831383194+05:30","level":"INFO","msg":"handler: closed","stream_id":{"value":"d87avglp"}}
+{"time":"2024-10-22T16:18:53.831397984+05:30","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"d87avglp"}}
+{"time":"2024-10-22T16:18:53.831437934+05:30","level":"INFO","msg":"sender: closed","stream_id":{"value":"d87avglp"}}
+{"time":"2024-10-22T16:18:53.831452544+05:30","level":"INFO","msg":"stream: closed","id":"d87avglp"}

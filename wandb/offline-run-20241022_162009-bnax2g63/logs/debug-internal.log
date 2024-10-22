@@ -1,0 +1,16 @@
+{"time":"2024-10-22T16:20:09.932153444+05:30","level":"INFO","msg":"using version","core version":"0.18.3"}
+{"time":"2024-10-22T16:20:09.932171284+05:30","level":"INFO","msg":"created symlink","path":"/home/oppenheimer/projects/arcnet/wandb/offline-run-20241022_162009-bnax2g63/logs/debug-core.log"}
+{"time":"2024-10-22T16:20:09.935236112+05:30","level":"INFO","msg":"created new stream","id":"bnax2g63"}
+{"time":"2024-10-22T16:20:09.935257852+05:30","level":"INFO","msg":"stream: started","id":"bnax2g63"}
+{"time":"2024-10-22T16:20:09.935282392+05:30","level":"INFO","msg":"handler: started","stream_id":{"value":"bnax2g63"}}
+{"time":"2024-10-22T16:20:09.935274702+05:30","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"bnax2g63"}}
+{"time":"2024-10-22T16:20:09.935283842+05:30","level":"INFO","msg":"sender: started","stream_id":{"value":"bnax2g63"}}
+{"time":"2024-10-22T16:20:09.93978641+05:30","level":"INFO","msg":"wandb-core","!BADKEY":null}
+{"time":"2024-10-22T16:20:09.980543773+05:30","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-22T16:20:40.886345283+05:30","level":"INFO","msg":"stream: closing","id":"bnax2g63"}
+{"time":"2024-10-22T16:20:40.886378423+05:30","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-22T16:20:40.888315373+05:30","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-22T16:20:40.888451893+05:30","level":"INFO","msg":"handler: closed","stream_id":{"value":"bnax2g63"}}
+{"time":"2024-10-22T16:20:40.888469653+05:30","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"bnax2g63"}}
+{"time":"2024-10-22T16:20:40.888471093+05:30","level":"INFO","msg":"sender: closed","stream_id":{"value":"bnax2g63"}}
+{"time":"2024-10-22T16:20:40.888506813+05:30","level":"INFO","msg":"stream: closed","id":"bnax2g63"}

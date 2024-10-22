@@ -45,11 +45,63 @@ with open(CHALLENGES_FILE, 'r') as f:
 with open(CODES_FILE, 'r') as f:
     codes = json.load(f)
 
+# Define grid compression and decompression functions
+def compress_grid(grid):
+    flattened = [str(cell) for row in grid for cell in row]
+    compressed = []
+    current_char = flattened[0]
+    count = 1
+
+    for char in flattened[1:]:
+        if char == current_char:
+            count += 1
+        else:
+            compressed.append(f"{current_char}{count}")
+            current_char = char
+            count = 1
+
+    compressed.append(f"{current_char}{count}")
+    return "".join(compressed)
+
+def decompress_grid(compressed, rows, cols):
+    decompressed = []
+    i = 0
+
+    while i < len(compressed):
+        # Read the character (the digit)
+        char = compressed[i]
+        i += 1
+
+        # Read the number (the count) which could be more than one digit
+        count = ''
+        while i < len(compressed) and compressed[i].isdigit():
+            count += compressed[i]
+            i += 1
+        
+        # Expand the character based on the count and add to the decompressed list
+        decompressed.extend([int(char)] * int(count))
+    
+    # Convert the flat list back into a grid of the specified dimensions
+    grid = [decompressed[i:i + cols] for i in range(0, len(decompressed), cols)]
+    return grid
+
 # Define separator token
 SEPARATOR = "\n===\n"
 
 # Prepare dataset entries
 dataset_entries = []
+
+# Prepare context for model
+context = """
+The following functions are used for transforming grids:
+def compress_grid(grid):
+    # Converts a 2D grid into a compressed string representation.
+    ...
+
+def decompress_grid(compressed, rows, cols):
+    # Converts a compressed string back into a 2D grid.
+    ...
+"""
 
 for key, code in codes.items():
     if key not in challenges:
@@ -62,16 +114,16 @@ for key, code in codes.items():
     if not train_examples:
         continue
 
-    # Create prompt by concatenating training input-output grids
+    # Create prompt by compressing training input-output grids
     prompt_parts = []
     for example in train_examples:
         input_grid = example.get('input', [])
         output_grid = example.get('output', [])
-        input_str = json.dumps(input_grid)
-        output_str = json.dumps(output_grid)
-        prompt_parts.append(f"Input Grid: {input_str}\nOutput Grid: {output_str}")
+        compressed_input = compress_grid(input_grid)
+        compressed_output = compress_grid(output_grid)
+        prompt_parts.append(f"Compressed Input: {compressed_input}\nCompressed Output: {compressed_output}")
 
-    prompt = f"Training Examples:\n" + f"{SEPARATOR}".join(prompt_parts) + "\n\nCode Completion:\n"
+    prompt = f"{context}\nTraining Examples:\n" + f"{SEPARATOR}".join(prompt_parts) + "\n\nCode Completion:\n"
 
     # Append to dataset entries
     dataset_entries.append({
@@ -228,7 +280,7 @@ training_args = TrainingArguments(
 print_callback = PrintSampleCallback(
     tokenizer=tokenizer,
     val_dataset=val_dataset,
-    max_new_tokens=1024,
+    max_new_tokens=512,
     num_beams=5
 )
 
