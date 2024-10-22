@@ -3,3 +3,4 @@ output/*
 *.pth
 fine_tuned_pythia/
 wandb/*
+results/*
