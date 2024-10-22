@@ -10,8 +10,8 @@ from pathlib import Path
 # ============================
 os.environ["NCCL_P2P_DISABLE"] = "1"
 os.environ["NCCL_IB_DISABLE"] = "1"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Use only GPU 0
-model_name = "meta-llama/Llama-3.2-1B"
+# Removed CUDA_VISIBLE_DEVICES to allow Trainer to utilize all available GPUs
+model_name = "meta-llama/Llama-3.2-3B"  # Using the 3B model as requested
 
 import torch
 from torch.utils.data import Dataset, random_split
@@ -37,6 +37,7 @@ np.random.seed(42)
 DATA_DIR = 'data'
 CHALLENGES_FILE = os.path.join(DATA_DIR, 'arc-agi_training_challenges.json')
 CODES_FILE = os.path.join(DATA_DIR, 'arc_training_codes.json')
+FUNCTIONS_CONTEXT_FILE = os.path.join(DATA_DIR, 'functions_context.json')  # Path to the functions context
 
 # Load JSON data
 with open(CHALLENGES_FILE, 'r') as f:
@@ -44,6 +45,16 @@ with open(CHALLENGES_FILE, 'r') as f:
 
 with open(CODES_FILE, 'r') as f:
     codes = json.load(f)
+
+# Load Functions Context
+with open(FUNCTIONS_CONTEXT_FILE, 'r') as f:
+    functions_context = json.load(f)
+
+# Convert functions_context JSON to a formatted string for inclusion in prompts
+functions_context_str = "## Function Definitions\n\n"
+for func in functions_context:
+    args = ", ".join(func["arguments"])
+    functions_context_str += f"**{func['name']}({args}) -> {func['return_type']}**: {func['description']}\n\n"
 
 # Define grid compression and decompression functions
 def compress_grid(grid):
@@ -85,16 +96,48 @@ SEPARATOR = "\n===\n"
 # Prepare dataset entries
 dataset_entries = []
 
-# Prepare context for model
-context = """
+# Prepare context for model (including function definitions)
+context = f"""
+{functions_context_str}
 The following functions are used for transforming grids:
+
 def compress_grid(grid):
     # Converts a 2D grid into a compressed string representation.
-    ...
+
+    flattened = [str(cell) for row in grid for cell in row]
+    compressed = []
+    current_char = flattened[0]
+    count = 1
+
+    for char in flattened[1:]:
+        if char == current_char:
+            count += 1
+        else:
+            compressed.append(f"{current_char}{count}")
+            current_char = char
+            count = 1
+
+    compressed.append(f"{current_char}{count}")
+    return "".join(compressed)
 
 def decompress_grid(compressed, rows, cols):
-    # Converts a compressed string back into a 2D grid.
-    ...
+    # Converts a compressed string back into a 2D grid
+
+    decompressed = []
+    i = 0
+
+    while i < len(compressed):
+        char = compressed[i]
+        i += 1
+        count = ''
+        while i < len(compressed) and compressed[i].isdigit():
+            count += compressed[i]
+            i += 1
+        decompressed.extend([int(char)] * int(count))
+
+    grid = [decompressed[i:i + cols] for i in range(0, len(decompressed), cols)]
+    return grid
+
 """
 
 for key, code in codes.items():
@@ -149,9 +192,10 @@ val_size = len(dataset_entries) - train_size
 train_entries, val_entries = random_split(dataset_entries, [train_size, val_size])
 
 class ARCCodeDataset(Dataset):
-    def __init__(self, entries, tokenizer, max_length=256, chunk_size=256, overlap=128):
+    def __init__(self, entries, tokenizer, functions_context, max_length=256, chunk_size=256, overlap=128):
         self.entries = entries
         self.tokenizer = tokenizer
+        self.functions_context = functions_context
         self.max_length = max_length
         self.chunk_size = chunk_size
         self.overlap = overlap
@@ -164,8 +208,8 @@ class ARCCodeDataset(Dataset):
         prompt = entry['prompt']
         completion = entry['completion']
 
-        # Concatenate prompt and completion
-        text = prompt + completion
+        # Concatenate functions context, prompt, and completion
+        text = self.functions_context + "\n" + prompt + completion
 
         # Tokenize the entire text without truncation
         encoding = self.tokenizer(
@@ -275,9 +319,12 @@ lora_config = LoraConfig(
 )
 model = get_peft_model(model, lora_config)
 
+# Enable gradient checkpointing to save memory
+model.gradient_checkpointing_enable()
+
 # Create datasets
-train_dataset = ARCCodeDataset(train_entries, tokenizer)
-val_dataset = ARCCodeDataset(val_entries, tokenizer)
+train_dataset = ARCCodeDataset(train_entries, tokenizer, functions_context_str)
+val_dataset = ARCCodeDataset(val_entries, tokenizer, functions_context_str)
 
 # Define data collator without padding parameter
 data_collator = DataCollatorForLanguageModeling(
@@ -285,15 +332,15 @@ data_collator = DataCollatorForLanguageModeling(
     mlm=False
 )
 
-# Define training arguments
+# Define training arguments with mixed precision and gradient checkpointing
 training_args = TrainingArguments(
-    gradient_accumulation_steps=4,
-    fp16=True,
+    gradient_accumulation_steps=8,  # Increased to maintain effective batch size
+    fp16=True,  # Enable mixed precision
     output_dir='./results',
     overwrite_output_dir=True,
     num_train_epochs=5,
-    per_device_train_batch_size=2,
-    per_device_eval_batch_size=2,
+    per_device_train_batch_size=1,  # Reduced batch size to minimize memory usage per GPU
+    per_device_eval_batch_size=1,   # Similarly reduce eval batch size
     eval_steps=100,
     save_steps=500,
     eval_strategy='epoch',
@@ -302,6 +349,7 @@ training_args = TrainingArguments(
     weight_decay=0.01,
     save_total_limit=2,
     ddp_find_unused_parameters=False,
+    # Additional settings can be added here if needed
 )
 
 # Initialize custom callback
@@ -312,7 +360,7 @@ print_callback = PrintSampleCallback(
     num_beams=5
 )
 
-# Initialize Trainer
+# Initialize Trainer with all available GPUs
 trainer = Trainer(
     model=model,
     args=training_args,

@@ -1,1 +1,14 @@
-/home/oppenheimer/.cache/wandb/logs/core-debug-20241022_162257.log
+{"time":"2024-10-22T16:22:57.824462329+05:30","level":"INFO","msg":"started logging, with flags","port-filename":"/tmp/tmpm_64kfaa/port-654328.txt","pid":654328,"debug":false,"disable-analytics":false}
+{"time":"2024-10-22T16:22:57.824486919+05:30","level":"INFO","msg":"FeatureState","shutdownOnParentExitEnabled":false}
+{"time":"2024-10-22T16:22:57.828236291+05:30","level":"INFO","msg":"Will exit if parent process dies.","ppid":654328}
+{"time":"2024-10-22T16:22:57.828217671+05:30","level":"INFO","msg":"server is running","addr":{"IP":"127.0.0.1","Port":35887,"Zone":""}}
+{"time":"2024-10-22T16:22:58.01939935+05:30","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"127.0.0.1:48612"}
+{"time":"2024-10-22T16:22:59.540445576+05:30","level":"INFO","msg":"handleInformInit: received","streamId":"eotlv8hu","id":"127.0.0.1:48612"}
+{"time":"2024-10-22T16:22:59.546674049+05:30","level":"INFO","msg":"handleInformInit: stream started","streamId":"eotlv8hu","id":"127.0.0.1:48612"}
+{"time":"2024-10-22T16:23:32.228794418+05:30","level":"INFO","msg":"handleInformTeardown: server teardown initiated","id":"127.0.0.1:48612"}
+{"time":"2024-10-22T16:23:32.228855438+05:30","level":"INFO","msg":"server is shutting down"}
+{"time":"2024-10-22T16:23:32.228850128+05:30","level":"INFO","msg":"connection: Close: initiating connection closure","id":"127.0.0.1:48612"}
+{"time":"2024-10-22T16:23:32.228947648+05:30","level":"INFO","msg":"connection: Close: connection successfully closed","id":"127.0.0.1:48612"}
+{"time":"2024-10-22T16:23:32.231650279+05:30","level":"INFO","msg":"handleInformTeardown: server shutdown complete","id":"127.0.0.1:48612"}
+{"time":"2024-10-22T16:23:32.231663519+05:30","level":"INFO","msg":"connection: ManageConnectionData: connection closed","id":"127.0.0.1:48612"}
+{"time":"2024-10-22T16:23:32.231671779+05:30","level":"INFO","msg":"server is closed"}

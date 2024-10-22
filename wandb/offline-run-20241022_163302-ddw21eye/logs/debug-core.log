@@ -1,1 +1,14 @@
-/home/oppenheimer/.cache/wandb/logs/core-debug-20241022_163301.log
+{"time":"2024-10-22T16:33:01.256762838+05:30","level":"INFO","msg":"started logging, with flags","port-filename":"/tmp/tmpbfbqbo3c/port-655238.txt","pid":655238,"debug":false,"disable-analytics":false}
+{"time":"2024-10-22T16:33:01.256786599+05:30","level":"INFO","msg":"FeatureState","shutdownOnParentExitEnabled":false}
+{"time":"2024-10-22T16:33:01.258983123+05:30","level":"INFO","msg":"Will exit if parent process dies.","ppid":655238}
+{"time":"2024-10-22T16:33:01.258981773+05:30","level":"INFO","msg":"server is running","addr":{"IP":"127.0.0.1","Port":42605,"Zone":""}}
+{"time":"2024-10-22T16:33:01.451674082+05:30","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"127.0.0.1:49362"}
+{"time":"2024-10-22T16:33:02.870135531+05:30","level":"INFO","msg":"handleInformInit: received","streamId":"ddw21eye","id":"127.0.0.1:49362"}
+{"time":"2024-10-22T16:33:02.877807945+05:30","level":"INFO","msg":"handleInformInit: stream started","streamId":"ddw21eye","id":"127.0.0.1:49362"}
+{"time":"2024-10-22T16:35:06.999797596+05:30","level":"INFO","msg":"handleInformTeardown: server teardown initiated","id":"127.0.0.1:49362"}
+{"time":"2024-10-22T16:35:06.999862366+05:30","level":"INFO","msg":"server is shutting down"}
+{"time":"2024-10-22T16:35:06.999854406+05:30","level":"INFO","msg":"connection: Close: initiating connection closure","id":"127.0.0.1:49362"}
+{"time":"2024-10-22T16:35:06.999951936+05:30","level":"INFO","msg":"connection: Close: connection successfully closed","id":"127.0.0.1:49362"}
+{"time":"2024-10-22T16:35:07.002704772+05:30","level":"INFO","msg":"handleInformTeardown: server shutdown complete","id":"127.0.0.1:49362"}
+{"time":"2024-10-22T16:35:07.002713902+05:30","level":"INFO","msg":"connection: ManageConnectionData: connection closed","id":"127.0.0.1:49362"}
+{"time":"2024-10-22T16:35:07.002720622+05:30","level":"INFO","msg":"server is closed"}

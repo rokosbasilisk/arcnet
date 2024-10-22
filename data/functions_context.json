@@ -1,0 +1,687 @@
+[
+    {
+        "name": "identity",
+        "arguments": ["x: Any"],
+        "return_type": "Any",
+        "description": "Identity function"
+    },
+    {
+        "name": "add",
+        "arguments": ["a: Numerical", "b: Numerical"],
+        "return_type": "Numerical",
+        "description": "Addition"
+    },
+    {
+        "name": "subtract",
+        "arguments": ["a: Numerical", "b: Numerical"],
+        "return_type": "Numerical",
+        "description": "Subtraction"
+    },
+    {
+        "name": "multiply",
+        "arguments": ["a: Numerical", "b: Numerical"],
+        "return_type": "Numerical",
+        "description": "Multiplication"
+    },
+    {
+        "name": "divide",
+        "arguments": ["a: Numerical", "b: Numerical"],
+        "return_type": "Numerical",
+        "description": "Floor division"
+    },
+    {
+        "name": "invert",
+        "arguments": ["n: Numerical"],
+        "return_type": "Numerical",
+        "description": "Inversion with respect to addition"
+    },
+    {
+        "name": "even",
+        "arguments": ["n: Integer"],
+        "return_type": "Boolean",
+        "description": "Evenness"
+    },
+    {
+        "name": "double",
+        "arguments": ["n: Numerical"],
+        "return_type": "Numerical",
+        "description": "Scaling by two"
+    },
+    {
+        "name": "halve",
+        "arguments": ["n: Numerical"],
+        "return_type": "Numerical",
+        "description": "Scaling by one half"
+    },
+    {
+        "name": "flip",
+        "arguments": ["b: Boolean"],
+        "return_type": "Boolean",
+        "description": "Logical NOT"
+    },
+    {
+        "name": "equality",
+        "arguments": ["a: Any", "b: Any"],
+        "return_type": "Boolean",
+        "description": "Equality"
+    },
+    {
+        "name": "contained",
+        "arguments": ["value: Any", "container: Container"],
+        "return_type": "Boolean",
+        "description": "Element of"
+    },
+    {
+        "name": "combine",
+        "arguments": ["a: Container", "b: Container"],
+        "return_type": "Container",
+        "description": "Union"
+    },
+    {
+        "name": "intersection",
+        "arguments": ["a: FrozenSet", "b: FrozenSet"],
+        "return_type": "FrozenSet",
+        "description": "Returns the intersection of two containers"
+    },
+    {
+        "name": "difference",
+        "arguments": ["a: Container", "b: Container"],
+        "return_type": "Container",
+        "description": "Difference"
+    },
+    {
+        "name": "dedupe",
+        "arguments": ["iterable: Tuple"],
+        "return_type": "Tuple",
+        "description": "Remove duplicates"
+    },
+    {
+        "name": "order",
+        "arguments": ["container: Container", "compfunc: Callable"],
+        "return_type": "Tuple",
+        "description": "Order container by custom key"
+    },
+    {
+        "name": "repeat",
+        "arguments": ["item: Any", "num: Integer"],
+        "return_type": "Tuple",
+        "description": "Repetition of item within vector"
+    },
+    {
+        "name": "greater",
+        "arguments": ["a: Integer", "b: Integer"],
+        "return_type": "Boolean",
+        "description": "Greater"
+    },
+    {
+        "name": "size",
+        "arguments": ["container: Container"],
+        "return_type": "Integer",
+        "description": "Cardinality"
+    },
+    {
+        "name": "merge",
+        "arguments": ["containers: ContainerContainer"],
+        "return_type": "Container",
+        "description": "Merging"
+    },
+    {
+        "name": "maximum",
+        "arguments": ["container: IntegerSet"],
+        "return_type": "Integer",
+        "description": "Maximum"
+    },
+    {
+        "name": "minimum",
+        "arguments": ["container: IntegerSet"],
+        "return_type": "Integer",
+        "description": "Minimum"
+    },
+    {
+        "name": "valmax",
+        "arguments": ["container: Container", "compfunc: Callable"],
+        "return_type": "Integer",
+        "description": "Maximum by custom function"
+    },
+    {
+        "name": "valmin",
+        "arguments": ["container: Container", "compfunc: Callable"],
+        "return_type": "Integer",
+        "description": "Minimum by custom function"
+    },
+    {
+        "name": "argmax",
+        "arguments": ["container: Container", "compfunc: Callable"],
+        "return_type": "Any",
+        "description": "Largest item by custom order"
+    },
+    {
+        "name": "argmin",
+        "arguments": ["container: Container", "compfunc: Callable"],
+        "return_type": "Any",
+        "description": "Smallest item by custom order"
+    },
+    {
+        "name": "mostcommon",
+        "arguments": ["container: Container"],
+        "return_type": "Any",
+        "description": "Most common item"
+    },
+    {
+        "name": "leastcommon",
+        "arguments": ["container: Container"],
+        "return_type": "Any",
+        "description": "Least common item"
+    },
+    {
+        "name": "initset",
+        "arguments": ["value: Any"],
+        "return_type": "FrozenSet",
+        "description": "Initialize container"
+    },
+    {
+        "name": "both",
+        "arguments": ["a: Boolean", "b: Boolean"],
+        "return_type": "Boolean",
+        "description": "Logical AND"
+    },
+    {
+        "name": "either",
+        "arguments": ["a: Boolean", "b: Boolean"],
+        "return_type": "Boolean",
+        "description": "Logical OR"
+    },
+    {
+        "name": "increment",
+        "arguments": ["x: Numerical"],
+        "return_type": "Numerical",
+        "description": "Incrementing"
+    },
+    {
+        "name": "decrement",
+        "arguments": ["x: Numerical"],
+        "return_type": "Numerical",
+        "description": "Decrementing"
+    },
+    {
+        "name": "crement",
+        "arguments": ["x: Numerical"],
+        "return_type": "Numerical",
+        "description": "Incrementing positive and decrementing negative"
+    },
+    {
+        "name": "sign",
+        "arguments": ["x: Numerical"],
+        "return_type": "Numerical",
+        "description": "Sign"
+    },
+    {
+        "name": "positive",
+        "arguments": ["x: Integer"],
+        "return_type": "Boolean",
+        "description": "Positive"
+    },
+    {
+        "name": "toivec",
+        "arguments": ["i: Integer"],
+        "return_type": "IntegerTuple",
+        "description": "Vector pointing vertically"
+    },
+    {
+        "name": "tojvec",
+        "arguments": ["j: Integer"],
+        "return_type": "IntegerTuple",
+        "description": "Vector pointing horizontally"
+    },
+    {
+        "name": "sfilter",
+        "arguments": ["container: Container", "condition: Callable"],
+        "return_type": "Container",
+        "description": "Keep elements in container that satisfy condition"
+    },
+    {
+        "name": "mfilter",
+        "arguments": ["container: Container", "function: Callable"],
+        "return_type": "FrozenSet",
+        "description": "Filter and merge"
+    },
+    {
+        "name": "extract",
+        "arguments": ["container: Container", "condition: Callable"],
+        "return_type": "Any",
+        "description": "First element of container that satisfies condition"
+    },
+    {
+        "name": "totuple",
+        "arguments": ["container: FrozenSet"],
+        "return_type": "Tuple",
+        "description": "Conversion to tuple"
+    },
+    {
+        "name": "first",
+        "arguments": ["container: Container"],
+        "return_type": "Any",
+        "description": "First item of container"
+    },
+    {
+        "name": "last",
+        "arguments": ["container: Container"],
+        "return_type": "Any",
+        "description": "Last item of container"
+    },
+    {
+        "name": "insert",
+        "arguments": ["value: Any", "container: FrozenSet"],
+        "return_type": "FrozenSet",
+        "description": "Insert item into container"
+    },
+    {
+        "name": "remove",
+        "arguments": ["value: Any", "container: Container"],
+        "return_type": "Container",
+        "description": "Remove item from container"
+    },
+    {
+        "name": "other",
+        "arguments": ["container: Container", "value: Any"],
+        "return_type": "Any",
+        "description": "Other value in the container"
+    },
+    {
+        "name": "interval",
+        "arguments": ["start: Integer", "stop: Integer", "step: Integer"],
+        "return_type": "Tuple",
+        "description": "Range"
+    },
+    {
+        "name": "astuple",
+        "arguments": ["a: Integer", "b: Integer"],
+        "return_type": "IntegerTuple",
+        "description": "Constructs a tuple"
+    },
+    {
+        "name": "product",
+        "arguments": ["a: Container", "b: Container"],
+        "return_type": "FrozenSet",
+        "description": "Cartesian product"
+    },
+    {
+        "name": "pair",
+        "arguments": ["a: Tuple", "b: Tuple"],
+        "return_type": "TupleTuple",
+        "description": "Zipping of two tuples"
+    },
+    {
+        "name": "branch",
+        "arguments": ["condition: Boolean", "if_value: Any", "else_value: Any"],
+        "return_type": "Any",
+        "description": "If-else branching"
+    },
+    {
+        "name": "compose",
+        "arguments": ["outer: Callable", "inner: Callable"],
+        "return_type": "Callable",
+        "description": "Function composition"
+    },
+    {
+        "name": "chain",
+        "arguments": ["h: Callable", "g: Callable", "f: Callable"],
+        "return_type": "Callable",
+        "description": "Function composition with three functions"
+    },
+    {
+        "name": "matcher",
+        "arguments": ["function: Callable", "target: Any"],
+        "return_type": "Callable",
+        "description": "Construction of equality function"
+    },
+    {
+        "name": "rbind",
+        "arguments": ["function: Callable", "fixed: Any"],
+        "return_type": "Callable",
+        "description": "Fix the rightmost argument"
+    },
+    {
+        "name": "lbind",
+        "arguments": ["function: Callable", "fixed: Any"],
+        "return_type": "Callable",
+        "description": "Fix the leftmost argument"
+    },
+    {
+        "name": "power",
+        "arguments": ["function: Callable", "n: Integer"],
+        "return_type": "Callable",
+        "description": "Power of function"
+    },
+    {
+        "name": "fork",
+        "arguments": ["outer: Callable", "a: Callable", "b: Callable"],
+        "return_type": "Callable",
+        "description": "Creates a wrapper function"
+    },
+    {
+        "name": "apply",
+        "arguments": ["function: Callable", "container: Container"],
+        "return_type": "Container",
+        "description": "Apply function to each item in container"
+    },
+    {
+        "name": "rapply",
+        "arguments": ["functions: Container", "value: Any"],
+        "return_type": "Container",
+        "description": "Apply each function in container to value"
+    },
+    {
+        "name": "mapply",
+        "arguments": ["function: Callable", "container: ContainerContainer"],
+        "return_type": "FrozenSet",
+        "description": "Apply and merge"
+    },
+    {
+        "name": "papply",
+        "arguments": ["function: Callable", "a: Tuple", "b: Tuple"],
+        "return_type": "Tuple",
+        "description": "Apply function on two vectors"
+    },
+    {
+        "name": "mpapply",
+        "arguments": ["function: Callable", "a: Tuple", "b: Tuple"],
+        "return_type": "Tuple",
+        "description": "Apply function on two vectors and merge"
+    },
+    {
+        "name": "prapply",
+        "arguments": ["function: Callable", "a: Container", "b: Container"],
+        "return_type": "FrozenSet",
+        "description": "Apply function on cartesian product"
+    },
+    {
+        "name": "mostcolor",
+        "arguments": ["element: Element"],
+        "return_type": "Integer",
+        "description": "Most common color"
+    },
+    {
+        "name": "leastcolor",
+        "arguments": ["element: Element"],
+        "return_type": "Integer",
+        "description": "Least common color"
+    },
+    {
+        "name": "height",
+        "arguments": ["piece: Piece"],
+        "return_type": "Integer",
+        "description": "Height of grid or patch"
+    },
+    {
+        "name": "width",
+        "arguments": ["piece: Piece"],
+        "return_type": "Integer",
+        "description": "Width of grid or patch"
+    },
+    {
+        "name": "shape",
+        "arguments": ["piece: Piece"],
+        "return_type": "IntegerTuple",
+        "description": "Height and width of grid or patch"
+    },
+    {
+        "name": "portrait",
+        "arguments": ["piece: Piece"],
+        "return_type": "Boolean",
+        "description": "Whether height is greater than width"
+    },
+    {
+        "name": "colorcount",
+        "arguments": ["element: Element", "value: Integer"],
+        "return_type": "Integer",
+        "description": "Number of cells with color"
+    },
+    {
+        "name": "colorfilter",
+        "arguments": ["objs: Objects", "value: Integer"],
+        "return_type": "Objects",
+        "description": "Filter objects by color"
+    },
+    {
+        "name": "sizefilter",
+        "arguments": ["container: Container", "n: Integer"],
+        "return_type": "FrozenSet",
+        "description": "Filter items by size"
+    },
+    {
+        "name": "asindices",
+        "arguments": ["grid: Grid"],
+        "return_type": "Indices",
+        "description": "Indices of all grid cells"
+    },
+    {
+        "name": "ofcolor",
+        "arguments": ["grid: Grid", "value: Integer"],
+        "return_type": "Indices",
+        "description": "Indices of all grid cells with value"
+    },
+    {
+        "name": "ulcorner",
+        "arguments": ["patch: Patch"],
+        "return_type": "IntegerTuple",
+        "description": "Index of upper left corner"
+    },
+    {
+        "name": "urcorner",
+        "arguments": ["patch: Patch"],
+        "return_type": "IntegerTuple",
+        "description": "Index of upper right corner"
+    },
+    {
+        "name": "llcorner",
+        "arguments": ["patch: Patch"],
+        "return_type": "IntegerTuple",
+        "description": "Index of lower left corner"
+    },
+    {
+        "name": "lrcorner",
+        "arguments": ["patch: Patch"],
+        "return_type": "IntegerTuple",
+        "description": "Index of lower right corner"
+    },
+    {
+        "name": "crop",
+        "arguments": ["grid: Grid", "start: IntegerTuple", "dims: IntegerTuple"],
+        "return_type": "Grid",
+        "description": "Subgrid specified by start and dimension"
+    },
+    {
+        "name": "hsplit",
+        "arguments": ["grid: Grid", "n: Integer"],
+        "return_type": "Tuple",
+        "description": "Split grid horizontally"
+    },
+    {
+        "name": "vsplit",
+        "arguments": ["grid: Grid", "n: Integer"],
+        "return_type": "Tuple",
+        "description": "Split grid vertically"
+    },
+    {
+        "name": "cellwise",
+        "arguments": ["a: Grid", "b: Grid", "fallback: Integer"],
+        "return_type": "Grid",
+        "description": "Cellwise match of two grids"
+    },
+    {
+        "name": "replace",
+        "arguments": ["grid: Grid", "replacee: Integer", "replacer: Integer"],
+        "return_type": "Grid",
+        "description": "Color substitution"
+    },
+    {
+        "name": "switch",
+        "arguments": ["grid: Grid", "a: Integer", "b: Integer"],
+        "return_type": "Grid",
+        "description": "Color switching"
+    },
+    {
+        "name": "center",
+        "arguments": ["patch: Patch"],
+        "return_type": "IntegerTuple",
+        "description": "Center of the patch"
+    },
+    {
+        "name": "position",
+        "arguments": ["a: Patch", "b: Patch"],
+        "return_type": "IntegerTuple",
+        "description": "Relative position between two patches"
+    },
+    {
+        "name": "index",
+        "arguments": ["grid: Grid", "loc: IntegerTuple"],
+        "return_type": "Integer",
+        "description": "Color at location"
+    },
+    {
+        "name": "canvas",
+        "arguments": ["value: Integer", "dimensions: IntegerTuple"],
+        "return_type": "Grid",
+        "description": "Grid construction"
+    },
+    {
+        "name": "corners",
+        "arguments": ["patch: Patch"],
+        "return_type": "Indices",
+        "description": "Indices of corners"
+    },
+    {
+        "name": "connect",
+        "arguments": ["a: IntegerTuple", "b: IntegerTuple"],
+        "return_type": "Indices",
+        "description": "Line between two points"
+    },
+    {
+        "name": "cover",
+        "arguments": ["grid: Grid", "patch: Patch"],
+        "return_type": "Grid",
+        "description": "Remove object from grid"
+    },
+    {
+        "name": "trim",
+        "arguments": ["grid: Grid"],
+        "return_type": "Grid",
+        "description": "Trim border of grid"
+    },
+    {
+        "name": "move",
+        "arguments": ["grid: Grid", "obj: Object", "offset: IntegerTuple"],
+        "return_type": "Grid",
+        "description": "Move object on grid"
+    },
+    {
+        "name": "tophalf",
+        "arguments": ["grid: Grid"],
+        "return_type": "Grid",
+        "description": "Upper half of grid"
+    },
+    {
+        "name": "bottomhalf",
+        "arguments": ["grid: Grid"],
+        "return_type": "Grid",
+        "description": "Lower half of grid"
+    },
+    {
+        "name": "lefthalf",
+        "arguments": ["grid: Grid"],
+        "return_type": "Grid",
+        "description": "Left half of grid"
+    },
+    {
+        "name": "righthalf",
+        "arguments": ["grid: Grid"],
+        "return_type": "Grid",
+        "description": "Right half of grid"
+    },
+    {
+        "name": "vfrontier",
+        "arguments": ["location: IntegerTuple"],
+        "return_type": "Indices",
+        "description": "Vertical frontier"
+    },
+    {
+        "name": "hfrontier",
+        "arguments": ["location: IntegerTuple"],
+        "return_type": "Indices",
+        "description": "Horizontal frontier"
+    },
+    {
+        "name": "backdrop",
+        "arguments": ["patch: Patch"],
+        "return_type": "Indices",
+        "description": "Indices in bounding box of patch"
+    },
+    {
+        "name": "delta",
+        "arguments": ["patch: Patch"],
+        "return_type": "Indices",
+        "description": "Indices in bounding box but not part of patch"
+    },
+    {
+        "name": "gravitate",
+        "arguments": ["source: Patch", "destination: Patch"],
+        "return_type": "IntegerTuple",
+        "description": "Direction to move source until adjacent to destination"
+    },
+    {
+        "name": "inbox",
+        "arguments": ["patch: Patch"],
+        "return_type": "Indices",
+        "description": "Inbox for patch"
+    },
+    {
+        "name": "outbox",
+        "arguments": ["patch: Patch"],
+        "return_type": "Indices",
+        "description": "Outbox for patch"
+    },
+    {
+        "name": "box",
+        "arguments": ["patch: Patch"],
+        "return_type": "Indices",
+        "description": "Outline of patch"
+    },
+    {
+        "name": "shoot",
+        "arguments": ["start: IntegerTuple", "direction: IntegerTuple"],
+        "return_type": "Indices",
+        "description": "Line from starting point and direction"
+    },
+    {
+        "name": "occurrences",
+        "arguments": ["grid: Grid", "obj: Object"],
+        "return_type": "Indices",
+        "description": "Locations of occurrences of object in grid"
+    },
+    {
+        "name": "frontiers",
+        "arguments": ["grid: Grid"],
+        "return_type": "Objects",
+        "description": "Set of frontiers"
+    },
+    {
+        "name": "compress",
+        "arguments": ["grid: Grid"],
+        "return_type": "Grid",
+        "description": "Removes frontiers from grid"
+    },
+    {
+        "name": "hperiod",
+        "arguments": ["obj: Object"],
+        "return_type": "Integer",
+        "description": "Horizontal periodicity"
+    },
+    {
+        "name": "vperiod",
+        "arguments": ["obj: Object"],
+        "return_type": "Integer",
+        "description": "Vertical periodicity"
+    }
+]
+

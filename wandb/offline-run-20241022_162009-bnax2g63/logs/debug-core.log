@@ -1,1 +1,14 @@
-/home/oppenheimer/.cache/wandb/logs/core-debug-20241022_162007.log
+{"time":"2024-10-22T16:20:07.229798918+05:30","level":"INFO","msg":"started logging, with flags","port-filename":"/tmp/tmp34d8gqzn/port-654054.txt","pid":654054,"debug":false,"disable-analytics":false}
+{"time":"2024-10-22T16:20:07.229833648+05:30","level":"INFO","msg":"FeatureState","shutdownOnParentExitEnabled":false}
+{"time":"2024-10-22T16:20:07.233311046+05:30","level":"INFO","msg":"Will exit if parent process dies.","ppid":654054}
+{"time":"2024-10-22T16:20:07.233316476+05:30","level":"INFO","msg":"server is running","addr":{"IP":"127.0.0.1","Port":36489,"Zone":""}}
+{"time":"2024-10-22T16:20:07.424439015+05:30","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"127.0.0.1:55136"}
+{"time":"2024-10-22T16:20:09.928472755+05:30","level":"INFO","msg":"handleInformInit: received","streamId":"bnax2g63","id":"127.0.0.1:55136"}
+{"time":"2024-10-22T16:20:09.935262092+05:30","level":"INFO","msg":"handleInformInit: stream started","streamId":"bnax2g63","id":"127.0.0.1:55136"}
+{"time":"2024-10-22T16:20:40.886289973+05:30","level":"INFO","msg":"handleInformTeardown: server teardown initiated","id":"127.0.0.1:55136"}
+{"time":"2024-10-22T16:20:40.886356433+05:30","level":"INFO","msg":"server is shutting down"}
+{"time":"2024-10-22T16:20:40.886347063+05:30","level":"INFO","msg":"connection: Close: initiating connection closure","id":"127.0.0.1:55136"}
+{"time":"2024-10-22T16:20:40.886457183+05:30","level":"INFO","msg":"connection: Close: connection successfully closed","id":"127.0.0.1:55136"}
+{"time":"2024-10-22T16:20:40.888561433+05:30","level":"INFO","msg":"handleInformTeardown: server shutdown complete","id":"127.0.0.1:55136"}
+{"time":"2024-10-22T16:20:40.888574473+05:30","level":"INFO","msg":"connection: ManageConnectionData: connection closed","id":"127.0.0.1:55136"}
+{"time":"2024-10-22T16:20:40.888582813+05:30","level":"INFO","msg":"server is closed"}
