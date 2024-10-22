@@ -89,7 +89,6 @@ def decompress_grid(compressed, rows, cols):
     
     grid = [decompressed[i:i + cols] for i in range(0, len(decompressed), cols)]
     return grid
-
 # Define separator token
 SEPARATOR = "\n===\n"
 
@@ -100,43 +99,13 @@ dataset_entries = []
 context = f"""
 {functions_context_str}
 The following functions are used for transforming grids:
-
 def compress_grid(grid):
     # Converts a 2D grid into a compressed string representation.
-
-    flattened = [str(cell) for row in grid for cell in row]
-    compressed = []
-    current_char = flattened[0]
-    count = 1
-
-    for char in flattened[1:]:
-        if char == current_char:
-            count += 1
-        else:
-            compressed.append(f"{current_char}{count}")
-            current_char = char
-            count = 1
-
-    compressed.append(f"{current_char}{count}")
-    return "".join(compressed)
+    ...
 
 def decompress_grid(compressed, rows, cols):
-    # Converts a compressed string back into a 2D grid
-
-    decompressed = []
-    i = 0
-
-    while i < len(compressed):
-        char = compressed[i]
-        i += 1
-        count = ''
-        while i < len(compressed) and compressed[i].isdigit():
-            count += compressed[i]
-            i += 1
-        decompressed.extend([int(char)] * int(count))
-
-    grid = [decompressed[i:i + cols] for i in range(0, len(decompressed), cols)]
-    return grid
+    # Converts a compressed string back into a 2D grid.
+    ...
 
 """
 
