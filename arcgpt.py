@@ -156,7 +156,7 @@ class PrintSampleCallback(TrainerCallback):
         attention_mask = sample['attention_mask'].unsqueeze(0).to(kwargs['model'].device)
         prompt_text = self.tokenizer.decode(input_ids[0], skip_special_tokens=True)
         print(f"\nDebug: Prompt Length - {len(prompt_text)} characters")
-        print(f"Prompt Text (truncated to 500 chars):\n{prompt_text[:500]}...\n")
+        print(f"Prompt Text:\n{prompt_text}...\n")
         with torch.no_grad():
             output_ids = kwargs['model'].generate(
                 input_ids=input_ids,
@@ -165,8 +165,8 @@ class PrintSampleCallback(TrainerCallback):
                 num_beams=self.num_beams,
                 early_stopping=True,
                 no_repeat_ngram_size=2,
-                pad_token_id=self.tokenizer.eos_token_id
-            )
+                pad_token_id=self.tokenizer.eos_token_id)
+
         generated_text = self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
         completion_text = generated_text[len(prompt_text):].strip()
         ground_truth_ids = sample['labels'].masked_fill(sample['labels'] == -100, self.tokenizer.pad_token_id)
@@ -174,8 +174,7 @@ class PrintSampleCallback(TrainerCallback):
         ground_truth_completion = ground_truth_text[len(prompt_text):].strip()
         print("\n--- Sample Validation Prediction ---")
         print(f"Prompt:\n{prompt_text}...")
-        print(f"Expected Completion:\n{ground_truth_completion}...")
-        print(f"Generated Completion:\n{completion_text}...")
+        print(f"Completion:\n{completion_text}...")
         print("-----------------------------------\n")
 
 class CustomDataCollator:
@@ -274,9 +273,9 @@ def main():
     pretrain_args = TrainingArguments(
         output_dir='./pretrain_results',
         overwrite_output_dir=True,
-        num_train_epochs=3,
-        per_device_train_batch_size=1,
-        per_device_eval_batch_size=1,
+        num_train_epochs=10,
+        per_device_train_batch_size=4,
+        per_device_eval_batch_size=4,
         gradient_accumulation_steps=1,
         evaluation_strategy='no',
         save_strategy='epoch',
@@ -357,8 +356,8 @@ def main():
         output_dir='./results',
         overwrite_output_dir=True,
         num_train_epochs=5,
-        per_device_train_batch_size=1,
-        per_device_eval_batch_size=1,
+        per_device_train_batch_size=4,
+        per_device_eval_batch_size=4,
         gradient_accumulation_steps=8,
         evaluation_strategy='epoch',
         save_strategy='steps',
