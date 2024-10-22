@@ -6,10 +6,10 @@ import warnings
 import torch
 from torch.utils.data import Dataset, random_split
 from transformers import (
-    AutoTokenizer, AutoModelForCausalLM, Trainer, TrainingArguments, 
+    AutoTokenizer, AutoModelForCausalLM, Trainer, TrainingArguments,
     DataCollatorForLanguageModeling, TrainerCallback
 )
-from peft import LoraConfig, get_peft_model, TaskType
+from torch.cuda.amp import autocast
 import logging
 
 # Setup logging and warnings
@@ -26,6 +26,7 @@ np.random.seed(42)
 DATA_DIR = 'data'
 CHALLENGES_FILE = os.path.join(DATA_DIR, 'arc-agi_training_challenges.json')
 CODES_FILE = os.path.join(DATA_DIR, 'arc_training_codes.json')
+FUNCTIONS_CONTEXT_FILE = os.path.join(DATA_DIR, 'functions_context.json')
 SEPARATOR = "<SEP>"
 COMPLETION_TOKEN = "<COMPLETION>"
 
@@ -57,9 +58,7 @@ class ARCCodeDataset(Dataset):
     
     def __getitem__(self, idx):
         entry = self.entries[idx]
-        # Combine prompt and completion with a special token
         full_text = entry['prompt'] + COMPLETION_TOKEN + entry['completion']
-        
         encoding = self.tokenizer(
             full_text,
             return_tensors='pt',
@@ -67,21 +66,15 @@ class ARCCodeDataset(Dataset):
             truncation=True,
             max_length=self.chunk_size
         )
-        
         input_ids = encoding['input_ids'].squeeze()
         attention_mask = encoding['attention_mask'].squeeze()
-        
-        # Create labels: -100 for prompt tokens (they won't contribute to loss)
         labels = input_ids.clone()
-        
-        # Find the position of the completion token
         completion_token_id = self.tokenizer.encode(COMPLETION_TOKEN, add_special_tokens=False)[0]
         completion_pos = (input_ids == completion_token_id).nonzero(as_tuple=True)[0]
-        
         if len(completion_pos) > 0:
-            # Mask out the prompt part in labels
-            labels[:completion_pos[0]] = -100
-        
+            labels[:completion_pos[0]+1] = -100  # Mask up to and including the completion token
+        else:
+            labels[:] = -100  # If completion token not found, mask all labels
         return {
             'input_ids': input_ids,
             'attention_mask': attention_mask,
@@ -89,66 +82,68 @@ class ARCCodeDataset(Dataset):
         }
 
 class PrintCompletionCallback(TrainerCallback):
-    def __init__(self, tokenizer, val_dataset, interval=10):
+    def __init__(self, tokenizer, val_dataset, interval=1):
         super().__init__()
         self.tokenizer = tokenizer
         self.val_dataset = val_dataset
         self.interval = interval
 
-    def on_step_end(self, args, state, control, **kwargs):
-        if state.global_step % self.interval == 0 and state.global_step > 0:
+    def on_log(self, args, state, control, **kwargs):
+        total_steps = state.global_step
+        if total_steps % self.interval == 0 and total_steps > 0:
             model = kwargs.get('model')
             if model is None:
                 return
-
-            # Pick a random sample from validation dataset
             sample_idx = random.randint(0, len(self.val_dataset) - 1)
             sample = self.val_dataset.entries[sample_idx]
-            
-            # Get just the prompt part
             input_prompt = sample['prompt']
-            
-            # Tokenize the prompt
             input_encoding = self.tokenizer(
                 input_prompt,
                 return_tensors='pt',
                 truncation=True,
                 max_length=512
             ).to(model.device)
-
-            # Generate completion
             with torch.no_grad():
-                generated_ids = model.generate(
-                    input_ids=input_encoding['input_ids'],
-                    attention_mask=input_encoding['attention_mask'],
-                    max_new_tokens=200,
-                    num_beams=3,
-                    temperature=0.7,
-                    do_sample=True,
-                    top_p=0.95,
-                    early_stopping=True,
-                    pad_token_id=self.tokenizer.eos_token_id
-                )
-            
+                with autocast():
+                    generated_ids = model.generate(
+                        input_ids=input_encoding['input_ids'],
+                        attention_mask=input_encoding['attention_mask'],
+                        max_new_tokens=200,
+                        num_beams=3,
+                        temperature=0.7,
+                        do_sample=True,
+                        top_p=0.95,
+                        early_stopping=True,
+                        pad_token_id=self.tokenizer.eos_token_id
+                    )
             generated_text = self.tokenizer.decode(generated_ids[0], skip_special_tokens=True)
-            
-            # Remove the prompt part from generated text
-            generated_completion = generated_text[len(input_prompt):]
-            
-            print(f"\nStep {state.global_step}: Actual vs. Predicted")
-            print(f"Input Prompt:\n{input_prompt}\n")
-            print(f"Expected Completion:\n{sample['completion']}\n")
-            print(f"Generated Completion:\n{generated_completion}\n")
-            print("--------------------------------------------------\n")
+            generated_completion = generated_text[len(input_prompt):].strip()
+            logger.info(f"\nStep {state.global_step}: Actual vs. Predicted")
+            logger.info(f"Input Prompt:\n{input_prompt}\n")
+            logger.info(f"Expected Completion:\n{sample['completion']}\n")
+            logger.info(f"Generated Completion:\n{generated_completion}\n")
+            logger.info("--------------------------------------------------\n")
 
 def load_data():
+    if not os.path.exists(CHALLENGES_FILE):
+        logger.error(f"Challenges file not found: {CHALLENGES_FILE}")
+        return None, None, None
+    if not os.path.exists(CODES_FILE):
+        logger.error(f"Codes file not found: {CODES_FILE}")
+        return None, None, None
+    if not os.path.exists(FUNCTIONS_CONTEXT_FILE):
+        logger.error(f"Functions context file not found: {FUNCTIONS_CONTEXT_FILE}")
+        return None, None, None
+
     with open(CHALLENGES_FILE, 'r') as f:
         challenges = json.load(f)
     with open(CODES_FILE, 'r') as f:
         codes = json.load(f)
-    return challenges, codes
+    with open(FUNCTIONS_CONTEXT_FILE, 'r') as f:
+        functions_context = json.load(f)
+    return challenges, codes, functions_context
 
-def prepare_dataset(challenges, codes, tokenizer):
+def prepare_dataset(challenges, codes):
     entries = []
     for key, code in codes.items():
         if key in challenges:
@@ -163,115 +158,123 @@ def prepare_dataset(challenges, codes, tokenizer):
                 entries.append({'prompt': prompt, 'completion': code})
     return entries
 
+def pretrain_on_context(model, tokenizer, functions_context_str):
+    pretrain_dataset = ARCCodeDataset([{'prompt': functions_context_str, 'completion': ''}], tokenizer)
+    pretrain_args = TrainingArguments(
+        output_dir='./pretrain_results',
+        overwrite_output_dir=True,
+        num_train_epochs=3,
+        per_device_train_batch_size=1,
+        evaluation_strategy='no',
+        logging_steps=10,
+        learning_rate=5e-5,
+        fp16=True,
+        save_total_limit=1
+    )
+    pretrainer = Trainer(
+        model=model,
+        args=pretrain_args,
+        train_dataset=pretrain_dataset
+    )
+    pretrainer.train()
+    pretrainer.save_model('./pretrained_model')
+    print("Pre-Training Completed.")
+
 def setup_trainer(model, tokenizer, train_dataset, val_dataset):
     training_args = TrainingArguments(
         output_dir='./results',
+        overwrite_output_dir=True,
         num_train_epochs=8,
-        per_device_train_batch_size=16,
+        per_device_train_batch_size=1,
         gradient_accumulation_steps=4,
         evaluation_strategy='epoch',
-        logging_steps=50,
+        logging_steps=1,
         learning_rate=5e-5,
         weight_decay=0.01,
-        # Modified FP16 training settings
         fp16=True,
-        fp16_full_eval=True,
-        fp16_backend="auto",
-        half_precision_backend="auto",
-        bf16=False,  # Disable bfloat16
-        # Added gradient clipping
         max_grad_norm=1.0,
-        # Added warmup steps
         warmup_steps=500,
-        # Added gradient checkpointing
         gradient_checkpointing=True,
-        # Other training parameters
-        report_to='none',
         save_strategy="epoch",
         save_total_limit=2,
         load_best_model_at_end=True,
-        metric_for_best_model="eval_loss"
+        metric_for_best_model="eval_loss",
+        report_to='none'
     )
-    
     data_collator = DataCollatorForLanguageModeling(
         tokenizer=tokenizer,
         mlm=False
     )
-    
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         data_collator=data_collator,
-        callbacks=[PrintCompletionCallback(tokenizer=tokenizer, val_dataset=val_dataset)]
+        callbacks=[PrintCompletionCallback(tokenizer=tokenizer, val_dataset=val_dataset, interval=1)]
     )
     return trainer
 
 def main():
-    challenges, codes = load_data()
+    challenges, codes, functions_context = load_data()
+    if challenges is None or codes is None or functions_context is None:
+        logger.error("Data loading failed. Exiting.")
+        return
 
     tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-3B")
     tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.add_special_tokens({'additional_special_tokens': [COMPLETION_TOKEN]})
+    special_tokens_dict = {'additional_special_tokens': [COMPLETION_TOKEN, SEPARATOR]}
+    tokenizer.add_special_tokens(special_tokens_dict)
+    
+    # Prepare functions context string
+    functions_context_str = "## Function Definitions\n\n" + "\n".join(
+        f"**{func['name']}({', '.join(func['arguments'])}) -> {func['return_type']}**: {func['description']}"
+        for func in functions_context
+    )
 
-    # Modified model loading with proper mixed precision settings
+    # Load and configure the model
     model = AutoModelForCausalLM.from_pretrained(
         "meta-llama/Llama-3.2-3B",
+        torch_dtype=torch.float32,  # Use FP32 to avoid FP16 gradient issues
         device_map='auto',
-        torch_dtype=torch.float16,
-        # Added low cpu memory usage
         low_cpu_mem_usage=True,
-        # Enable gradient checkpointing
         use_cache=False
     )
-    
     model.resize_token_embeddings(len(tokenizer))
+    model.gradient_checkpointing_enable()
+    model.enable_input_require_grads()
 
-    # Configure model for training
-    model.gradient_checkpointing_enable()  # Enable gradient checkpointing
-    model.enable_input_require_grads()  # Enable input gradients for PEFT
-    
-    # Freeze base model parameters
-    for param in model.base_model.parameters():
-        param.requires_grad = False
+    # Pre-train on functions context
+    pretrain_on_context(model, tokenizer, functions_context_str)
 
-    # Configure LoRA with adjusted parameters
-    lora_config = LoraConfig(
-        task_type=TaskType.CAUSAL_LM,
-        r=16,
-        lora_alpha=32,
-        lora_dropout=0.1,
-        target_modules=["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"],
-        bias="none",  # Disable bias training
-        inference_mode=False
-    )
-    model = get_peft_model(model, lora_config)
-    
-    # Print trainable parameters
-    model.print_trainable_parameters()
+    # Prepare dataset
+    entries = prepare_dataset(challenges, codes)
+    if len(entries) == 0:
+        logger.error("No entries in dataset. Exiting.")
+        return
 
-    # Prepare datasets
-    entries = prepare_dataset(challenges, codes, tokenizer)
+    # Split dataset into training and validation sets
     train_size = int(0.9 * len(entries))
-    train_entries, val_entries = random_split(entries, [train_size, len(entries) - train_size])
+    val_size = len(entries) - train_size
+    train_entries, val_entries = random_split(entries, [train_size, val_size])
 
-    train_dataset = ARCCodeDataset(train_entries, tokenizer)
-    val_dataset = ARCCodeDataset(val_entries, tokenizer)
+    # Create datasets
+    train_dataset = ARCCodeDataset([entries[i] for i in train_entries.indices], tokenizer)
+    val_dataset = ARCCodeDataset([entries[i] for i in val_entries.indices], tokenizer)
 
-    # Setup and run training
+    # Setup trainer
     trainer = setup_trainer(model, tokenizer, train_dataset, val_dataset)
-    
+
+    # Start training
     try:
         trainer.train()
         trainer.save_model('./trained_model')
-        
         eval_results = trainer.evaluate()
         print(f"Validation Loss: {eval_results['eval_loss']}")
-        
     except Exception as e:
         logger.error(f"Training failed with error: {str(e)}")
         raise
 
 if __name__ == "__main__":
     main()
+
