@@ -52,7 +52,7 @@ def compress_grid(grid):
     return "".join(compressed)
 
 class PretrainingDataset(Dataset):
-    def __init__(self, context, tokenizer, max_length=1024):
+    def __init__(self, context, tokenizer, max_length=512):
         self.context = context
         self.tokenizer = tokenizer
         self.max_length = max_length
@@ -79,7 +79,10 @@ class PretrainingDataset(Dataset):
         }
 
 class ARCCodeDataset(Dataset):
-    def __init__(self, entries, tokenizer, chunk_size=1024):
+    """
+    Dataset for ARC code training.
+    """
+    def __init__(self, entries, tokenizer, chunk_size=512):
         self.entries = entries
         self.tokenizer = tokenizer
         self.chunk_size = chunk_size
@@ -91,17 +94,28 @@ class ARCCodeDataset(Dataset):
         entry = self.entries[idx]
         variable_prompt = entry['prompt']
         completion = entry['completion']
-        encoding = self.tokenizer(
-            variable_prompt + completion,
+        
+        # Tokenize prompt and completion separately for clarity
+        prompt_encoding = self.tokenizer(
+            variable_prompt,
             return_tensors='pt',
             padding='max_length',
             truncation=True,
-            max_length=self.chunk_size,
-            return_attention_mask=True
+            max_length=self.chunk_size // 2
         )
-        input_ids = encoding['input_ids'].squeeze()
-        attention_mask = encoding['attention_mask'].squeeze()
-        labels = input_ids.clone()
+        completion_encoding = self.tokenizer(
+            completion,
+            return_tensors='pt',
+            padding='max_length',
+            truncation=True,
+            max_length=self.chunk_size // 2
+        )
+
+        input_ids = torch.cat((prompt_encoding['input_ids'], completion_encoding['input_ids']), dim=1).squeeze()
+        attention_mask = torch.cat((prompt_encoding['attention_mask'], completion_encoding['attention_mask']), dim=1).squeeze()
+
+        labels = completion_encoding['input_ids'].squeeze()
+
         return {
             'input_ids': input_ids,
             'attention_mask': attention_mask,
@@ -109,6 +123,9 @@ class ARCCodeDataset(Dataset):
         }
 
 class PrintSampleCallback(TrainerCallback):
+    """
+    Callback to generate and print sample outputs after each epoch.
+    """
     def __init__(self, tokenizer, val_dataset, max_new_tokens=100, num_beams=5):
         super().__init__()
         self.tokenizer = tokenizer
@@ -119,13 +136,27 @@ class PrintSampleCallback(TrainerCallback):
     def on_epoch_end(self, args, state, control, **kwargs):
         model = kwargs.get('model')
         if model is None:
+            print("Model is not available in kwargs.")
             return
 
+        # Select a random validation sample
         sample = random.choice(self.val_dataset)
         input_ids = sample['input_ids'].unsqueeze(0).to(model.device)
         attention_mask = sample['attention_mask'].unsqueeze(0).to(model.device)
-        prompt_text = self.tokenizer.decode(sample['input_ids'], skip_special_tokens=True)
+        
+        # Decode and print the prompt part
+        prompt_length = input_ids.shape[1] - sample['labels'].shape[0]
+        prompt_ids = input_ids[0, :prompt_length]
+        completion_ids = input_ids[0, prompt_length:]
+        
+        prompt_text = self.tokenizer.decode(prompt_ids, skip_special_tokens=True)
+        completion_text = self.tokenizer.decode(completion_ids, skip_special_tokens=True)
+        
+        print(f"\n--- Sample Input ---")
+        print(f"Prompt Text:\n{prompt_text}")
+        print(f"Expected Completion Text:\n{completion_text}")
 
+        # Generate output using the model
         with torch.no_grad():
             output_ids = model.generate(
                 input_ids=input_ids,
@@ -137,18 +168,13 @@ class PrintSampleCallback(TrainerCallback):
                 pad_token_id=self.tokenizer.eos_token_id
             )
         
+        # Decode the generated output
         generated_text = self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
-        completion_text = generated_text[len(prompt_text):].strip()
+        generated_completion = generated_text[len(prompt_text):].strip()
 
-        ground_truth_ids = sample['labels'].masked_fill(sample['labels'] == -100, self.tokenizer.pad_token_id)
-        ground_truth_text = self.tokenizer.decode(ground_truth_ids, skip_special_tokens=True)
-        ground_truth_completion = ground_truth_text[len(prompt_text):].strip()
-
-        print("\n--- Sample Validation Prediction ---")
-        print(f"Prompt:\n{prompt_text}")
-        print(f"Ground-Truth Completion:\n{ground_truth_completion}")
-        print(f"Generated Completion:\n{completion_text}")
-        print("-----------------------------------\n")
+        print(f"\n--- Generated Output ---")
+        print(f"Generated Text:\n{generated_completion}")
+        print(f"-----------------------------------\n")
 
 class CustomDataCollator:
     def __init__(self, tokenizer):
@@ -215,7 +241,7 @@ def main():
     )
     model = get_peft_model(model, lora_config)
 
-    pretrain_dataset = PretrainingDataset(functions_context_str, tokenizer, max_length=1024)
+    pretrain_dataset = PretrainingDataset(functions_context_str, tokenizer, max_length=512)
     pretrain_args = TrainingArguments(
         output_dir='./pretrain_results',
         overwrite_output_dir=True,
@@ -300,7 +326,7 @@ def main():
     print_callback = PrintSampleCallback(
         tokenizer=tokenizer,
         val_dataset=val_dataset,
-        max_new_tokens=100,
+        max_new_tokens=512,
         num_beams=5
     )
 
