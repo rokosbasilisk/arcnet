@@ -7,3 +7,10 @@
 {"time":"2024-10-22T16:33:02.877831805+05:30","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"ddw21eye"}}
 {"time":"2024-10-22T16:33:02.882190843+05:30","level":"INFO","msg":"wandb-core","!BADKEY":null}
 {"time":"2024-10-22T16:33:02.92338854+05:30","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-22T16:35:06.999872716+05:30","level":"INFO","msg":"stream: closing","id":"ddw21eye"}
+{"time":"2024-10-22T16:35:06.999904636+05:30","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-22T16:35:07.002481612+05:30","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-22T16:35:07.002595452+05:30","level":"INFO","msg":"handler: closed","stream_id":{"value":"ddw21eye"}}
+{"time":"2024-10-22T16:35:07.002607822+05:30","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"ddw21eye"}}
+{"time":"2024-10-22T16:35:07.002651742+05:30","level":"INFO","msg":"sender: closed","stream_id":{"value":"ddw21eye"}}
+{"time":"2024-10-22T16:35:07.002671402+05:30","level":"INFO","msg":"stream: closed","id":"ddw21eye"}

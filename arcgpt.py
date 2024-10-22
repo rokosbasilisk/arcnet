@@ -1,19 +1,20 @@
 import os
 import json
 import random
-from pathlib import Path
+import numpy as np
 import warnings
+from pathlib import Path
 
 # ============================
 # Set NCCL environment variables
 # ============================
 os.environ["NCCL_P2P_DISABLE"] = "1"
 os.environ["NCCL_IB_DISABLE"] = "1"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Use only GPU 0
 model_name = "meta-llama/Llama-3.2-1B"
 
 import torch
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import Dataset, random_split
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
@@ -22,7 +23,6 @@ from transformers import (
     DataCollatorForLanguageModeling,
     TrainerCallback,
 )
-import numpy as np
 from peft import LoraConfig, get_peft_model, TaskType
 
 # Suppress specific warnings
@@ -68,20 +68,14 @@ def decompress_grid(compressed, rows, cols):
     i = 0
 
     while i < len(compressed):
-        # Read the character (the digit)
         char = compressed[i]
         i += 1
-
-        # Read the number (the count) which could be more than one digit
         count = ''
         while i < len(compressed) and compressed[i].isdigit():
             count += compressed[i]
             i += 1
-        
-        # Expand the character based on the count and add to the decompressed list
         decompressed.extend([int(char)] * int(count))
     
-    # Convert the flat list back into a grid of the specified dimensions
     grid = [decompressed[i:i + cols] for i in range(0, len(decompressed), cols)]
     return grid
 
@@ -131,6 +125,20 @@ for key, code in codes.items():
         'completion': code
     })
 
+# Measure prompt and completion lengths
+prompt_lengths = [len(entry['prompt']) for entry in dataset_entries]
+completion_lengths = [len(entry['completion']) for entry in dataset_entries]
+
+max_prompt_length = max(prompt_lengths)
+median_prompt_length = np.median(prompt_lengths)
+max_completion_length = max(completion_lengths)
+median_completion_length = np.median(completion_lengths)
+
+print(f"Maximum Prompt Length: {max_prompt_length} characters")
+print(f"Median Prompt Length: {median_prompt_length} characters")
+print(f"Maximum Completion Length: {max_completion_length} characters")
+print(f"Median Completion Length: {median_completion_length} characters")
+
 # Limit to 400 entries
 if len(dataset_entries) > 400:
     dataset_entries = random.sample(dataset_entries, 400)
@@ -141,10 +149,12 @@ val_size = len(dataset_entries) - train_size
 train_entries, val_entries = random_split(dataset_entries, [train_size, val_size])
 
 class ARCCodeDataset(Dataset):
-    def __init__(self, entries, tokenizer, max_length=256):
+    def __init__(self, entries, tokenizer, max_length=256, chunk_size=256, overlap=128):
         self.entries = entries
         self.tokenizer = tokenizer
         self.max_length = max_length
+        self.chunk_size = chunk_size
+        self.overlap = overlap
 
     def __len__(self):
         return len(self.entries)
@@ -157,38 +167,54 @@ class ARCCodeDataset(Dataset):
         # Concatenate prompt and completion
         text = prompt + completion
 
-        # Tokenize the text
+        # Tokenize the entire text without truncation
         encoding = self.tokenizer(
             text,
-            truncation=True,
-            max_length=self.max_length,
-            padding='max_length',
-            return_tensors='pt'
+            return_tensors='pt',
+            truncation=False
         )
 
         input_ids = encoding['input_ids'].squeeze()
-        attention_mask = encoding['attention_mask'].squeeze()
 
-        # Labels are the same as input_ids, but we mask the prompt part
-        prompt_encoding = self.tokenizer(
-            prompt,
-            truncation=True,
-            max_length=self.max_length,
-            return_tensors='pt'
-        )
-        prompt_length = prompt_encoding['input_ids'].shape[1]
+        # Create overlapping chunks
+        chunks = []
+        start_idx = 0
+        while start_idx < len(input_ids):
+            end_idx = min(start_idx + self.chunk_size, len(input_ids))
+            chunk = input_ids[start_idx:end_idx]
+            attention_mask = torch.ones_like(chunk)
 
-        labels = input_ids.clone()
-        labels[:prompt_length] = -100  # Ignore the prompt in loss
+            # Create labels (only mask out the prompt part in the first chunk)
+            labels = chunk.clone()
+            if start_idx == 0:
+                prompt_encoding = self.tokenizer(
+                    prompt,
+                    truncation=True,
+                    max_length=self.max_length,
+                    return_tensors='pt'
+                )
+                prompt_length = len(prompt_encoding['input_ids'].squeeze())
+                labels[:prompt_length] = -100
 
-        return {
-            'input_ids': input_ids,
-            'attention_mask': attention_mask,
-            'labels': labels
-        }
+            # Pad the chunk if it's shorter than chunk_size
+            if len(chunk) < self.chunk_size:
+                padding_length = self.chunk_size - len(chunk)
+                chunk = torch.cat([chunk, torch.full((padding_length,), self.tokenizer.pad_token_id, dtype=torch.long)])
+                attention_mask = torch.cat([attention_mask, torch.zeros(padding_length, dtype=torch.long)])
+                labels = torch.cat([labels, torch.full((padding_length,), -100, dtype=torch.long)])
+
+            chunks.append({
+                'input_ids': chunk,
+                'attention_mask': attention_mask,
+                'labels': labels
+            })
+            start_idx += self.chunk_size - self.overlap
+
+        # Randomly select one chunk for training
+        return random.choice(chunks)
 
 class PrintSampleCallback(TrainerCallback):
-    def __init__(self, tokenizer, val_dataset, max_new_tokens=512, num_beams=5):
+    def __init__(self, tokenizer, val_dataset, max_new_tokens=1500, num_beams=5):
         super().__init__()
         self.tokenizer = tokenizer
         self.val_dataset = val_dataset
@@ -198,16 +224,18 @@ class PrintSampleCallback(TrainerCallback):
     def on_epoch_end(self, args, state, control, **kwargs):
         # Select a random sample from the validation dataset
         sample = random.choice(self.val_dataset)
-        prompt_ids = sample['input_ids'].unsqueeze(0).to(kwargs['model'].device)
+        input_ids = sample['input_ids'].unsqueeze(0).to(kwargs['model'].device)
         attention_mask = sample['attention_mask'].unsqueeze(0).to(kwargs['model'].device)
 
         # Decode the prompt for display
-        prompt_text = self.tokenizer.decode(prompt_ids[0], skip_special_tokens=True)
+        prompt_text = self.tokenizer.decode(input_ids[0], skip_special_tokens=True)
+        print(f"\nDebug: Prompt Length - {len(prompt_text)} characters")
+        print(f"Prompt Text (truncated to 500 chars):\n{prompt_text[:500]}...\n")
 
         # Generate prediction using the model
         with torch.no_grad():
             output_ids = kwargs['model'].generate(
-                input_ids=prompt_ids,
+                input_ids=input_ids,
                 attention_mask=attention_mask,
                 max_new_tokens=self.max_new_tokens,
                 num_beams=self.num_beams,
@@ -226,14 +254,14 @@ class PrintSampleCallback(TrainerCallback):
         ground_truth_completion = ground_truth_text[len(prompt_text):].strip()
 
         print("\n--- Sample Validation Prediction ---")
-        print(f"Prompt:\n{prompt_text}")
-        print(f"Expected Completion:\n{ground_truth_completion}")
-        print(f"Generated Completion:\n{completion_text}")
+        print(f"Prompt (truncated to 500 chars):\n{prompt_text[:500]}...")
+        print(f"Expected Completion (truncated to 500 chars):\n{ground_truth_completion[:500]}...")
+        print(f"Generated Completion (truncated to 500 chars):\n{completion_text[:500]}...")
         print("-----------------------------------\n")
 
 # Initialize tokenizer and model directly
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-tokenizer.pad_token = tokenizer.eos_token
+tokenizer.pad_token = tokenizer.eos_token  # Ensure pad token is set
 
 model = AutoModelForCausalLM.from_pretrained(model_name)
 
@@ -251,10 +279,10 @@ model = get_peft_model(model, lora_config)
 train_dataset = ARCCodeDataset(train_entries, tokenizer)
 val_dataset = ARCCodeDataset(val_entries, tokenizer)
 
-# Define data collator
+# Define data collator without padding parameter
 data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer,
-    mlm=False,
+    mlm=False
 )
 
 # Define training arguments
@@ -280,7 +308,7 @@ training_args = TrainingArguments(
 print_callback = PrintSampleCallback(
     tokenizer=tokenizer,
     val_dataset=val_dataset,
-    max_new_tokens=512,
+    max_new_tokens=1500,  # Adjusted based on maximum completion length
     num_beams=5
 )
 
