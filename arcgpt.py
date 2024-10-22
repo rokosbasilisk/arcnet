@@ -17,12 +17,21 @@ from transformers import (
 )
 from peft import LoraConfig, get_peft_model, TaskType
 
+import logging
+
+# Suppress unnecessary warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Set random seeds for reproducibility
 random.seed(42)
 torch.manual_seed(42)
 np.random.seed(42)
 
+# Define data directories and files
 DATA_DIR = 'data'
 CHALLENGES_FILE = os.path.join(DATA_DIR, 'arc-agi_training_challenges.json')
 CODES_FILE = os.path.join(DATA_DIR, 'arc_training_codes.json')
@@ -30,6 +39,9 @@ FUNCTIONS_CONTEXT_FILE = os.path.join(DATA_DIR, 'functions_context.json')
 SEPARATOR = "\n===\n"
 
 def compress_grid(grid):
+    """
+    Compresses a 2D grid by collapsing consecutive identical elements.
+    """
     if not grid or not grid[0]:
         return ""
     flattened = [str(cell) for row in grid for cell in row]
@@ -47,6 +59,9 @@ def compress_grid(grid):
     return "".join(compressed)
 
 class PretrainingDataset(Dataset):
+    """
+    Dataset for pre-training on a constant context.
+    """
     def __init__(self, context, tokenizer, max_length=1024):
         self.context = context
         self.tokenizer = tokenizer
@@ -74,6 +89,9 @@ class PretrainingDataset(Dataset):
         }
 
 class ARCCodeDataset(Dataset):
+    """
+    Dataset for ARC code training.
+    """
     def __init__(self, entries, tokenizer, chunk_size=1024):
         self.entries = entries
         self.tokenizer = tokenizer
@@ -105,7 +123,7 @@ class ARCCodeDataset(Dataset):
         )
         prompt_length = (prompt_encoding['input_ids'] != self.tokenizer.pad_token_id).sum().item()
         labels = input_ids.clone()
-        labels[:prompt_length] = -100
+        labels[:prompt_length] = -100  # Mask the prompt tokens
         return {
             'input_ids': input_ids,
             'attention_mask': attention_mask,
@@ -113,12 +131,18 @@ class ARCCodeDataset(Dataset):
         }
 
 class DebugLossCallback(TrainerCallback):
+    """
+    Callback to print loss details after each training step.
+    """
     def on_step_end(self, args, state, control, **kwargs):
         loss = kwargs.get('loss')
         if loss is not None:
             print(f"Debug: Loss={loss.item()}, requires_grad={loss.requires_grad}, grad_fn={loss.grad_fn}")
 
 class PrintSampleCallback(TrainerCallback):
+    """
+    Callback to generate and print sample outputs after each epoch.
+    """
     def __init__(self, tokenizer, val_dataset, max_new_tokens=1500, num_beams=5):
         super().__init__()
         self.tokenizer = tokenizer
@@ -155,6 +179,9 @@ class PrintSampleCallback(TrainerCallback):
         print("-----------------------------------\n")
 
 class CustomDataCollator:
+    """
+    Custom data collator to handle batching.
+    """
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
 
@@ -168,7 +195,17 @@ class CustomDataCollator:
             'labels': labels
         }
 
+def get_model_module_names(model):
+    """
+    Utility function to print all module names in the model.
+    """
+    print("\n--- Model Module Names ---")
+    for name, module in model.named_modules():
+        print(name)
+    print("--- End of Module Names ---\n")
+
 def main():
+    # Check for the existence of necessary data files
     if not os.path.exists(CHALLENGES_FILE):
         print(f"Challenges file not found: {CHALLENGES_FILE}")
         return
@@ -207,6 +244,10 @@ def main():
         trust_remote_code=True
     )
 
+    # Optional: Print model module names for verification
+    # Uncomment the following line to inspect module names
+    # get_model_module_names(model)
+
     print("Freezing base model parameters...")
     for param in model.base_model.parameters():
         param.requires_grad = False
@@ -235,8 +276,8 @@ def main():
     non_trainable_params = []
     for name, param in model.named_parameters():
         if 'lora_up' in name or 'lora_down' in name:
-            param.requires_grad = True
-            trainable_params.append(name)
+            if param.requires_grad:
+                trainable_params.append(name)
         else:
             non_trainable_params.append(name)
 
@@ -244,13 +285,14 @@ def main():
     print(f"Total Trainable Parameters: {len(trainable_params)}")
     print(f"Total Non-Trainable Parameters: {len(non_trainable_params)}\n")
 
-    print("Sample Trainable Parameters:")
-    for name in trainable_params[:10]:
-        print(f" - {name}")
-
     if not trainable_params:
         print("No LoRA parameters are trainable. Exiting.")
         return
+
+    print("Sample Trainable Parameters:")
+    for name in trainable_params[:10]:
+        print(f" - {name}")
+    print()
 
     print("Pre-Training on constant context...")
     pretrain_dataset = PretrainingDataset(functions_context_str, tokenizer, max_length=1024)
@@ -353,7 +395,7 @@ def main():
         print("Attention Mask:", sample['attention_mask'])
         print("Labels:", sample['labels'])
         print()
-
+    
     print("\n--- Label Verification ---")
     for i in range(min(3, len(train_dataset))):
         sample = train_dataset[i]
