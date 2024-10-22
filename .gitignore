@@ -4,3 +4,4 @@ output/*
 fine_tuned_pythia/
 wandb/*
 results/*
+.ipynb_checkpoints/*

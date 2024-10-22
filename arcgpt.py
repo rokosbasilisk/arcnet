@@ -96,18 +96,55 @@ SEPARATOR = "\n===\n"
 dataset_entries = []
 
 # Prepare context for model (including function definitions)
-context = f"""
+context = f'''
 {functions_context_str}
 The following functions are used for transforming grids:
 def compress_grid(grid):
-    # Converts a 2D grid into a compressed string representation.
-    ...
+    """
+    Converts a 2D grid into a compressed string representation using run-length encoding.
+
+    Each row of the grid is flattened into a one-dimensional list, and consecutive identical elements
+    are compressed into a single character followed by the count of how many times it repeats.
+
+    For example, a grid like:
+    [[8, 8, 0, 0, 0],
+     [8, 8, 0, 0, 0],
+     [0, 0, 0, 0, 0]]
+
+    Will be converted into a compressed string: '8218041630'
+
+    This compression is useful for reducing the size of large grids with many repeating elements.
+
+    Parameters:
+    grid (List[List[int]]): The 2D grid to be compressed.
+
+    Returns:
+    str: The compressed string representation of the grid.
+    """
 
 def decompress_grid(compressed, rows, cols):
-    # Converts a compressed string back into a 2D grid.
-    ...
+    """
+    Converts a compressed string back into a 2D grid of specified dimensions.
 
-"""
+    This function reverses the run-length encoding by reading the compressed string and expanding
+    each character and its associated count back into its original grid form.
+
+    For example, the string '8218041630' will be decompressed into:
+    [[8, 8, 0, 0, 0],
+     [8, 8, 0, 0, 0],
+     [0, 0, 0, 0, 0]]
+
+    This is useful for recovering the original 2D grid structure from a compressed string.
+
+    Parameters:
+    compressed (str): The compressed string representation of the grid.
+    rows (int): The number of rows in the original grid.
+    cols (int): The number of columns in the original grid.
+
+    Returns:
+    List[List[int]]: The decompressed 2D grid.
+    """
+'''
 
 for key, code in codes.items():
     if key not in challenges:
