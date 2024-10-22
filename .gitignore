@@ -5,3 +5,5 @@ fine_tuned_pythia/
 wandb/*
 results/*
 *.pt
+pretrained_model/* 
+pretrain_results/*
