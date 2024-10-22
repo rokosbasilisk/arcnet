@@ -19,29 +19,22 @@ from peft import LoraConfig, get_peft_model, TaskType
 
 import logging
 
-# Suppress unnecessary warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Set random seeds for reproducibility
 random.seed(42)
 torch.manual_seed(42)
 np.random.seed(42)
 
-# Define data directories and files
 DATA_DIR = 'data'
 CHALLENGES_FILE = os.path.join(DATA_DIR, 'arc-agi_training_challenges.json')
 CODES_FILE = os.path.join(DATA_DIR, 'arc_training_codes.json')
 FUNCTIONS_CONTEXT_FILE = os.path.join(DATA_DIR, 'functions_context.json')
-SEPARATOR = "\n===\n"
+SEPARATOR = "<SEP>"
 
 def compress_grid(grid):
-    """
-    Compresses a 2D grid by collapsing consecutive identical elements.
-    """
     if not grid or not grid[0]:
         return ""
     flattened = [str(cell) for row in grid for cell in row]
@@ -59,9 +52,6 @@ def compress_grid(grid):
     return "".join(compressed)
 
 class PretrainingDataset(Dataset):
-    """
-    Dataset for pre-training on a constant context.
-    """
     def __init__(self, context, tokenizer, max_length=1024):
         self.context = context
         self.tokenizer = tokenizer
@@ -89,9 +79,6 @@ class PretrainingDataset(Dataset):
         }
 
 class ARCCodeDataset(Dataset):
-    """
-    Dataset for ARC code training.
-    """
     def __init__(self, entries, tokenizer, chunk_size=1024):
         self.entries = entries
         self.tokenizer = tokenizer
@@ -114,36 +101,15 @@ class ARCCodeDataset(Dataset):
         )
         input_ids = encoding['input_ids'].squeeze()
         attention_mask = encoding['attention_mask'].squeeze()
-        prompt_encoding = self.tokenizer(
-            variable_prompt,
-            return_tensors='pt',
-            padding='max_length',
-            truncation=True,
-            max_length=self.chunk_size
-        )
-        prompt_length = (prompt_encoding['input_ids'] != self.tokenizer.pad_token_id).sum().item()
         labels = input_ids.clone()
-        labels[:prompt_length] = -100  # Mask the prompt tokens
         return {
             'input_ids': input_ids,
             'attention_mask': attention_mask,
             'labels': labels
         }
 
-class DebugLossCallback(TrainerCallback):
-    """
-    Callback to print loss details after each training step.
-    """
-    def on_step_end(self, args, state, control, **kwargs):
-        loss = kwargs.get('loss')
-        if loss is not None:
-            print(f"Debug: Loss={loss.item()}, requires_grad={loss.requires_grad}, grad_fn={loss.grad_fn}")
-
 class PrintSampleCallback(TrainerCallback):
-    """
-    Callback to generate and print sample outputs after each epoch.
-    """
-    def __init__(self, tokenizer, val_dataset, max_new_tokens=1500, num_beams=5):
+    def __init__(self, tokenizer, val_dataset, max_new_tokens=100, num_beams=5):
         super().__init__()
         self.tokenizer = tokenizer
         self.val_dataset = val_dataset
@@ -151,36 +117,40 @@ class PrintSampleCallback(TrainerCallback):
         self.num_beams = num_beams
 
     def on_epoch_end(self, args, state, control, **kwargs):
+        model = kwargs.get('model')
+        if model is None:
+            return
+
         sample = random.choice(self.val_dataset)
-        input_ids = sample['input_ids'].unsqueeze(0).to(kwargs['model'].device)
-        attention_mask = sample['attention_mask'].unsqueeze(0).to(kwargs['model'].device)
-        prompt_text = self.tokenizer.decode(input_ids[0], skip_special_tokens=True)
-        print(f"\nDebug: Prompt Length - {len(prompt_text)} characters")
-        print(f"Prompt Text:\n{prompt_text}...\n")
+        input_ids = sample['input_ids'].unsqueeze(0).to(model.device)
+        attention_mask = sample['attention_mask'].unsqueeze(0).to(model.device)
+        prompt_text = self.tokenizer.decode(sample['input_ids'], skip_special_tokens=True)
+
         with torch.no_grad():
-            output_ids = kwargs['model'].generate(
+            output_ids = model.generate(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 max_new_tokens=self.max_new_tokens,
                 num_beams=self.num_beams,
                 early_stopping=True,
                 no_repeat_ngram_size=2,
-                pad_token_id=self.tokenizer.eos_token_id)
-
+                pad_token_id=self.tokenizer.eos_token_id
+            )
+        
         generated_text = self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
         completion_text = generated_text[len(prompt_text):].strip()
+
         ground_truth_ids = sample['labels'].masked_fill(sample['labels'] == -100, self.tokenizer.pad_token_id)
         ground_truth_text = self.tokenizer.decode(ground_truth_ids, skip_special_tokens=True)
         ground_truth_completion = ground_truth_text[len(prompt_text):].strip()
+
         print("\n--- Sample Validation Prediction ---")
-        print(f"Prompt:\n{prompt_text}...")
-        print(f"Completion:\n{completion_text}...")
+        print(f"Prompt:\n{prompt_text}")
+        print(f"Ground-Truth Completion:\n{ground_truth_completion}")
+        print(f"Generated Completion:\n{completion_text}")
         print("-----------------------------------\n")
 
 class CustomDataCollator:
-    """
-    Custom data collator to handle batching.
-    """
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
 
@@ -194,36 +164,19 @@ class CustomDataCollator:
             'labels': labels
         }
 
-def get_model_module_names(model):
-    """
-    Utility function to print all module names in the model.
-    """
-    print("\n--- Model Module Names ---")
-    for name, module in model.named_modules():
-        print(name)
-    print("--- End of Module Names ---\n")
-
 def main():
-    # Check for the existence of necessary data files
-    if not os.path.exists(CHALLENGES_FILE):
-        print(f"Challenges file not found: {CHALLENGES_FILE}")
-        return
-    if not os.path.exists(CODES_FILE):
-        print(f"Codes file not found: {CODES_FILE}")
-        return
-    if not os.path.exists(FUNCTIONS_CONTEXT_FILE):
-        print(f"Functions context file not found: {FUNCTIONS_CONTEXT_FILE}")
+    missing_files = []
+    for file_path in [CHALLENGES_FILE, CODES_FILE, FUNCTIONS_CONTEXT_FILE]:
+        if not os.path.exists(file_path):
+            missing_files.append(file_path)
+    if missing_files:
+        print(f"Missing data files: {', '.join(missing_files)}")
         return
 
-    print("Loading challenges...")
     with open(CHALLENGES_FILE, 'r') as f:
         challenges = json.load(f)
-
-    print("Loading codes...")
     with open(CODES_FILE, 'r') as f:
         codes = json.load(f)
-
-    print("Loading functions context...")
     with open(FUNCTIONS_CONTEXT_FILE, 'r') as f:
         functions_context = json.load(f)
 
@@ -232,7 +185,6 @@ def main():
         args = ", ".join(func["arguments"])
         functions_context_str += f"**{func['name']}({args}) -> {func['return_type']}**: {func['description']}\n\n"
 
-    print("Loading tokenizer and model with device_map='auto'...")
     tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-3B")
     tokenizer.pad_token = tokenizer.eos_token
 
@@ -243,15 +195,9 @@ def main():
         trust_remote_code=True
     )
 
-    # Optional: Print model module names for verification
-    # Uncomment the following line to inspect module names
-    # get_model_module_names(model)
-
-    print("Freezing base model parameters...")
     for param in model.base_model.parameters():
         param.requires_grad = False
 
-    print("Applying LoRA configuration...")
     lora_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
         r=16,
@@ -268,16 +214,14 @@ def main():
         ]
     )
     model = get_peft_model(model, lora_config)
-    print("Pre-Training on constant context...")
+
     pretrain_dataset = PretrainingDataset(functions_context_str, tokenizer, max_length=1024)
     pretrain_args = TrainingArguments(
         output_dir='./pretrain_results',
         overwrite_output_dir=True,
         num_train_epochs=10,
         per_device_train_batch_size=4,
-        per_device_eval_batch_size=4,
         gradient_accumulation_steps=1,
-        evaluation_strategy='no',
         save_strategy='epoch',
         logging_steps=10,
         learning_rate=5e-5,
@@ -298,11 +242,15 @@ def main():
     )
     pretrainer.train()
     pretrainer.save_model('./pretrained_model')
-    print("Pre-Training Completed.\n")
 
-    print("Preparing main training dataset...")
+    function_names = [func['name'] for func in functions_context]
+    variable_tokens = [f"x{i}" for i in range(100)]
+    custom_tokens = list(set(function_names + variable_tokens))
+
+    tokenizer.add_tokens(custom_tokens)
+    model.resize_token_embeddings(len(tokenizer))
+
     dataset_entries = []
-
     for key, code in codes.items():
         if key not in challenges:
             continue
@@ -323,46 +271,22 @@ def main():
             'completion': code
         })
 
-    prompt_lengths = [len(entry['prompt']) for entry in dataset_entries]
-    completion_lengths = [len(entry['completion']) for entry in dataset_entries]
-
-    max_prompt_length = max(prompt_lengths) if prompt_lengths else 0
-    median_prompt_length = np.median(prompt_lengths) if prompt_lengths else 0
-    max_completion_length = max(completion_lengths) if completion_lengths else 0
-    median_completion_length = np.median(completion_lengths) if completion_lengths else 0
-
-    print(f"Maximum Prompt Length: {max_prompt_length} characters")
-    print(f"Median Prompt Length: {median_prompt_length} characters")
-    print(f"Maximum Completion Length: {max_completion_length} characters")
-    print(f"Median Completion Length: {median_completion_length} characters")
-
-    if len(dataset_entries) > 400:
-        dataset_entries = random.sample(dataset_entries, 400)
-        print(f"Limited dataset to 400 entries. New dataset size: {len(dataset_entries)}")
-    else:
-        print(f"Dataset size: {len(dataset_entries)}")
-
-    train_size = int(0.95 * len(dataset_entries))
+    train_size = int(0.90 * len(dataset_entries))
     val_size = len(dataset_entries) - train_size
     train_entries, val_entries = random_split(dataset_entries, [train_size, val_size])
 
-    print(f"Training set size: {len(train_entries)}")
-    print(f"Validation set size: {len(val_entries)}")
-
-    train_dataset = ARCCodeDataset(train_entries, tokenizer, chunk_size=1024)
-    val_dataset = ARCCodeDataset(val_entries, tokenizer, chunk_size=1024)
+    train_dataset = ARCCodeDataset(train_entries, tokenizer, chunk_size=512)
+    val_dataset = ARCCodeDataset(val_entries, tokenizer, chunk_size=512)
 
     training_args = TrainingArguments(
         output_dir='./results',
         overwrite_output_dir=True,
-        num_train_epochs=5,
-        per_device_train_batch_size=4,
-        per_device_eval_batch_size=4,
+        num_train_epochs=8,
+        per_device_train_batch_size=8,
         gradient_accumulation_steps=8,
         evaluation_strategy='epoch',
         save_strategy='steps',
         save_steps=500,
-        eval_steps=100,
         logging_steps=50,
         learning_rate=5e-5,
         weight_decay=0.01,
@@ -376,27 +300,20 @@ def main():
     print_callback = PrintSampleCallback(
         tokenizer=tokenizer,
         val_dataset=val_dataset,
-        max_new_tokens=1500,
+        max_new_tokens=100,
         num_beams=5
     )
 
-    debug_callback = DebugLossCallback()
-
-    print("Initializing Trainer for main training...")
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         data_collator=CustomDataCollator(tokenizer),
-        callbacks=[print_callback, debug_callback],
+        callbacks=[print_callback],
     )
 
-
-    print("\n=== Starting Main Training Phase ===")
     trainer.train()
-    print("=== Main Training Completed ===\n")
-
     eval_results = trainer.evaluate()
     print(f"Validation Loss: {eval_results['eval_loss']}")
 
