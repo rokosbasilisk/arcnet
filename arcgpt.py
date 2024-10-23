@@ -159,12 +159,19 @@ def prepare_dataset(challenges, codes):
                     f"Compressed Input: {compress_grid(ex['input'])}\nCompressed Output: {compress_grid(ex['output'])}"
                     for ex in examples
                 ]
-                prompt = f"Training Examples:\n{SEPARATOR.join(prompt_parts)}\n\nCode Completion:\n"
+                prompt = (
+                    "The model should generate a program that takes the compressed form of an input grid and converts it into the compressed form of the output grid.\n"
+                    "Below are training examples:\n"
+                    f"{SEPARATOR.join(prompt_parts)}\n\nCode Completion:\n"
+                )
                 entries.append({'prompt': prompt, 'completion': code})
     return entries
 
 def pretrain_on_context(model, tokenizer, functions_context_str):
-    pretrain_dataset = ARCCodeDataset([{'prompt': functions_context_str, 'completion': ''}], tokenizer)
+    pretrain_prompt = (
+        "These functions are used for converting one grid representation to another. Below is the list of function definitions:\n\n"
+    )
+    pretrain_dataset = ARCCodeDataset([{'prompt': pretrain_prompt + functions_context_str, 'completion': ''}], tokenizer)
     pretrain_args = TrainingArguments(
         output_dir='./pretrain_results',
         overwrite_output_dir=True,
