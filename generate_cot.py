@@ -6,7 +6,7 @@ from typing import List
 import inspect
 from transform_functions import *  # Import all transformation functions
 from dsl import *  # Import all DSL functions
-
+from compress_utils import *
 
 # Load the functions context to extract functions that return a "Grid"
 with open('data/functions_context.json', 'r') as f:
@@ -14,30 +14,6 @@ with open('data/functions_context.json', 'r') as f:
 
 # Extract the list of function names where return_type is "Grid"
 action_list = [func['name'] for func in functions_context if func['return_type'] == 'Grid']
-
-def compress_grid(grid):
-    """Compress a grid into a run-length encoded string representation."""
-    if not grid or not grid[0]:
-        return ""
-    
-    # Flatten the grid into a list of strings
-    flattened = [str(cell) for row in grid for cell in row]
-    compressed = []
-    current_char = flattened[0]
-    count = 1
-    
-    # Iterate through the flattened list to create a run-length encoding
-    for char in flattened[1:]:
-        if char == current_char:
-            count += 1
-        else:
-            compressed.append(f"{current_char}{count}")
-            current_char = char
-            count = 1
-    
-    # Add the final run-length encoded segment
-    compressed.append(f"{current_char}{count}")
-    return "".join(compressed)
 
 # Load the dataset of tasks
 with open('data/arc-agi_training_challenges.json', 'r') as f:

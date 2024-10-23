@@ -33,6 +33,44 @@ model_name = "meta-llama/Llama-3.2-3B-Instruct"
 batch_size = 8
 num_epochs = 8
 
+code_context = """
+def compress_grid_optimized(grid):
+    \"\"\"Compress a grid with dimensions and RLE.\"\"\"
+    rows = len(grid)
+    cols = len(grid[0]) if rows > 0 else 0
+    flattened = [str(cell) for row in grid for cell in row]
+    compressed = []
+    current_char = flattened[0]
+    count = 1
+
+    # Create the RLE string with count for each character.
+    for char in flattened[1:]:
+        if char == current_char:
+            count += 1
+        else:
+            compressed.append(f"{current_char}x{count}")
+            current_char = char
+            count = 1
+    compressed.append(f"{current_char}x{count}")
+
+    # Prefix with dimensions.
+    return f"{rows}x{cols}|" + ",".join(compressed)
+
+def decompress_grid_optimized(compressed):
+    \"\"\"Decompress a grid from the optimized RLE format.\"\"\"
+    dims, rle_data = compressed.split('|')
+    rows, cols = map(int, dims.split('x'))
+    flat_list = []
+
+    # Reconstruct the flattened list from RLE.
+    for segment in rle_data.split(','):
+        char, count = segment.split('x')
+        flat_list.extend([int(char)] * int(count))
+
+    # Convert the flattened list back into a 2D grid.
+    return [flat_list[i * cols:(i + 1) * cols] for i in range(rows)]
+"""
+
 class ARCCodeDataset(Dataset):
     def __init__(self, entries, tokenizer, chunk_size=512):
         self.entries = entries
@@ -142,6 +180,7 @@ def prepare_cot_dataset(cot_data):
         # Construct the prompt and completion
         prompt = (
             "The model should generate a program that takes the compressed form of an input grid and converts it into the compressed form of the output grid.\n"
+            f"the functions used to compress and decompress the grid are: {code_context}\n"
             "Below are the transformation steps with intermediate comments:\n"
             f"{SEPARATOR.join(prompt_parts)}\n\nCode Completion:\n"
         )
