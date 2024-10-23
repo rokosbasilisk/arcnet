@@ -12,10 +12,12 @@ from transformers import (
 from torch.cuda.amp import autocast
 import logging
 
+os.environ["WANDB_DISABLED"] = "true"
 # Setup logging and warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 # Fix random seeds for reproducibility
 random.seed(42)
@@ -29,6 +31,9 @@ CODES_FILE = os.path.join(DATA_DIR, 'arc_training_codes.json')
 FUNCTIONS_CONTEXT_FILE = os.path.join(DATA_DIR, 'functions_context.json')
 SEPARATOR = "<SEP>"
 COMPLETION_TOKEN = "<COMPLETION>"
+model_name = "TheBloke/Mistral-7B-v0.1-AWQ"
+batch_size = 3
+num_epochs = 4 
 
 def compress_grid(grid):
     if not grid or not grid[0]:
@@ -163,8 +168,8 @@ def pretrain_on_context(model, tokenizer, functions_context_str):
     pretrain_args = TrainingArguments(
         output_dir='./pretrain_results',
         overwrite_output_dir=True,
-        num_train_epochs=3,
-        per_device_train_batch_size=1,
+        num_train_epochs=num_epochs,
+        per_device_train_batch_size=batch_size,
         evaluation_strategy='no',
         logging_steps=10,
         learning_rate=5e-5,
@@ -184,8 +189,8 @@ def setup_trainer(model, tokenizer, train_dataset, val_dataset):
     training_args = TrainingArguments(
         output_dir='./results',
         overwrite_output_dir=True,
-        num_train_epochs=8,
-        per_device_train_batch_size=1,
+        num_train_epochs=num_epochs,
+        per_device_train_batch_size=batch_size,
         gradient_accumulation_steps=4,
         evaluation_strategy='epoch',
         logging_steps=1,
@@ -221,7 +226,7 @@ def main():
         logger.error("Data loading failed. Exiting.")
         return
 
-    tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-3B")
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token = tokenizer.eos_token
     special_tokens_dict = {'additional_special_tokens': [COMPLETION_TOKEN, SEPARATOR]}
     tokenizer.add_special_tokens(special_tokens_dict)
@@ -234,7 +239,7 @@ def main():
 
     # Load and configure the model
     model = AutoModelForCausalLM.from_pretrained(
-        "meta-llama/Llama-3.2-3B",
+        model_name,
         torch_dtype=torch.float32,  # Use FP32 to avoid FP16 gradient issues
         device_map='auto',
         low_cpu_mem_usage=True,
