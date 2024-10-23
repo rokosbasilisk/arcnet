@@ -7,3 +7,4 @@ results/*
 *.pt
 pretrained_model/* 
 pretrain_results/*
+trained_model/*
