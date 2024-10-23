@@ -31,8 +31,8 @@ CODES_FILE = os.path.join(DATA_DIR, 'arc_training_codes.json')
 FUNCTIONS_CONTEXT_FILE = os.path.join(DATA_DIR, 'functions_context.json')
 SEPARATOR = "<SEP>"
 COMPLETION_TOKEN = "<COMPLETION>"
-model_name = "meta-llama/Llama-3.2-3B"
-batch_size = 8
+model_name = "meta-llama/Llama-3.2-3B-Instruct"
+batch_size = 4
 num_epochs = 8
 
 def compress_grid(grid):
