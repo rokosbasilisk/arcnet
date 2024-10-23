@@ -31,7 +31,7 @@ CODES_FILE = os.path.join(DATA_DIR, 'arc_training_codes.json')
 FUNCTIONS_CONTEXT_FILE = os.path.join(DATA_DIR, 'functions_context.json')
 SEPARATOR = "<SEP>"
 COMPLETION_TOKEN = "<COMPLETION>"
-model_name = "TheBloke/Mistral-7B-v0.1-AWQ"
+model_name = "meta-llama/Llama-3.2-1B"
 batch_size = 3
 num_epochs = 4 
 
