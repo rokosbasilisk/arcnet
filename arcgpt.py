@@ -128,7 +128,6 @@ def prepare_cot_dataset(cot_data):
     """ Prepare the dataset with chain-of-thought prompts and completions. """
     entries = []
     for item in cot_data:
-        hash_id = item['hash_id']
         input_grid = item['input_grid']
         final_output_grid = item.get('final_output_grid', '')
 
@@ -147,6 +146,9 @@ def prepare_cot_dataset(cot_data):
             f"{SEPARATOR.join(prompt_parts)}\n\nCode Completion:\n"
         )
         completion = item.get('transform_function', 'def transform_grid(I: Grid) -> Grid:\n    return I')
+        
+        # Replace function name to avoid memorizing hash-based names
+        completion = completion.replace(item['hash_id'], "transform_grid")
         
         # Inject intermediate steps into the completion
         for step in item.get('intermediate_steps', []):
@@ -239,7 +241,7 @@ def main():
     # Load and configure the model
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float32,
+        torch_dtype=torch.float32,  # Use FP32 to avoid FP16 gradient issues
         device_map='auto',
         low_cpu_mem_usage=True,
         use_cache=False
