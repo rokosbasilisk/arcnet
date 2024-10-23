@@ -2,10 +2,11 @@ import json
 import random
 import re
 import os
-from typing import List, Dict
+from typing import List
 import inspect
 from transform_functions import *  # Import all transformation functions
 from dsl import *  # Import all DSL functions
+
 
 # Load the functions context to extract functions that return a "Grid"
 with open('data/functions_context.json', 'r') as f:
@@ -13,6 +14,30 @@ with open('data/functions_context.json', 'r') as f:
 
 # Extract the list of function names where return_type is "Grid"
 action_list = [func['name'] for func in functions_context if func['return_type'] == 'Grid']
+
+def compress_grid(grid):
+    """Compress a grid into a run-length encoded string representation."""
+    if not grid or not grid[0]:
+        return ""
+    
+    # Flatten the grid into a list of strings
+    flattened = [str(cell) for row in grid for cell in row]
+    compressed = []
+    current_char = flattened[0]
+    count = 1
+    
+    # Iterate through the flattened list to create a run-length encoding
+    for char in flattened[1:]:
+        if char == current_char:
+            count += 1
+        else:
+            compressed.append(f"{current_char}{count}")
+            current_char = char
+            count = 1
+    
+    # Add the final run-length encoded segment
+    compressed.append(f"{current_char}{count}")
+    return "".join(compressed)
 
 # Load the dataset of tasks
 with open('data/arc-agi_training_challenges.json', 'r') as f:
@@ -44,9 +69,9 @@ intermediate_dataset = []
 
 for hash_id, task in tasks_data.items():
     try:
-        # Get a random train input example
+        # Get a random train input example (now pick the first one for consistency)
         train_examples = task['train']
-        random_example = random.choice(train_examples)
+        random_example = train_examples[0]  # Always pick the first example
         input_grid = tuple(tuple(row) for row in random_example['input'])
 
         # Get the corresponding transform function source code
@@ -70,6 +95,7 @@ for hash_id, task in tasks_data.items():
 
             # Debug: Show the truncated function being executed
             print(f"Executing truncated function for {hash_id} at step {idx + 1}, line {line_idx + 1}")
+            print(truncated_func_source)
 
             # Execute the truncated function and get the intermediate grid
             local_vars = {}
@@ -77,16 +103,12 @@ for hash_id, task in tasks_data.items():
             transform_grid = local_vars['transform_grid']
             intermediate_result = transform_grid(input_grid)
 
-            # Check if the result is a valid Grid
-            if not isinstance(intermediate_result, tuple) or not all(isinstance(row, tuple) for row in intermediate_result):
-                raise ValueError(f"Expected a Grid but got {type(intermediate_result)} for hash ID {hash_id}")
-
             # Store the intermediate step
             intermediate_steps.append({
                 "step": idx + 1,
-                "line_number": line_idx + 1,  # Convert zero-indexed to one-indexed line number
+                "line_number": line_idx + 1,
                 "line": action_line.strip(),
-                "grid": [list(row) for row in intermediate_result],  # Convert tuple grid back to list for JSON compatibility
+                "grid": compress_grid(intermediate_result),  # Compress grid
                 "truncated_function": truncated_func_source
             })
 
@@ -100,18 +122,16 @@ for hash_id, task in tasks_data.items():
         # Create an entry for this task with intermediate steps
         intermediate_entry = {
             "hash_id": hash_id,
-            "input_grid": [list(row) for row in input_grid],  # Convert tuple grid back to list for JSON compatibility
+            "input_grid": compress_grid(input_grid),  # Compress input grid
             "transform_function": func_source,
             "intermediate_steps": intermediate_steps,
-            "final_output_grid": [list(row) for row in final_output_grid],  # Convert tuple grid back to list
-            "expected_output_grid": random_example['output']
+            "final_output_grid": compress_grid(final_output_grid),  # Compress output grid
+            "expected_output_grid": compress_grid(random_example['output'])
         }
 
     except Exception as e:
-        # In case of error, just store the input and final output as a single action
+        # In case of error, store minimal entry
         print(f"Error processing hash ID {hash_id}: {e}")
-        
-        # Try to run the full function to capture the final output grid even if intermediate steps failed
         try:
             final_func = func_source.replace(f'verify_{hash_id}', 'transform_grid')
             local_vars = {}
@@ -119,22 +139,18 @@ for hash_id, task in tasks_data.items():
             transform_grid = local_vars['transform_grid']
             final_output_grid = transform_grid(input_grid)
 
-            # Create a minimal entry in case of error
             intermediate_entry = {
                 "hash_id": hash_id,
-                "input_grid": [list(row) for row in input_grid],  # Convert tuple grid back to list
-                "final_output_grid": [list(row) for row in final_output_grid]  # Convert tuple grid back to list
+                "input_grid": compress_grid(input_grid),
+                "final_output_grid": compress_grid(final_output_grid)
             }
         except Exception as final_error:
-            print(f"Final output processing also failed for hash ID {hash_id}: {final_error}")
-            # Create an entry with an error message if the final step also fails
             intermediate_entry = {
                 "hash_id": hash_id,
-                "input_grid": [list(row) for row in input_grid],
+                "input_grid": compress_grid(input_grid),
                 "error": str(final_error)
             }
 
-    # Add the entry to the dataset
     intermediate_dataset.append(intermediate_entry)
 
 # Save the intermediate dataset to a new JSON file
