@@ -27,12 +27,12 @@ np.random.seed(42)
 # Define constants
 DATA_DIR = 'data'
 CHALLENGES_FILE = os.path.join(DATA_DIR, 'arc-agi_training_challenges.json')
-CODES_FILE = os.path.join(DATA_DIR, 'arc_training_codes.json')
+CODES_FILE = os.path.join(DATA_DIR, 'arc_training_codes_modified.json')
 FUNCTIONS_CONTEXT_FILE = os.path.join(DATA_DIR, 'functions_context.json')
 SEPARATOR = "<SEP>"
 COMPLETION_TOKEN = "<COMPLETION>"
 model_name = "meta-llama/Llama-3.2-3B-Instruct"
-batch_size = 4
+batch_size = 8
 num_epochs = 8
 
 def compress_grid(grid):
