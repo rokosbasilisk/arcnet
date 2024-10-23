@@ -12,12 +12,13 @@ from transformers import (
 from torch.cuda.amp import autocast
 import logging
 
+# Set environment variables
 os.environ["WANDB_DISABLED"] = "true"
+
 # Setup logging and warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 
 # Fix random seeds for reproducibility
 random.seed(42)
@@ -26,8 +27,7 @@ np.random.seed(42)
 
 # Define constants
 DATA_DIR = 'data'
-CHALLENGES_FILE = os.path.join(DATA_DIR, 'arc-agi_training_challenges.json')
-CODES_FILE = os.path.join(DATA_DIR, 'arc_training_codes_modified.json')
+COT_FILE = os.path.join(DATA_DIR, 'intermediate_grids_dataset.json')
 FUNCTIONS_CONTEXT_FILE = os.path.join(DATA_DIR, 'functions_context.json')
 SEPARATOR = "<SEP>"
 COMPLETION_TOKEN = "<COMPLETION>"
@@ -35,7 +35,9 @@ model_name = "meta-llama/Llama-3.2-3B-Instruct"
 batch_size = 8
 num_epochs = 8
 
+# Define compress_grid function
 def compress_grid(grid):
+    """Compress a grid into a run-length encoded string representation."""
     if not grid or not grid[0]:
         return ""
     flattened = [str(cell) for row in grid for cell in row]
@@ -52,6 +54,30 @@ def compress_grid(grid):
     compressed.append(f"{current_char}{count}")
     return "".join(compressed)
 
+def decompress_grid(compressed):
+    """Decompress a run-length encoded grid string into a 2D list representation."""
+    decompressed = []
+    current_row = []
+    index = 0
+    while index < len(compressed):
+        char = compressed[index]
+        index += 1
+        count = ""
+        while index < len(compressed) and compressed[index].isdigit():
+            count += compressed[index]
+            index += 1
+        count = int(count)
+        current_row.extend([int(char)] * count)
+        if len(current_row) == 30:  # Assuming standard 30x30 grid for simplicity
+            decompressed.append(current_row)
+            current_row = []
+    return decompressed
+
+def display_grid(grid):
+    """Display a 2D list grid in a readable string format."""
+    return "\n".join("".join(str(cell) for cell in row) for row in grid)
+
+# Define the custom dataset for the training
 class ARCCodeDataset(Dataset):
     def __init__(self, entries, tokenizer, chunk_size=512):
         self.entries = entries
@@ -99,6 +125,7 @@ class PrintCompletionCallback(TrainerCallback):
             model = kwargs.get('model')
             if model is None:
                 return
+
             sample_idx = random.randint(0, len(self.val_dataset) - 1)
             sample = self.val_dataset.entries[sample_idx]
             input_prompt = sample['prompt']
@@ -122,49 +149,69 @@ class PrintCompletionCallback(TrainerCallback):
                         pad_token_id=self.tokenizer.eos_token_id
                     )
             generated_text = self.tokenizer.decode(generated_ids[0], skip_special_tokens=True)
-            generated_completion = generated_text[len(input_prompt):].strip()
+            generated_completion = generated_text.split(COMPLETION_TOKEN, 1)[-1].strip()
+            
+            # Log the actual and generated completions
             logger.info(f"\nStep {state.global_step}: Actual vs. Predicted")
             logger.info(f"Input Prompt:\n{input_prompt}\n")
             logger.info(f"Expected Completion:\n{sample['completion']}\n")
             logger.info(f"Generated Completion:\n{generated_completion}\n")
+
+            # Display the intermediate grids if they exist in the prompt
+            for part in input_prompt.split(SEPARATOR):
+                if "Step" in part:
+                    step_info = part.split(": ", 1)
+                    if len(step_info) == 2:
+                        step_compressed = step_info[1].strip()
+                        decompressed_grid = decompress_grid(step_compressed)
+                        logger.info(f"Step {step_info[0]}:\n{display_grid(decompressed_grid)}\n")
             logger.info("--------------------------------------------------\n")
 
 def load_data():
-    if not os.path.exists(CHALLENGES_FILE):
-        logger.error(f"Challenges file not found: {CHALLENGES_FILE}")
-        return None, None, None
-    if not os.path.exists(CODES_FILE):
-        logger.error(f"Codes file not found: {CODES_FILE}")
-        return None, None, None
+    if not os.path.exists(COT_FILE):
+        logger.error(f"COT file not found: {COT_FILE}")
+        return None, None
     if not os.path.exists(FUNCTIONS_CONTEXT_FILE):
         logger.error(f"Functions context file not found: {FUNCTIONS_CONTEXT_FILE}")
-        return None, None, None
+        return None, None
 
-    with open(CHALLENGES_FILE, 'r') as f:
-        challenges = json.load(f)
-    with open(CODES_FILE, 'r') as f:
-        codes = json.load(f)
+    with open(COT_FILE, 'r') as f:
+        cot_data = json.load(f)
     with open(FUNCTIONS_CONTEXT_FILE, 'r') as f:
         functions_context = json.load(f)
-    return challenges, codes, functions_context
+    return cot_data, functions_context
 
-def prepare_dataset(challenges, codes):
+def calculate_length_statistics(entries):
+    prompt_lengths = [len(entry['prompt']) for entry in entries]
+    completion_lengths = [len(entry['completion']) for entry in entries]
+    median_prompt_length = np.median(prompt_lengths)
+    max_prompt_length = np.max(prompt_lengths)
+    median_completion_length = np.median(completion_lengths)
+    max_completion_length = np.max(completion_lengths)
+
+    logger.info(f"Median prompt length: {median_prompt_length}")
+    logger.info(f"Max prompt length: {max_prompt_length}")
+    logger.info(f"Median completion length: {median_completion_length}")
+    logger.info(f"Max completion length: {max_completion_length}")
+
+    # Adjusting max_length based on the computed statistics
+    return int(min(max_prompt_length + max_completion_length, 1024))
+
+def prepare_cot_dataset(cot_data):
     entries = []
-    for key, code in codes.items():
-        if key in challenges:
-            challenge = challenges[key]
-            examples = challenge.get('train', [])
-            if examples:
-                prompt_parts = [
-                    f"Compressed Input: {compress_grid(ex['input'])}\nCompressed Output: {compress_grid(ex['output'])}"
-                    for ex in examples
-                ]
-                prompt = (
-                    "The model should generate a program that takes the compressed form of an input grid and converts it into the compressed form of the output grid.\n"
-                    "Below are training examples, the programs given in the training examples use functions from specialized DSL called ARC-DSL:\n"
-                    f"{SEPARATOR.join(prompt_parts)}\n\nCode Completion:\n"
-                )
-                entries.append({'prompt': prompt, 'completion': code})
+    for item in cot_data:
+        prompt_parts = [f"Compressed Input: {item['input_grid']}"]
+        for step in item.get('intermediate_steps', []):
+            prompt_parts.append(f"# Step {step['step']}: {step['grid']}")
+        prompt_parts.append(f"Compressed Output: {item['final_output_grid']}")
+        
+        prompt = (
+            "The model should generate a program that takes the compressed form of an input grid and converts it into the compressed form of the output grid.\n"
+            "Below are the transformation steps with intermediate comments:\n"
+            f"{SEPARATOR.join(prompt_parts)}\n\nCode Completion:\n"
+        )
+        completion = item['transform_function']
+        entries.append({'prompt': prompt, 'completion': completion})
     return entries
 
 def pretrain_on_context(model, tokenizer, functions_context_str):
@@ -175,7 +222,7 @@ def pretrain_on_context(model, tokenizer, functions_context_str):
     pretrain_args = TrainingArguments(
         output_dir='./pretrain_results',
         overwrite_output_dir=True,
-        num_train_epochs=num_epochs,
+        num_train_epochs=1,
         per_device_train_batch_size=batch_size,
         evaluation_strategy='no',
         logging_steps=10,
@@ -192,7 +239,7 @@ def pretrain_on_context(model, tokenizer, functions_context_str):
     pretrainer.save_model('./pretrained_model')
     print("Pre-Training Completed.")
 
-def setup_trainer(model, tokenizer, train_dataset, val_dataset):
+def setup_trainer(model, tokenizer, train_dataset, val_dataset, max_length):
     training_args = TrainingArguments(
         output_dir='./results',
         overwrite_output_dir=True,
@@ -200,7 +247,7 @@ def setup_trainer(model, tokenizer, train_dataset, val_dataset):
         per_device_train_batch_size=batch_size,
         gradient_accumulation_steps=4,
         evaluation_strategy='epoch',
-        logging_steps=1,
+        logging_steps=10,
         learning_rate=5e-5,
         weight_decay=0.01,
         fp16=True,
@@ -211,7 +258,8 @@ def setup_trainer(model, tokenizer, train_dataset, val_dataset):
         save_total_limit=2,
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",
-        report_to='none'
+        report_to='none',
+        max_length=max_length
     )
     data_collator = DataCollatorForLanguageModeling(
         tokenizer=tokenizer,
@@ -223,31 +271,32 @@ def setup_trainer(model, tokenizer, train_dataset, val_dataset):
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         data_collator=data_collator,
-        callbacks=[PrintCompletionCallback(tokenizer=tokenizer, val_dataset=val_dataset, interval=1)]
+        callbacks=[PrintCompletionCallback(tokenizer=tokenizer, val_dataset=val_dataset, interval=10)]
     )
     return trainer
 
 def main():
-    challenges, codes, functions_context = load_data()
-    if challenges is None or codes is None or functions_context is None:
+    # Load CoT dataset
+    cot_data, functions_context = load_data()
+    if cot_data is None or functions_context is None:
         logger.error("Data loading failed. Exiting.")
         return
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    tokenizer.pad_token = tokenizer.eos_token
-    special_tokens_dict = {'additional_special_tokens': [COMPLETION_TOKEN, SEPARATOR]}
-    tokenizer.add_special_tokens(special_tokens_dict)
-    
     # Prepare functions context string
     functions_context_str = "## Function Definitions\n\n" + "\n".join(
         f"**{func['name']}({', '.join(func['arguments'])}) -> {func['return_type']}**: {func['description']}"
         for func in functions_context
     )
 
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer.pad_token = tokenizer.eos_token
+    special_tokens_dict = {'additional_special_tokens': [COMPLETION_TOKEN, SEPARATOR]}
+    tokenizer.add_special_tokens(special_tokens_dict)
+    
     # Load and configure the model
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float32,  # Use FP32 to avoid FP16 gradient issues
+        torch_dtype=torch.float32,
         device_map='auto',
         low_cpu_mem_usage=True,
         use_cache=False
@@ -260,10 +309,13 @@ def main():
     pretrain_on_context(model, tokenizer, functions_context_str)
 
     # Prepare dataset
-    entries = prepare_dataset(challenges, codes)
+    entries = prepare_cot_dataset(cot_data)
     if len(entries) == 0:
         logger.error("No entries in dataset. Exiting.")
         return
+
+    # Calculate max_length for tokenization based on dataset statistics
+    max_length = calculate_length_statistics(entries)
 
     # Split dataset into training and validation sets
     train_size = int(0.9 * len(entries))
@@ -271,13 +323,11 @@ def main():
     train_entries, val_entries = random_split(entries, [train_size, val_size])
 
     # Create datasets
-    train_dataset = ARCCodeDataset([entries[i] for i in train_entries.indices], tokenizer)
-    val_dataset = ARCCodeDataset([entries[i] for i in val_entries.indices], tokenizer)
+    train_dataset = ARCCodeDataset([entries[i] for i in train_entries.indices], tokenizer, chunk_size=max_length)
+    val_dataset = ARCCodeDataset([entries[i] for i in val_entries.indices], tokenizer, chunk_size=max_length)
 
-    # Setup trainer
-    trainer = setup_trainer(model, tokenizer, train_dataset, val_dataset)
-
-    # Start training
+    # Setup and start training
+    trainer = setup_trainer(model, tokenizer, train_dataset, val_dataset, max_length)
     try:
         trainer.train()
         trainer.save_model('./trained_model')
