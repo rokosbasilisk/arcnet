@@ -31,9 +31,9 @@ CODES_FILE = os.path.join(DATA_DIR, 'arc_training_codes.json')
 FUNCTIONS_CONTEXT_FILE = os.path.join(DATA_DIR, 'functions_context.json')
 SEPARATOR = "<SEP>"
 COMPLETION_TOKEN = "<COMPLETION>"
-model_name = "meta-llama/Llama-3.2-1B"
-batch_size = 3
-num_epochs = 4 
+model_name = "Qwen/Qwen2.5-Coder-1.5B-Instruct"
+batch_size = 8
+num_epochs = 5
 
 def compress_grid(grid):
     if not grid or not grid[0]:
@@ -161,7 +161,7 @@ def prepare_dataset(challenges, codes):
                 ]
                 prompt = (
                     "The model should generate a program that takes the compressed form of an input grid and converts it into the compressed form of the output grid.\n"
-                    "Below are training examples:\n"
+                    "Below are training examples, the programs given in the training examples use functions from specialized DSL called ARC-DSL:\n"
                     f"{SEPARATOR.join(prompt_parts)}\n\nCode Completion:\n"
                 )
                 entries.append({'prompt': prompt, 'completion': code})
@@ -169,7 +169,7 @@ def prepare_dataset(challenges, codes):
 
 def pretrain_on_context(model, tokenizer, functions_context_str):
     pretrain_prompt = (
-        "These functions are used for converting one grid representation to another. Below is the list of function definitions:\n\n"
+        "These functions are from a special DSL called ARC-DSL, used for converting one grid representation to another from the ARC puzzles. Below is the list of function definitions:\n\n"
     )
     pretrain_dataset = ARCCodeDataset([{'prompt': pretrain_prompt + functions_context_str, 'completion': ''}], tokenizer)
     pretrain_args = TrainingArguments(
