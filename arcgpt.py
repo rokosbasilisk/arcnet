@@ -134,8 +134,10 @@ def prepare_cot_dataset(cot_data):
 
         # Create prompt parts from intermediate steps
         prompt_parts = [f"Compressed Input: {input_grid}"]
+        intermediate_comments = []
         for step in item.get('intermediate_steps', []):
-            prompt_parts.append(f"# Step {step['step']}: {step['grid']}")
+            intermediate_comments.append(f"# Step {step['step']}: {step['grid']}")
+        prompt_parts.extend(intermediate_comments)
         prompt_parts.append(f"Compressed Output: {final_output_grid}")
 
         # Construct the prompt and completion
@@ -145,6 +147,14 @@ def prepare_cot_dataset(cot_data):
             f"{SEPARATOR.join(prompt_parts)}\n\nCode Completion:\n"
         )
         completion = item.get('transform_function', 'def transform_grid(I: Grid) -> Grid:\n    return I')
+        
+        # Inject intermediate steps into the completion
+        for step in item.get('intermediate_steps', []):
+            completion = completion.replace(
+                step['line'],
+                f"{step['line']}\n    # intermediate gridstate: {step['grid']}"
+            )
+        
         entries.append({'prompt': prompt, 'completion': completion})
 
     return entries
