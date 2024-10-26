@@ -1,15 +1,6 @@
 
 
-from typing import (
-    List,
-    Union,
-    Tuple,
-    Any,
-    Container,
-    Callable,
-    FrozenSet,
-    Iterable
-)
+from typing import List,Union,Tuple,Any,Container,Callable,FrozenSet,Iterable
 
 Boolean = bool
 Integer = int
