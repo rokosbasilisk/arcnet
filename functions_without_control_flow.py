@@ -1,0 +1,1203 @@
+def generate_c1d99e64(diff_lb: float, diff_ub: float) ->dict:
+    dim_bounds = 4, 30
+    colopts = remove(2, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, dim_bounds)
+    w = unifint(diff_lb, diff_ub, dim_bounds)
+    nofrontcol = choice(colopts)
+    noisefrontcol = choice(remove(nofrontcol, colopts))
+    gi = canvas(nofrontcol, (h, w))
+    cands = totuple(asindices(gi))
+    horifront_bounds = 1, h // 4
+    vertifront_bounds = 1, w // 4
+    nhf = unifint(diff_lb, diff_ub, horifront_bounds)
+    nvf = unifint(diff_lb, diff_ub, vertifront_bounds)
+    vfs = mapply(compose(vfrontier, tojvec), sample(interval(0, w, 1), nvf))
+    hfs = mapply(compose(hfrontier, toivec), sample(interval(0, h, 1), nhf))
+    gi = fill(gi, noisefrontcol, combine(vfs, hfs))
+    cands = totuple(ofcolor(gi, nofrontcol))
+    kk = size(cands)
+    midp = h * w // 2
+    noise_bounds = 0, max(0, kk - midp - 1)
+    num_noise = unifint(diff_lb, diff_ub, noise_bounds)
+    noise = sample(cands, num_noise)
+    gi = fill(gi, noisefrontcol, noise)
+    go = fill(gi, 2, merge(colorfilter(frontiers(gi), noisefrontcol)))
+    return {'input': gi, 'output': go}
+
+def generate_623ea044(diff_lb: float, diff_ub: float) ->dict:
+    dim_bounds = 3, 30
+    colopts = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, dim_bounds)
+    w = unifint(diff_lb, diff_ub, dim_bounds)
+    bgc = choice(colopts)
+    g = canvas(bgc, (h, w))
+    fullinds = asindices(g)
+    inds = totuple(asindices(g))
+    card_bounds = 0, max(int(h * w * 0.1), 1)
+    numdots = unifint(diff_lb, diff_ub, card_bounds)
+    dots = sample(inds, numdots)
+    gi = canvas(bgc, (h, w))
+    fgc = choice(remove(bgc, colopts))
+    gi = fill(gi, fgc, dots)
+    go = fill(gi, fgc, mapply(rbind(shoot, UP_RIGHT), dots))
+    go = fill(go, fgc, mapply(rbind(shoot, DOWN_LEFT), dots))
+    go = fill(go, fgc, mapply(rbind(shoot, UNITY), dots))
+    go = fill(go, fgc, mapply(rbind(shoot, NEG_UNITY), dots))
+    return {'input': gi, 'output': go}
+
+def generate_1c786137(diff_lb: float, diff_ub: float) ->dict:
+    dim_bounds = 3, 30
+    num_cols_card_bounds = 1, 8
+    colopts = interval(1, 10, 1)
+    h = unifint(diff_lb, diff_ub, dim_bounds)
+    w = unifint(diff_lb, diff_ub, dim_bounds)
+    noise_card_bounds = 0, h * w
+    c = canvas(0, (h, w))
+    inds = totuple(asindices(c))
+    num_noise = unifint(diff_lb, diff_ub, noise_card_bounds)
+    num_cols = unifint(diff_lb, diff_ub, num_cols_card_bounds)
+    noiseinds = sample(inds, num_noise)
+    colset = sample(colopts, num_cols)
+    trgcol = choice(difference(colopts, colset))
+    noise = frozenset((choice(colset), ij) for ij in noiseinds)
+    gi = paint(c, noise)
+    boxhrng = 3, max(3, h // 2)
+    boxwrng = 3, max(3, w // 2)
+    boxh = unifint(diff_lb, diff_ub, boxhrng)
+    boxw = unifint(diff_lb, diff_ub, boxwrng)
+    boxi = choice(interval(0, h - boxh + 1, 1))
+    boxj = choice(interval(0, w - boxw + 1, 1))
+    loc = boxi, boxj
+    llc = add(loc, toivec(boxh - 1))
+    urc = add(loc, tojvec(boxw - 1))
+    lrc = add(loc, (boxh - 1, boxw - 1))
+    l1 = connect(loc, llc)
+    l2 = connect(loc, urc)
+    l3 = connect(urc, lrc)
+    l4 = connect(llc, lrc)
+    l = l1 | l2 | l3 | l4
+    gi = fill(gi, trgcol, l)
+    go = crop(gi, increment(loc), (boxh - 2, boxw - 2))
+    return {'input': gi, 'output': go}
+
+def generate_23581191(diff_lb: float, diff_ub: float) ->dict:
+    dim_bounds = 3, 30
+    colopts = remove(2, interval(0, 10, 1))
+    f = fork(combine, hfrontier, vfrontier)
+    h = unifint(diff_lb, diff_ub, dim_bounds)
+    w = unifint(diff_lb, diff_ub, dim_bounds)
+    bgcol = choice(colopts)
+    remcols = remove(bgcol, colopts)
+    c = canvas(bgcol, (h, w))
+    inds = totuple(asindices(c))
+    acol = choice(remcols)
+    bcol = choice(remove(acol, remcols))
+    card_bounds = 1, h * w // 4
+    na = unifint(diff_lb, diff_ub, card_bounds)
+    nb = unifint(diff_lb, diff_ub, card_bounds)
+    a = sample(inds, na)
+    b = sample(difference(inds, a), nb)
+    gi = fill(c, acol, a)
+    gi = fill(gi, bcol, b)
+    fa = apply(first, a)
+    la = apply(last, a)
+    fb = apply(first, b)
+    lb = apply(last, b)
+    alins = sfilter(inds, lambda ij: first(ij) in fa or last(ij) in la)
+    blins = sfilter(inds, lambda ij: first(ij) in fb or last(ij) in lb)
+    go = fill(c, acol, alins)
+    go = fill(go, bcol, blins)
+    go = fill(go, 2, intersection(set(alins), set(blins)))
+    go = fill(go, acol, a)
+    go = fill(go, bcol, b)
+    return {'input': gi, 'output': go}
+
+def generate_5168d44c(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (7, 30))
+    w = unifint(diff_lb, diff_ub, (7, 30))
+    doth = unifint(diff_lb, diff_ub, (1, h // 3))
+    dotw = unifint(diff_lb, diff_ub, (1, w // 3))
+    borderh = unifint(diff_lb, diff_ub, (1, h // 4))
+    borderw = unifint(diff_lb, diff_ub, (1, w // 4))
+    direc = choice((DOWN, RIGHT, UNITY))
+    dotloci = randint(0, h - doth - 1 if direc == RIGHT else h - doth -
+        borderh - 1)
+    dotlocj = randint(0, w - dotw - 1 if direc == DOWN else w - dotw -
+        borderw - 1)
+    dotloc = dotloci, dotlocj
+    bgc = choice(cols)
+    remcols = remove(bgc, cols)
+    dotcol = choice(remcols)
+    remcols = remove(dotcol, remcols)
+    boxcol = choice(remcols)
+    gi = canvas(bgc, (h, w))
+    dotshap = doth, dotw
+    starterdot = backdrop(frozenset({dotloc, add(dotloc, decrement(dotshap))}))
+    bordershap = borderh, borderw
+    offset = add(multiply(direc, dotshap), multiply(direc, bordershap))
+    itv = interval(-15, 16, 1)
+    itv = apply(lbind(multiply, offset), itv)
+    dots = mapply(lbind(shift, starterdot), itv)
+    gi = fill(gi, dotcol, dots)
+    protobx = backdrop(frozenset({(dotloci - borderh, dotlocj - borderw), (
+        dotloci + doth + borderh - 1, dotlocj + dotw + borderw - 1)}))
+    bx = protobx - starterdot
+    bxshifted = shift(bx, offset)
+    go = fill(gi, boxcol, bxshifted)
+    gi = fill(gi, boxcol, bx)
+    return {'input': gi, 'output': go}
+
+def generate_4258a5f9(diff_lb: float, diff_ub: float) ->dict:
+    colopts = remove(1, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (2, 30))
+    w = unifint(diff_lb, diff_ub, (2, 30))
+    bgc = choice(colopts)
+    remcols = remove(bgc, colopts)
+    fgc = choice(remcols)
+    gi = canvas(bgc, (h, w))
+    mp = h * w // 2 if h * w % 2 == 1 else h * w // 2 - 1
+    ndots = unifint(diff_lb, diff_ub, (1, mp))
+    inds = totuple(asindices(gi))
+    dots = sample(inds, ndots)
+    go = fill(gi, 1, mapply(neighbors, frozenset(dots)))
+    go = fill(go, fgc, dots)
+    gi = fill(gi, fgc, dots)
+    return {'input': gi, 'output': go}
+
+def generate_3de23699(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (5, 30))
+    w = unifint(diff_lb, diff_ub, (5, 30))
+    bgc = choice(cols)
+    c = canvas(bgc, (h, w))
+    hi = unifint(diff_lb, diff_ub, (4, h))
+    wi = unifint(diff_lb, diff_ub, (4, w))
+    loci = randint(0, h - hi)
+    locj = randint(0, w - wi)
+    remcols = remove(bgc, cols)
+    ccol = choice(remcols)
+    remcols = remove(ccol, remcols)
+    ncol = choice(remcols)
+    tmpo = frozenset({(loci, locj), (loci + hi - 1, locj + wi - 1)})
+    cnds = totuple(backdrop(inbox(tmpo)))
+    mp = len(cnds) // 2
+    dev = unifint(diff_lb, diff_ub, (0, mp))
+    ncnds = choice((dev, len(cnds) - dev))
+    ncnds = min(max(0, ncnds), len(cnds))
+    ss = sample(cnds, ncnds)
+    gi = fill(c, ccol, corners(tmpo))
+    gi = fill(gi, ncol, ss)
+    go = trim(crop(switch(gi, ccol, ncol), (loci, locj), (hi, wi)))
+    return {'input': gi, 'output': go}
+
+def generate_6d58a25d(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    shp = normalize(frozenset({(0, 0), (1, 0), (1, 1), (1, -1), (2, -1), (2,
+        -2), (2, 1), (2, 2), (3, 3), (3, -3)}))
+    h = unifint(diff_lb, diff_ub, (5, 30))
+    w = unifint(diff_lb, diff_ub, (8, 30))
+    bgc = choice(cols)
+    remcols = remove(bgc, cols)
+    c = canvas(bgc, (h, w))
+    inds = totuple(asindices(c))
+    c1 = choice(remcols)
+    c2 = choice(remove(c1, remcols))
+    loci = randint(0, h - 4)
+    locj = randint(0, w - 7)
+    plcd = shift(shp, (loci, locj))
+    rem = difference(inds, plcd)
+    nnoise = unifint(diff_lb, diff_ub, (1, max(1, len(rem) // 2 - 1)))
+    nois = sample(rem, nnoise)
+    gi = fill(c, c2, nois)
+    gi = fill(gi, c1, plcd)
+    ff = lambda ij: len(intersection(shoot(ij, (-1, 0)), plcd)) > 0
+    trg = sfilter(nois, ff)
+    gg = lambda ij: valmax(sfilter(plcd, lambda kl: kl[1] == ij[1]), first) + 1
+    kk = lambda ij: connect((gg(ij), ij[1]), (h - 1, ij[1]))
+    fullres = mapply(kk, trg)
+    go = fill(gi, c2, fullres)
+    rotf = choice((identity, rot90, rot180, rot270))
+    gi = rotf(gi)
+    go = rotf(go)
+    return {'input': gi, 'output': go}
+
+def generate_ce22a75a(diff_lb: float, diff_ub: float) ->dict:
+    cols = remove(1, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (3, 30))
+    w = unifint(diff_lb, diff_ub, (3, 30))
+    bgc = choice(cols)
+    remcols = remove(bgc, cols)
+    fgc = choice(remcols)
+    c = canvas(bgc, (h, w))
+    ndots = unifint(diff_lb, diff_ub, (1, h * w // 3))
+    dots = sample(totuple(asindices(c)), ndots)
+    gi = fill(c, fgc, dots)
+    go = fill(c, 1, mapply(neighbors, dots))
+    go = fill(go, 1, dots)
+    return {'input': gi, 'output': go}
+
+def generate_d631b094(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (2, 30))
+    w = unifint(diff_lb, diff_ub, (2, 30))
+    bgc = 0
+    remcols = remove(bgc, cols)
+    fgc = choice(remcols)
+    nc = unifint(diff_lb, diff_ub, (1, min(30, h * w // 2 - 1)))
+    c = canvas(bgc, (h, w))
+    cands = totuple(asindices(c))
+    cels = sample(cands, nc)
+    gi = fill(c, fgc, cels)
+    go = canvas(fgc, (1, nc))
+    return {'input': gi, 'output': go}
+
+def generate_7c008303(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (2, 13))
+    w = unifint(diff_lb, diff_ub, (2, 13))
+    h = h * 2
+    w = w * 2
+    bgc = choice(cols)
+    remcols = remove(bgc, cols)
+    linc = choice(remcols)
+    remcols = remove(linc, remcols)
+    fgc = choice(remcols)
+    remcols = remove(fgc, remcols)
+    fremcols = sample(remcols, unifint(diff_lb, diff_ub, (1, 4)))
+    qc = [choice(fremcols) for j in range(4)]
+    c = canvas(bgc, (h, w))
+    inds = totuple(asindices(c))
+    ncd = unifint(diff_lb, diff_ub, (0, h * w // 2))
+    nc = choice((ncd, h * w - ncd))
+    nc = min(max(0, nc), h * w)
+    cels = sample(inds, nc)
+    go = fill(c, fgc, cels)
+    gi = canvas(bgc, (h + 3, w + 3))
+    gi = paint(gi, shift(asobject(go), (3, 3)))
+    gi = fill(gi, linc, connect((2, 0), (2, w + 2)))
+    gi = fill(gi, linc, connect((0, 2), (h + 2, 2)))
+    gi = fill(gi, qc[0], {(0, 0)})
+    gi = fill(gi, qc[1], {(0, 1)})
+    gi = fill(gi, qc[2], {(1, 0)})
+    gi = fill(gi, qc[3], {(1, 1)})
+    A = lefthalf(tophalf(go))
+    B = righthalf(tophalf(go))
+    C = lefthalf(bottomhalf(go))
+    D = righthalf(bottomhalf(go))
+    A2 = replace(A, fgc, qc[0])
+    B2 = replace(B, fgc, qc[1])
+    C2 = replace(C, fgc, qc[2])
+    D2 = replace(D, fgc, qc[3])
+    go = vconcat(hconcat(A2, B2), hconcat(C2, D2))
+    rotf = choice((identity, rot90, rot180, rot270))
+    gi = rotf(gi)
+    go = rotf(go)
+    return {'input': gi, 'output': go}
+
+def generate_46f33fce(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (2, 7))
+    w = unifint(diff_lb, diff_ub, (2, 7))
+    nc = unifint(diff_lb, diff_ub, (0, h * w // 2 - 1))
+    bgc = choice(cols)
+    remcols = remove(bgc, cols)
+    go = canvas(bgc, (h, w))
+    gi = canvas(bgc, (h * 2, w * 2))
+    inds = totuple(asindices(go))
+    locs = sample(inds, nc)
+    objo = frozenset({(choice(remcols), ij) for ij in locs})
+    f = lambda cij: (cij[0], double(cij[1]))
+    obji = shift(apply(f, objo), (1, 1))
+    gi = paint(gi, obji)
+    go = paint(go, objo)
+    go = upscale(go, 4)
+    return {'input': gi, 'output': go}
+
+def generate_dc1df850(diff_lb: float, diff_ub: float) ->dict:
+    cols = difference(interval(0, 10, 1), (1, 2))
+    h = unifint(diff_lb, diff_ub, (4, 30))
+    w = unifint(diff_lb, diff_ub, (4, 30))
+    bgc = choice(cols)
+    remcols = remove(bgc, cols)
+    c = canvas(bgc, (h, w))
+    nc = unifint(diff_lb, diff_ub, (0, h * w // 2 - 1))
+    nreddev = unifint(diff_lb, diff_ub, (0, nc // 2))
+    nred = choice((nreddev, nc - nreddev))
+    nred = min(max(0, nred), nc)
+    inds = totuple(asindices(c))
+    occ = sample(inds, nc)
+    reds = sample(occ, nred)
+    others = difference(occ, reds)
+    c = fill(c, 2, reds)
+    obj = frozenset({(choice(remcols), ij) for ij in others})
+    c = paint(c, obj)
+    gi = tuple(r for r in c)
+    go = underfill(c, 1, mapply(neighbors, frozenset(reds)))
+    return {'input': gi, 'output': go}
+
+def generate_f76d97a5(diff_lb: float, diff_ub: float) ->dict:
+    cols = remove(0, remove(5, interval(0, 10, 1)))
+    h = unifint(diff_lb, diff_ub, (4, 30))
+    w = unifint(diff_lb, diff_ub, (4, 30))
+    col = choice(cols)
+    gi = canvas(5, (h, w))
+    go = canvas(col, (h, w))
+    numdev = unifint(diff_lb, diff_ub, (0, h * w // 2))
+    num = choice((numdev, h * w - numdev))
+    num = min(max(1, num), h * w)
+    inds = totuple(asindices(gi))
+    locs = sample(inds, num)
+    gi = fill(gi, col, locs)
+    go = fill(go, 0, locs)
+    return {'input': gi, 'output': go}
+
+def generate_b94a9452(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (4, 30))
+    w = unifint(diff_lb, diff_ub, (4, 30))
+    bgc, outer, inner = sample(cols, 3)
+    c = canvas(bgc, (h, w))
+    oh = unifint(diff_lb, diff_ub, (3, h - 1))
+    ow = unifint(diff_lb, diff_ub, (3, w - 1))
+    loci = randint(0, h - oh)
+    locj = randint(0, w - ow)
+    oh2d = unifint(diff_lb, diff_ub, (0, oh // 2))
+    ow2d = unifint(diff_lb, diff_ub, (0, ow // 2))
+    oh2 = choice((oh2d, oh - oh2d))
+    oh2 = min(max(1, oh2), oh - 2)
+    ow2 = choice((ow2d, ow - ow2d))
+    ow2 = min(max(1, ow2), ow - 2)
+    loci2 = randint(loci + 1, loci + oh - oh2 - 1)
+    locj2 = randint(locj + 1, locj + ow - ow2 - 1)
+    obj1 = backdrop(frozenset({(loci, locj), (loci + oh - 1, locj + ow - 1)}))
+    obj2 = backdrop(frozenset({(loci2, locj2), (loci2 + oh2 - 1, locj2 +
+        ow2 - 1)}))
+    gi = fill(c, outer, obj1)
+    gi = fill(gi, inner, obj2)
+    go = compress(gi)
+    go = switch(go, outer, inner)
+    return {'input': gi, 'output': go}
+
+def generate_cf98881b(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (2, 30))
+    w = unifint(diff_lb, diff_ub, (2, 9))
+    bgc, barcol, cola, colb, colc = sample(cols, 5)
+    canv = canvas(bgc, (h, w))
+    inds = totuple(asindices(canv))
+    gbar = canvas(barcol, (h, 1))
+    mp = h * w // 2
+    devrng = 0, mp
+    deva = unifint(diff_lb, diff_ub, devrng)
+    devb = unifint(diff_lb, diff_ub, devrng)
+    devc = unifint(diff_lb, diff_ub, devrng)
+    sgna = choice((+1, -1))
+    sgnb = choice((+1, -1))
+    sgnc = choice((+1, -1))
+    deva = sgna * deva
+    devb = sgnb * devb
+    devc = sgnc * devc
+    numa = mp + deva
+    numb = mp + devb
+    numc = mp + devc
+    numa = max(min(h * w - 1, numa), 1)
+    numb = max(min(h * w - 1, numb), 1)
+    numc = max(min(h * w - 1, numc), 1)
+    a = sample(inds, numa)
+    b = sample(inds, numb)
+    c = sample(inds, numc)
+    gia = fill(canv, cola, a)
+    gib = fill(canv, colb, b)
+    gic = fill(canv, colc, c)
+    gi = hconcat(hconcat(hconcat(gia, gbar), hconcat(gib, gbar)), gic)
+    go = fill(gic, colb, b)
+    go = fill(go, cola, a)
+    return {'input': gi, 'output': go}
+
+def generate_952a094c(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (6, 30))
+    w = unifint(diff_lb, diff_ub, (6, 30))
+    ih = unifint(diff_lb, diff_ub, (4, h - 2))
+    iw = unifint(diff_lb, diff_ub, (4, w - 2))
+    loci = randint(1, h - ih - 1)
+    locj = randint(1, w - iw - 1)
+    sp = loci, locj
+    ep = loci + ih - 1, locj + iw - 1
+    bx = box(frozenset({sp, ep}))
+    bgc, fgc, a, b, c, d = sample(cols, 6)
+    canv = canvas(bgc, (h, w))
+    canvv = fill(canv, fgc, bx)
+    gi = tuple(e for e in canvv)
+    go = tuple(e for e in canvv)
+    gi = fill(gi, a, {(loci + 1, locj + 1)})
+    go = fill(go, a, {(loci + ih, locj + iw)})
+    gi = fill(gi, b, {(loci + 1, locj + iw - 2)})
+    go = fill(go, b, {(loci + ih, locj - 1)})
+    gi = fill(gi, c, {(loci + ih - 2, locj + 1)})
+    go = fill(go, c, {(loci - 1, locj + iw)})
+    gi = fill(gi, d, {(loci + ih - 2, locj + iw - 2)})
+    go = fill(go, d, {(loci - 1, locj - 1)})
+    return {'input': gi, 'output': go}
+
+def generate_b8cdaf2b(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (3, 30))
+    w = unifint(diff_lb, diff_ub, (3, 30))
+    bgc, linc, dotc = sample(cols, 3)
+    lin = connect((0, 0), (0, w - 1))
+    winv = unifint(diff_lb, diff_ub, (2, w - 1))
+    w2 = w - winv
+    w2 = min(max(w2, 1), w - 2)
+    locj = randint(1, w - w2 - 1)
+    bar2 = connect((0, locj), (0, locj + w2 - 1))
+    c = canvas(bgc, (h, w))
+    gi = fill(c, linc, lin)
+    gi = fill(gi, dotc, bar2)
+    gi = fill(gi, linc, shift(bar2, (1, 0)))
+    go = fill(gi, dotc, shoot((2, locj - 1), (1, -1)))
+    go = fill(go, dotc, shoot((2, locj + w2), (1, 1)))
+    rotf = choice((identity, rot90, rot180, rot270))
+    gi = rotf(gi)
+    go = rotf(go)
+    return {'input': gi, 'output': go}
+
+def generate_b548a754(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (5, 30))
+    w = unifint(diff_lb, diff_ub, (4, 30))
+    hi = unifint(diff_lb, diff_ub, (4, h - 1))
+    wi = unifint(diff_lb, diff_ub, (3, w - 1))
+    loci = randint(0, h - hi)
+    locj = randint(0, w - wi)
+    bx = box(frozenset({(loci, locj), (loci + hi - 1, locj + wi - 1)}))
+    ins = backdrop(inbox(bx))
+    bgc, boxc, inc, dotc = sample(cols, 4)
+    c = canvas(bgc, (h, w))
+    go = fill(c, boxc, bx)
+    go = fill(go, inc, ins)
+    cutoff = randint(loci + 2, loci + hi - 2)
+    bx2 = box(frozenset({(loci, locj), (cutoff, locj + wi - 1)}))
+    ins2 = backdrop(inbox(bx2))
+    gi = fill(c, boxc, bx2)
+    gi = fill(gi, inc, ins2)
+    locc = choice(totuple(connect((loci + hi - 1, locj), (loci + hi - 1, 
+        locj + wi - 1))))
+    gi = fill(gi, dotc, {locc})
+    rotf = choice((identity, rot90, rot180, rot270))
+    gi = rotf(gi)
+    go = rotf(go)
+    return {'input': gi, 'output': go}
+
+def generate_f1cefba8(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (7, 30))
+    w = unifint(diff_lb, diff_ub, (7, 30))
+    ih = unifint(diff_lb, diff_ub, (6, h - 1))
+    iw = unifint(diff_lb, diff_ub, (6, w - 1))
+    loci = randint(0, h - ih)
+    locj = randint(0, w - iw)
+    bgc, ringc, inc = sample(cols, 3)
+    obj = frozenset({(loci, locj), (loci + ih - 1, locj + iw - 1)})
+    ring1 = box(obj)
+    ring2 = inbox(obj)
+    bd = backdrop(obj)
+    c = canvas(bgc, (h, w))
+    c = fill(c, inc, bd)
+    c = fill(c, ringc, ring1 | ring2)
+    cands = totuple(ring2 - corners(ring2))
+    numc = unifint(diff_lb, diff_ub, (1, len(cands) // 2))
+    locs = sample(cands, numc)
+    gi = fill(c, inc, locs)
+    lm = lowermost(ring2)
+    hori = sfilter(locs, lambda ij: ij[0] > loci + 1 and ij[0] < lm)
+    verti = difference(locs, hori)
+    hlines = mapply(hfrontier, hori)
+    vlines = mapply(vfrontier, verti)
+    fulllocs = set(hlines) | set(vlines)
+    topaintinc = fulllocs & ofcolor(c, bgc)
+    topaintringc = fulllocs & ofcolor(c, inc)
+    go = fill(c, inc, topaintinc)
+    go = fill(go, ringc, topaintringc)
+    return {'input': gi, 'output': go}
+
+def generate_d89b689b(diff_lb: float, diff_ub: float) ->dict:
+    cols = remove(5, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (4, 30))
+    w = unifint(diff_lb, diff_ub, (4, 30))
+    bgc, sqc, a, b, c, d = sample(cols, 6)
+    loci = randint(1, h - 3)
+    locj = randint(1, w - 3)
+    canv = canvas(bgc, (h, w))
+    go = fill(canv, a, {(loci, locj)})
+    go = fill(go, b, {(loci, locj + 1)})
+    go = fill(go, c, {(loci + 1, locj)})
+    go = fill(go, d, {(loci + 1, locj + 1)})
+    inds = totuple(asindices(canv))
+    aopts = sfilter(inds, lambda ij: ij[0] < loci and ij[1] < locj)
+    bopts = sfilter(inds, lambda ij: ij[0] < loci and ij[1] > locj + 1)
+    copts = sfilter(inds, lambda ij: ij[0] > loci + 1 and ij[1] < locj)
+    dopts = sfilter(inds, lambda ij: ij[0] > loci + 1 and ij[1] > locj + 1)
+    aopts = order(aopts, lambda ij: manhattan({ij}, {(loci, locj)}))
+    bopts = order(bopts, lambda ij: manhattan({ij}, {(loci, locj + 1)}))
+    copts = order(copts, lambda ij: manhattan({ij}, {(loci + 1, locj)}))
+    dopts = order(dopts, lambda ij: manhattan({ij}, {(loci + 1, locj + 1)}))
+    aidx = unifint(diff_lb, diff_ub, (0, len(aopts) - 1))
+    bidx = unifint(diff_lb, diff_ub, (0, len(bopts) - 1))
+    cidx = unifint(diff_lb, diff_ub, (0, len(copts) - 1))
+    didx = unifint(diff_lb, diff_ub, (0, len(dopts) - 1))
+    loca = aopts[aidx]
+    locb = bopts[bidx]
+    locc = copts[cidx]
+    locd = dopts[didx]
+    gi = fill(canv, sqc, backdrop({(loci, locj), (loci + 1, locj + 1)}))
+    gi = fill(gi, a, {loca})
+    gi = fill(gi, b, {locb})
+    gi = fill(gi, c, {locc})
+    gi = fill(gi, d, {locd})
+    return {'input': gi, 'output': go}
+
+def generate_a2fd1cf0(diff_lb: float, diff_ub: float) ->dict:
+    cols = difference(interval(0, 10, 1), (2, 3, 8))
+    h = unifint(diff_lb, diff_ub, (4, 30))
+    w = unifint(diff_lb, diff_ub, (4, 30))
+    gloci = unifint(diff_lb, diff_ub, (1, h - 1))
+    glocj = unifint(diff_lb, diff_ub, (1, w - 1))
+    gloc = gloci, glocj
+    bgc = choice(cols)
+    g = canvas(bgc, (h, w))
+    g = fill(g, 3, {gloc})
+    g = rot180(g)
+    glocinv = center(ofcolor(g, 3))
+    glocinvi, glocinvj = glocinv
+    rloci = unifint(diff_lb, diff_ub, (glocinvi + 1, h - 1))
+    rlocj = unifint(diff_lb, diff_ub, (glocinvj + 1, w - 1))
+    rlocinv = rloci, rlocj
+    g = fill(g, 2, {rlocinv})
+    rotf = choice((identity, rot90, rot180, rot270))
+    gi = rotf(g)
+    a, b = center(ofcolor(gi, 2))
+    c, d = center(ofcolor(gi, 3))
+    go = fill(gi, 8, connect((a, b), (a, d)))
+    go = fill(go, 8, connect((a, d), (c, d)))
+    go = fill(go, 2, {(a, b)})
+    go = fill(go, 3, {(c, d)})
+    return {'input': gi, 'output': go}
+
+def generate_d4a91cb9(diff_lb: float, diff_ub: float) ->dict:
+    cols = difference(interval(0, 10, 1), (2, 4, 8))
+    h = unifint(diff_lb, diff_ub, (4, 30))
+    w = unifint(diff_lb, diff_ub, (4, 30))
+    gloci = unifint(diff_lb, diff_ub, (1, h - 1))
+    glocj = unifint(diff_lb, diff_ub, (1, w - 1))
+    gloc = gloci, glocj
+    bgc = choice(cols)
+    g = canvas(bgc, (h, w))
+    g = fill(g, 8, {gloc})
+    g = rot180(g)
+    glocinv = center(ofcolor(g, 8))
+    glocinvi, glocinvj = glocinv
+    rloci = unifint(diff_lb, diff_ub, (glocinvi + 1, h - 1))
+    rlocj = unifint(diff_lb, diff_ub, (glocinvj + 1, w - 1))
+    rlocinv = rloci, rlocj
+    g = fill(g, 2, {rlocinv})
+    rotf = choice((identity, rot90, rot180, rot270))
+    gi = rotf(g)
+    a, b = center(ofcolor(gi, 2))
+    c, d = center(ofcolor(gi, 8))
+    go = fill(gi, 4, connect((a, b), (a, d)))
+    go = fill(go, 4, connect((a, d), (c, d)))
+    go = fill(go, 2, {(a, b)})
+    go = fill(go, 8, {(c, d)})
+    return {'input': gi, 'output': go}
+
+def generate_8731374e(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (10, 30))
+    w = unifint(diff_lb, diff_ub, (10, 30))
+    inh = randint(5, h - 2)
+    inw = randint(5, w - 2)
+    bgc, fgc = sample(cols, 2)
+    num = unifint(diff_lb, diff_ub, (1, min(inh, inw)))
+    mat = canvas(bgc, (inh - 2, inw - 2))
+    tol = lambda g: list(list(e) for e in g)
+    tot = lambda g: tuple(tuple(e) for e in g)
+    mat = fill(mat, fgc, connect((0, 0), (num - 1, num - 1)))
+    mat = tol(mat)
+    shuffle(mat)
+    mat = tol(dmirror(tot(mat)))
+    shuffle(mat)
+    mat = dmirror(tot(mat))
+    sgi = paint(canvas(bgc, (inh, inw)), shift(asobject(mat), (1, 1)))
+    inds = ofcolor(sgi, fgc)
+    lins = mapply(fork(combine, vfrontier, hfrontier), inds)
+    go = fill(sgi, fgc, lins)
+    numci = unifint(diff_lb, diff_ub, (3, 10))
+    numc = 13 - numci
+    ccols = sample(cols, numc)
+    c = canvas(-1, (h, w))
+    inds = asindices(c)
+    obj = {(choice(ccols), ij) for ij in inds}
+    gi = paint(c, obj)
+    loci = randint(1, h - inh - 1)
+    locj = randint(1, w - inw - 1)
+    loc = loci, locj
+    plcd = shift(asobject(sgi), loc)
+    gi = paint(gi, plcd)
+    a, b = ulcorner(plcd)
+    c, d = lrcorner(plcd)
+    p1 = choice(totuple(connect((a - 1, b), (a - 1, d))))
+    p2 = choice(totuple(connect((a, b - 1), (c, b - 1))))
+    p3 = choice(totuple(connect((c + 1, b), (c + 1, d))))
+    p4 = choice(totuple(connect((a, d + 1), (c, d + 1))))
+    remcols = remove(bgc, ccols)
+    fixobj = {(choice(remcols), p1), (choice(remcols), p2), (choice(remcols
+        ), p3), (choice(remcols), p4)}
+    gi = paint(gi, fixobj)
+    return {'input': gi, 'output': go}
+
+def generate_cce03e0d(diff_lb: float, diff_ub: float) ->dict:
+    cols = difference(interval(0, 10, 1), (2, 8))
+    h = unifint(diff_lb, diff_ub, (2, 5))
+    w = unifint(diff_lb, diff_ub, (2, 5))
+    nred = unifint(diff_lb, diff_ub, (1, h * w - 1))
+    ncols = unifint(diff_lb, diff_ub, (1, min(8, nred)))
+    ncells = unifint(diff_lb, diff_ub, (1, h * w - nred))
+    ccols = sample(cols, ncols)
+    gi = canvas(0, (h, w))
+    inds = asindices(gi)
+    reds = sample(totuple(inds), nred)
+    reminds = difference(inds, reds)
+    gi = fill(gi, 2, reds)
+    rest = sample(totuple(reminds), ncells)
+    rest = {(choice(ccols), ij) for ij in rest}
+    gi = paint(gi, rest)
+    go = canvas(0, (h ** 2, w ** 2))
+    locs = apply(rbind(multiply, (h, w)), reds)
+    res = mapply(lbind(shift, asobject(gi)), locs)
+    go = paint(go, res)
+    return {'input': gi, 'output': go}
+
+def generate_d4f3cd78(diff_lb: float, diff_ub: float) ->dict:
+    cols = remove(8, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (10, 30))
+    w = unifint(diff_lb, diff_ub, (10, 30))
+    ih = unifint(diff_lb, diff_ub, (3, h // 3 * 2))
+    iw = unifint(diff_lb, diff_ub, (3, w // 3 * 2))
+    loci = randint(1, h - ih - 1)
+    locj = randint(1, w - iw - 1)
+    crns = frozenset({(loci, locj), (loci + ih - 1, locj + iw - 1)})
+    fullcrns = corners(crns)
+    bx = box(crns)
+    opts = bx - fullcrns
+    bgc, fgc = sample(cols, 2)
+    c = canvas(bgc, (h, w))
+    nholes = unifint(diff_lb, diff_ub, (1, len(opts)))
+    holes = sample(totuple(opts), nholes)
+    gi = fill(c, fgc, bx - set(holes))
+    bib = backdrop(inbox(bx))
+    go = fill(gi, 8, bib)
+    A, B = ulcorner(bib)
+    C, D = lrcorner(bib)
+    f1 = lambda idx: 1 if idx > C else -1 if idx < A else 0
+    f2 = lambda idx: 1 if idx > D else -1 if idx < B else 0
+    f = lambda d: shoot(d, (f1(d[0]), f2(d[1])))
+    res = mapply(f, set(holes))
+    go = fill(go, 8, res)
+    return {'input': gi, 'output': go}
+
+def generate_9d9215db(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (5, 14))
+    w = unifint(diff_lb, diff_ub, (5, 14))
+    h = h * 2 + 1
+    w = w * 2 + 1
+    bgc = choice(cols)
+    remcols = remove(bgc, cols)
+    ub = min(h, w) // 4
+    nrings = unifint(diff_lb, diff_ub, (1, ub))
+    onlinesbase = tuple([(2 * k + 1, 2 * k + 1) for k in range(ub)])
+    onlines = sample(onlinesbase, nrings)
+    onlines = {(choice(remcols), ij) for ij in onlines}
+    gi = canvas(bgc, (h, w))
+    gi = paint(gi, onlines)
+    linsbase = apply(rbind(add, (0, 2)), onlinesbase[:-1])
+    nlines = unifint(diff_lb, diff_ub, (1, len(linsbase)))
+    linesps = sample(linsbase, nlines)
+    colors = [choice(remcols) for k in range(nlines)]
+    dots = {(col, ij) for col, ij in zip(colors, linesps)}
+    dots2 = {(col, ij[::-1]) for col, ij in zip(colors, linesps)}
+    gi = paint(gi, dots | dots2)
+    ff = lambda ij: ij[1] % 2 == 1
+    ff2 = lambda ij: ij[0] % 2 == 1
+    linesps2 = tuple(x[::-1] for x in linesps)
+    lines = tuple(sfilter(connect(ij, (ij[0], w - ij[1] - 1)), ff) for ij in
+        linesps)
+    lines2 = tuple(sfilter(connect(ij, (h - ij[0] - 1, ij[1])), ff2) for ij in
+        linesps2)
+    lines = merge({recolor(col, l1 | l2) for col, (l1, l2) in zip(colors,
+        zip(lines, lines2))})
+    gobase = paint(gi, lines)
+    go = paint(gobase, merge(fgpartition(vmirror(gobase))))
+    go = paint(go, merge(fgpartition(hmirror(gobase))))
+    go = paint(go, merge(fgpartition(vmirror(hmirror(gobase)))))
+    rotf = choice((identity, rot90, rot180, rot270))
+    gi = rotf(gi)
+    go = rotf(go)
+    return {'input': gi, 'output': go}
+
+def generate_67385a82(diff_lb: float, diff_ub: float) ->dict:
+    cols = remove(0, remove(8, interval(0, 10, 1)))
+    h = unifint(diff_lb, diff_ub, (3, 30))
+    w = unifint(diff_lb, diff_ub, (3, 30))
+    col = choice(cols)
+    gi = canvas(0, (h, w))
+    inds = totuple(asindices(gi))
+    ncd = unifint(diff_lb, diff_ub, (0, len(inds) // 2))
+    nc = choice((ncd, len(inds) - ncd))
+    nc = min(max(1, nc), len(inds) - 1)
+    locs = sample(inds, nc)
+    gi = fill(gi, col, locs)
+    objs = objects(gi, T, F, F)
+    rems = toindices(merge(sizefilter(colorfilter(objs, col), 1)))
+    blues = difference(ofcolor(gi, col), rems)
+    go = fill(gi, 8, blues)
+    return {'input': gi, 'output': go}
+
+def generate_e48d4e1a(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (3, 30))
+    w = unifint(diff_lb, diff_ub, (3, 30))
+    loci = randint(1, h - 2)
+    locj = randint(1, w - 2)
+    inds = asindices(canvas(-1, (loci, locj)))
+    maxn = min(min(h - loci - 1, w - locj - 1), len(inds))
+    nn = unifint(diff_lb, diff_ub, (1, maxn))
+    ss = sample(totuple(inds), nn)
+    bgc, fgc, dotc = sample(cols, 3)
+    gi = canvas(bgc, (h, w))
+    go = canvas(bgc, (h, w))
+    gi = fill(gi, fgc, hfrontier((loci, 0)) | vfrontier((0, locj)))
+    gi = fill(gi, dotc, ss)
+    go = fill(go, fgc, hfrontier((loci + nn, 0)) | vfrontier((0, locj + nn)))
+    rotf = choice((identity, rot90, rot180, rot270))
+    gi = rotf(gi)
+    go = rotf(go)
+    return {'input': gi, 'output': go}
+
+def generate_ac0a08a4(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (2, 5))
+    w = unifint(diff_lb, diff_ub, (2, 5))
+    num = unifint(diff_lb, diff_ub, (1, min(min(9, h * w - 2), min(30 // h,
+        30 // w))))
+    bgc = choice(cols)
+    c = canvas(bgc, (h, w))
+    inds = asindices(c)
+    locs = sample(totuple(inds), num)
+    remcols = remove(bgc, cols)
+    obj = {(col, loc) for col, loc in zip(sample(remcols, num), locs)}
+    gi = paint(c, obj)
+    go = upscale(gi, num)
+    return {'input': gi, 'output': go}
+
+def generate_77fdfe62(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (1, 13))
+    w = unifint(diff_lb, diff_ub, (1, 13))
+    c1, c2, c3, c4, barc, bgc, inc = sample(cols, 7)
+    qd = canvas(bgc, (h, w))
+    inds = totuple(asindices(qd))
+    fullh = 2 * h + 4
+    fullw = 2 * w + 4
+    n1 = unifint(diff_lb, diff_ub, (1, h * w))
+    n2 = unifint(diff_lb, diff_ub, (1, h * w))
+    n3 = unifint(diff_lb, diff_ub, (1, h * w))
+    n4 = unifint(diff_lb, diff_ub, (1, h * w))
+    i1 = sample(inds, n1)
+    i2 = sample(inds, n2)
+    i3 = sample(inds, n3)
+    i4 = sample(inds, n4)
+    gi = canvas(bgc, (2 * h + 4, 2 * w + 4))
+    gi = fill(gi, barc, connect((1, 0), (1, fullw - 1)))
+    gi = fill(gi, barc, connect((fullh - 2, 0), (fullh - 2, fullw - 1)))
+    gi = fill(gi, barc, connect((0, 1), (fullh - 1, 1)))
+    gi = fill(gi, barc, connect((0, fullw - 2), (fullh - 1, fullw - 2)))
+    gi = fill(gi, c1, {(0, 0)})
+    gi = fill(gi, c2, {(0, fullw - 1)})
+    gi = fill(gi, c3, {(fullh - 1, 0)})
+    gi = fill(gi, c4, {(fullh - 1, fullw - 1)})
+    gi = fill(gi, inc, shift(i1, (2, 2)))
+    gi = fill(gi, inc, shift(i2, (2, 2 + w)))
+    gi = fill(gi, inc, shift(i3, (2 + h, 2)))
+    gi = fill(gi, inc, shift(i4, (2 + h, 2 + w)))
+    go = canvas(bgc, (2 * h, 2 * w))
+    go = fill(go, c1, shift(i1, (0, 0)))
+    go = fill(go, c2, shift(i2, (0, w)))
+    go = fill(go, c3, shift(i3, (h, 0)))
+    go = fill(go, c4, shift(i4, (h, w)))
+    return {'input': gi, 'output': go}
+
+def generate_eb281b96(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (3, 8))
+    w = unifint(diff_lb, diff_ub, (3, 30))
+    bgc = choice(cols)
+    remcols = remove(bgc, cols)
+    numc = unifint(diff_lb, diff_ub, (1, 9))
+    ccols = sample(remcols, numc)
+    c = canvas(bgc, (h, w))
+    inds = asindices(c)
+    ncells = unifint(diff_lb, diff_ub, (1, h * w))
+    locs = sample(totuple(inds), ncells)
+    obj = {(choice(ccols), ij) for ij in locs}
+    gi = paint(c, obj)
+    go = vconcat(gi, hmirror(gi[:-1]))
+    go = vconcat(go, hmirror(go[:-1]))
+    return {'input': gi, 'output': go}
+
+def generate_d4469b4b(diff_lb: float, diff_ub: float) ->dict:
+    cols = difference(interval(0, 10, 1), (1, 2, 3))
+    canv = canvas(5, (3, 3))
+    A = fill(canv, 0, {(1, 0), (2, 0), (1, 2), (2, 2)})
+    B = fill(canv, 0, corners(asindices(canv)))
+    C = fill(canv, 0, {(0, 0), (0, 1), (1, 0), (1, 1)})
+    colabc = (2, A), (1, B), (3, C)
+    h = unifint(diff_lb, diff_ub, (2, 30))
+    w = unifint(diff_lb, diff_ub, (2, 30))
+    col, go = choice(colabc)
+    gi = canvas(col, (h, w))
+    inds = asindices(gi)
+    numc = unifint(diff_lb, diff_ub, (1, 7))
+    ccols = sample(cols, numc)
+    numcells = unifint(diff_lb, diff_ub, (0, h * w - 1))
+    locs = sample(totuple(inds), numcells)
+    otherobj = {(choice(ccols), ij) for ij in locs}
+    gi = paint(gi, otherobj)
+    return {'input': gi, 'output': go}
+
+def generate_f5b8619d(diff_lb: float, diff_ub: float) ->dict:
+    cols = remove(8, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (2, 15))
+    w = unifint(diff_lb, diff_ub, (2, 15))
+    ncells = unifint(diff_lb, diff_ub, (1, h * w // 2 - 1))
+    bgc = choice(cols)
+    remcols = remove(bgc, cols)
+    gi = canvas(bgc, (h, w))
+    inds = asindices(gi)
+    locs = sample(totuple(inds), ncells)
+    blockcol = randint(0, w - 1)
+    locs = sfilter(locs, lambda ij: ij[1] != blockcol)
+    numcols = unifint(diff_lb, diff_ub, (1, 8))
+    ccols = sample(remcols, numcols)
+    obj = frozenset({(choice(ccols), ij) for ij in locs})
+    gi = paint(gi, obj)
+    go = fill(gi, 8, mapply(vfrontier, set(locs)) & inds - set(locs))
+    go = hconcat(go, go)
+    go = vconcat(go, go)
+    return {'input': gi, 'output': go}
+
+def generate_10fcaaa3(diff_lb: float, diff_ub: float) ->dict:
+    cols = remove(8, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (2, 15))
+    w = unifint(diff_lb, diff_ub, (2, 15))
+    ncells = unifint(diff_lb, diff_ub, (1, max(1, h * w // 6)))
+    ncols = unifint(diff_lb, diff_ub, (1, 8))
+    bgc = choice(cols)
+    remcols = remove(bgc, cols)
+    ccols = sample(remcols, ncols)
+    c = canvas(bgc, (h, w))
+    inds = asindices(c)
+    locs = frozenset(sample(totuple(inds), ncells))
+    obj = frozenset({(choice(ccols), ij) for ij in locs})
+    gi = paint(c, obj)
+    go = hconcat(gi, gi)
+    go = vconcat(go, go)
+    fullocs = locs | shift(locs, (0, w)) | shift(locs, (h, 0)) | shift(locs,
+        (h, w))
+    nbhs = mapply(ineighbors, fullocs)
+    topaint = nbhs & ofcolor(go, bgc)
+    go = fill(go, 8, topaint)
+    return {'input': gi, 'output': go}
+
+def generate_bc1d5164(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (3, 15))
+    w = unifint(diff_lb, diff_ub, (2, 14))
+    fullh = 2 * h - 1
+    fullw = 2 * w + 1
+    bgc, objc = sample(cols, 2)
+    inds = asindices(canvas(-1, (h, w)))
+    nA = randint(1, (h - 1) * (w - 1) - 1)
+    nB = randint(1, (h - 1) * (w - 1) - 1)
+    nC = randint(1, (h - 1) * (w - 1) - 1)
+    nD = randint(1, (h - 1) * (w - 1) - 1)
+    A = sample(totuple(sfilter(inds, lambda ij: ij[0] < h - 1 and ij[1] < w -
+        1)), nA)
+    B = sample(totuple(sfilter(inds, lambda ij: ij[0] < h - 1 and ij[1] > 0
+        )), nB)
+    C = sample(totuple(sfilter(inds, lambda ij: ij[0] > 0 and ij[1] < w - 1
+        )), nC)
+    D = sample(totuple(sfilter(inds, lambda ij: ij[0] > 0 and ij[1] > 0)), nD)
+    gi = canvas(bgc, (fullh, fullw))
+    gi = fill(gi, objc, A)
+    gi = fill(gi, objc, shift(B, (0, fullw - w)))
+    gi = fill(gi, objc, shift(C, (fullh - h, 0)))
+    gi = fill(gi, objc, shift(D, (fullh - h, fullw - w)))
+    go = canvas(bgc, (h, w))
+    go = fill(go, objc, set(A) | set(B) | set(C) | set(D))
+    return {'input': gi, 'output': go}
+
+def generate_1b60fb0c(diff_lb: float, diff_ub: float) ->dict:
+    cols = remove(2, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (10, 30))
+    w = unifint(diff_lb, diff_ub, (10, 30))
+    odh = unifint(diff_lb, diff_ub, (2, min(h, w) // 2))
+    loci = randint(0, h - 2 * odh)
+    locj = randint(0, w - 2 * odh)
+    loc = loci, locj
+    bgc, objc = sample(cols, 2)
+    quad = canvas(bgc, (odh, odh))
+    ncellsd = unifint(diff_lb, diff_ub, (0, odh ** 2 // 2))
+    ncells = choice((ncellsd, odh ** 2 - ncellsd))
+    ncells = min(max(1, ncells), odh ** 2 - 1)
+    cells = sample(totuple(asindices(canvas(-1, (odh, odh)))), ncells)
+    g1 = fill(quad, objc, cells)
+    g2 = rot90(g1)
+    g3 = rot90(g2)
+    g4 = rot90(g3)
+    c1 = shift(ofcolor(g1, objc), (0, 0))
+    c2 = shift(ofcolor(g2, objc), (0, odh))
+    c3 = shift(ofcolor(g3, objc), (odh, odh))
+    c4 = shift(ofcolor(g4, objc), (odh, 0))
+    shftamt = randint(0, odh)
+    c1 = shift(c1, (0, shftamt))
+    c2 = shift(c2, (shftamt, 0))
+    c3 = shift(c3, (0, -shftamt))
+    c4 = shift(c4, (-shftamt, 0))
+    cs = c1, c2, c3, c4
+    rempart = choice(cs)
+    inobjparts = remove(rempart, cs)
+    inobj = merge(set(inobjparts))
+    rempart = rempart - inobj
+    inobj = shift(inobj, loc)
+    rempart = shift(rempart, loc)
+    gi = canvas(bgc, (h, w))
+    gi = fill(gi, objc, inobj)
+    go = fill(gi, 2, rempart)
+    return {'input': gi, 'output': go}
+
+def generate_3bd67248(diff_lb: float, diff_ub: float) ->dict:
+    cols = difference(interval(0, 10, 1), (2, 4))
+    h = unifint(diff_lb, diff_ub, (3, 15))
+    w = unifint(diff_lb, diff_ub, (3, 15))
+    bgc, linc = sample(cols, 2)
+    fac = unifint(diff_lb, diff_ub, (1, 30 // max(h, w)))
+    gi = canvas(bgc, (h, w))
+    gi = fill(gi, linc, connect((0, 0), (h - 1, 0)))
+    go = fill(gi, 4, connect((h - 1, 1), (h - 1, w - 1)))
+    go = fill(go, 2, shoot((h - 2, 1), (-1, 1)))
+    rotf = choice((identity, rot90, rot180, rot270))
+    gi = rotf(gi)
+    go = rotf(go)
+    gi = upscale(gi, fac)
+    go = upscale(go, fac)
+    return {'input': gi, 'output': go}
+
+def generate_27a28665(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    mapping = [(1, {(0, 0), (0, 1), (1, 0), (1, 2), (2, 1)}), (2, {(0, 0),
+        (1, 1), (2, 0), (0, 2), (2, 2)}), (3, {(2, 0), (0, 1), (0, 2), (1, 
+        1), (1, 2)}), (6, {(1, 1), (0, 1), (1, 0), (1, 2), (2, 1)})]
+    h = unifint(diff_lb, diff_ub, (3, 30))
+    w = unifint(diff_lb, diff_ub, (3, 30))
+    col, obj = choice(mapping)
+    bgc, objc = sample(cols, 2)
+    fac = unifint(diff_lb, diff_ub, (1, min(h, w) // 3))
+    go = canvas(col, (1, 1))
+    gi = canvas(bgc, (h, w))
+    canv = canvas(bgc, (3, 3))
+    canv = fill(canv, objc, obj)
+    canv = upscale(canv, fac)
+    obj = asobject(canv)
+    loci = randint(0, h - 3 * fac)
+    locj = randint(0, w - 3 * fac)
+    loc = loci, locj
+    gi = paint(gi, shift(obj, loc))
+    return {'input': gi, 'output': go}
+
+def generate_6f8cd79b(diff_lb: float, diff_ub: float) ->dict:
+    cols = remove(8, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (3, 30))
+    w = unifint(diff_lb, diff_ub, (3, 30))
+    bgc = choice(cols)
+    remcols = remove(bgc, cols)
+    gi = canvas(bgc, (h, w))
+    ncols = unifint(diff_lb, diff_ub, (1, 8))
+    ccols = sample(remcols, ncols)
+    ncells = unifint(diff_lb, diff_ub, (0, h * w))
+    inds = asindices(gi)
+    cells = sample(totuple(inds), ncells)
+    obj = {(choice(ccols), ij) for ij in cells}
+    gi = paint(gi, obj)
+    brd = box(inds)
+    go = fill(gi, 8, brd)
+    return {'input': gi, 'output': go}
+
+def generate_ec883f72(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (6, 30))
+    w = unifint(diff_lb, diff_ub, (6, 30))
+    ohi = unifint(diff_lb, diff_ub, (0, h - 6))
+    owi = unifint(diff_lb, diff_ub, (0, w - 6))
+    oh = h - 5 - ohi
+    ow = w - 5 - owi
+    loci = randint(0, h - oh)
+    locj = randint(0, w - ow)
+    bgc, sqc, linc = sample(cols, 3)
+    gi = canvas(bgc, (h, w))
+    obj = backdrop(frozenset({(loci, locj), (loci + oh - 1, locj + ow - 1)}))
+    gi = fill(gi, sqc, obj)
+    obob = outbox(outbox(obj))
+    gi = fill(gi, linc, obob)
+    ln1 = shoot(lrcorner(obob), (1, 1))
+    ln2 = shoot(ulcorner(obob), (-1, -1))
+    ln3 = shoot(llcorner(obob), (1, -1))
+    ln4 = shoot(urcorner(obob), (-1, 1))
+    lns = (ln1 | ln2 | ln3 | ln4) & ofcolor(gi, bgc)
+    go = fill(gi, sqc, lns)
+    return {'input': gi, 'output': go}
+
+def generate_ea786f4a(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (1, 14))
+    w = unifint(diff_lb, diff_ub, (1, 14))
+    mp = h, w
+    h = 2 * h + 1
+    w = 2 * w + 1
+    linc = choice(cols)
+    remcols = remove(linc, cols)
+    gi = canvas(linc, (h, w))
+    inds = remove(mp, asindices(gi))
+    ncols = unifint(diff_lb, diff_ub, (1, 9))
+    ccols = sample(remcols, ncols)
+    obj = {(choice(ccols), ij) for ij in inds}
+    gi = paint(gi, obj)
+    ln1 = shoot(mp, (-1, -1))
+    ln2 = shoot(mp, (1, 1))
+    ln3 = shoot(mp, (-1, 1))
+    ln4 = shoot(mp, (1, -1))
+    go = fill(gi, linc, ln1 | ln2 | ln3 | ln4)
+    return {'input': gi, 'output': go}
+
+def generate_a68b268e(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (2, 14))
+    w = unifint(diff_lb, diff_ub, (2, 4))
+    bgc, linc, c1, c2, c3, c4 = sample(cols, 6)
+    canv = canvas(bgc, (h, w))
+    inds = asindices(canv)
+    nc1d = unifint(diff_lb, diff_ub, (0, h * w // 2))
+    nc1 = choice((nc1d, h * w - nc1d))
+    nc1 = min(max(1, nc1), h * w - 1)
+    nc2d = unifint(diff_lb, diff_ub, (0, h * w // 2))
+    nc2 = choice((nc2d, h * w - nc2d))
+    nc2 = min(max(1, nc2), h * w - 1)
+    nc3d = unifint(diff_lb, diff_ub, (0, h * w // 2))
+    nc3 = choice((nc3d, h * w - nc3d))
+    nc3 = min(max(1, nc3), h * w - 1)
+    nc4d = unifint(diff_lb, diff_ub, (0, h * w // 2))
+    nc4 = choice((nc4d, h * w - nc4d))
+    nc4 = min(max(1, nc4), h * w - 1)
+    ofc1 = sample(totuple(inds), nc1)
+    ofc2 = sample(totuple(inds), nc2)
+    ofc3 = sample(totuple(inds), nc3)
+    ofc4 = sample(totuple(inds), nc4)
+    go = fill(canv, c1, ofc1)
+    go = fill(go, c2, ofc2)
+    go = fill(go, c3, ofc3)
+    go = fill(go, c4, ofc4)
+    LR = asobject(fill(canv, c1, ofc1))
+    LL = asobject(fill(canv, c2, ofc2))
+    UR = asobject(fill(canv, c3, ofc3))
+    UL = asobject(fill(canv, c4, ofc4))
+    gi = canvas(linc, (2 * h + 1, 2 * w + 1))
+    gi = paint(gi, shift(LR, (h + 1, w + 1)))
+    gi = paint(gi, shift(LL, (h + 1, 0)))
+    gi = paint(gi, shift(UR, (0, w + 1)))
+    gi = paint(gi, shift(UL, (0, 0)))
+    return {'input': gi, 'output': go}
+
+def generate_aba27056(diff_lb: float, diff_ub: float) ->dict:
+    cols = remove(4, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (6, 30))
+    w = unifint(diff_lb, diff_ub, (6, 30))
+    bgc, sqc = sample(cols, 2)
+    canv = canvas(bgc, (h, w))
+    oh = randint(3, h)
+    ow = unifint(diff_lb, diff_ub, (5, w - 1))
+    loci = unifint(diff_lb, diff_ub, (0, h - oh))
+    locj = randint(0, w - ow)
+    bx = box(frozenset({(loci, locj), (loci + oh - 1, locj + ow - 1)}))
+    maxk = (ow - 4) // 2
+    k = randint(0, maxk)
+    hole = connect((loci, locj + 2 + k), (loci, locj + ow - 3 - k))
+    gi = fill(canv, sqc, bx)
+    gi = fill(gi, bgc, hole)
+    go = fill(canv, 4, backdrop(bx))
+    go = fill(go, sqc, bx)
+    bar = mapply(rbind(shoot, (-1, 0)), hole)
+    go = fill(go, 4, bar)
+    go = fill(go, 4, shoot(add((-1, 1), urcorner(hole)), (-1, 1)))
+    go = fill(go, 4, shoot(add((-1, -1), ulcorner(hole)), (-1, -1)))
+    rotf = choice((identity, rot90, rot180, rot270))
+    gi = rotf(gi)
+    go = rotf(go)
+    return {'input': gi, 'output': go}
+
+def generate_9edfc990(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(2, 10, 1)
+    h = unifint(diff_lb, diff_ub, (5, 30))
+    w = unifint(diff_lb, diff_ub, (5, 30))
+    namt = unifint(diff_lb, diff_ub, (int(0.4 * h * w), int(0.7 * h * w)))
+    gi = canvas(0, (h, w))
+    inds = asindices(gi)
+    locs = sample(totuple(inds), namt)
+    noise = {(choice(cols), ij) for ij in locs}
+    gi = paint(gi, noise)
+    remlocs = inds - set(locs)
+    numc = unifint(diff_lb, diff_ub, (1, max(1, len(remlocs) // 10)))
+    blocs = sample(totuple(remlocs), numc)
+    gi = fill(gi, 1, blocs)
+    objs = objects(gi, T, F, F)
+    objs = colorfilter(objs, 0)
+    res = mfilter(objs, rbind(adjacent, blocs))
+    go = fill(gi, 1, res)
+    return {'input': gi, 'output': go}
+
+def generate_49d1d64f(diff_lb: float, diff_ub: float) ->dict:
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (2, 28))
+    w = unifint(diff_lb, diff_ub, (2, 28))
+    ncols = unifint(diff_lb, diff_ub, (1, 10))
+    ccols = sample(cols, ncols)
+    gi = canvas(-1, (h, w))
+    obj = {(choice(ccols), ij) for ij in asindices(gi)}
+    gi = paint(gi, obj)
+    go = canvas(0, (h + 2, w + 2))
+    go = paint(go, shift(asobject(gi), (1, 1)))
+    ts = sfilter(obj, lambda cij: cij[1][0] == 0)
+    bs = sfilter(obj, lambda cij: cij[1][0] == h - 1)
+    ls = sfilter(obj, lambda cij: cij[1][1] == 0)
+    rs = sfilter(obj, lambda cij: cij[1][1] == w - 1)
+    ts = shift(ts, (1, 1))
+    bs = shift(bs, (1, 1))
+    ls = shift(ls, (1, 1))
+    rs = shift(rs, (1, 1))
+    go = paint(go, shift(ts, (-1, 0)))
+    go = paint(go, shift(bs, (1, 0)))
+    go = paint(go, shift(ls, (0, -1)))
+    go = paint(go, shift(rs, (0, 1)))
+    return {'input': gi, 'output': go}
+

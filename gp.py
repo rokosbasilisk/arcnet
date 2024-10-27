@@ -32,7 +32,6 @@ creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin)
 # Define the Primitive Set
 # ===============================
 
-# Define pset with arity 2 to accommodate functions like greater(a, b)
 pset = gp.PrimitiveSetTyped("MAIN", [int, int], int)
 pset.renameArguments(ARG0='x', ARG1='y')  # Optional: Rename arguments for clarity
 
@@ -41,36 +40,21 @@ pset.renameArguments(ARG0='x', ARG1='y')  # Optional: Rename arguments for clari
 # ===============================
 
 def safe_wrap(func: Callable) -> Callable:
-    """
-    Wraps a function to catch exceptions and return a default value.
-    Converts boolean outputs to integers.
-    """
     sig = inspect.signature(func)
     arity = len(sig.parameters)
     
     def wrapper(*args):
         try:
-            # Call the function with the correct number of arguments
             if arity == 1:
                 result = func(args[0])
             elif arity == 2:
                 result = func(args[0], args[1])
             else:
-                # For functions with different arity, handle accordingly
                 result = func(*args)
             
-            # Convert bool to int
-            if isinstance(result, bool):
-                return int(result)
-            return result
-        except Exception as e:
-            # Determine default return value based on function name
-            if func.__name__ in {'add_integers', 'multiply_integers', 'greater'}:
-                return 0  # Default for numeric operations
-            elif func.__name__ in {'flip', 'either', 'positive'}:
-                return 0  # Convert False to 0, True to 1
-            else:
-                return 0  # Generic default
+            return int(result) if isinstance(result, bool) else result
+        except Exception:
+            return 0  # Default value if there's an error
     return wrapper
 
 # ===============================
@@ -78,27 +62,16 @@ def safe_wrap(func: Callable) -> Callable:
 # ===============================
 
 def is_concrete(annotation):
-    """
-    Check if the type annotation is concrete.
-    Excludes Union, Callable, Any, and subscripted generics.
-    """
     origin = get_origin(annotation)
-    if origin is not None:
-        return False
-    if annotation in {Union, Callable, Any}:
-        return False
-    return True
+    return origin is None and annotation not in {Union, Callable, Any}
 
-# Iterate over all functions in dsl module
+# Iterate over all functions in dsl module and add to pset
 for name, func in inspect.getmembers(dsl, inspect.isfunction):
     sig = inspect.signature(func)
-    
-    # Ensure 'return_annotation' exists and is concrete
     ret_type = sig.return_annotation
     if ret_type is inspect.Signature.empty or not is_concrete(ret_type):
         continue
 
-    # Extract argument types
     arg_types = []
     skip = False
     for param in sig.parameters.values():
@@ -106,15 +79,12 @@ for name, func in inspect.getmembers(dsl, inspect.isfunction):
         if param_type is inspect.Parameter.empty or not is_concrete(param_type):
             skip = True
             break
-        arg_types.append(int)  # Use 'int' as the type for all arguments
+        arg_types.append(int)  # Assume all arguments are int
     
     if skip:
-        continue  # Skip functions with non-concrete types
+        continue  # Skip non-concrete types
 
-    # Wrap the function to handle type errors and convert bools to ints
     wrapped_func = safe_wrap(func)
-
-    # Add the primitive with 'int' types
     try:
         pset.addPrimitive(wrapped_func, arg_types, int, name=name)
     except TypeError as e:
@@ -130,40 +100,15 @@ for color_name in color_constants:
     if hasattr(dsl, color_name):
         color_value = getattr(dsl, color_name)
         pset.addTerminal(dsl.Integer(color_value), int, name=color_name)
-    else:
-        print(f"Warning: '{color_name}' not found in dsl.py")
-
-# Add tuple constants if necessary (ensure they return int or compatible types)
-tuple_constants = [
-    'ORIGIN', 'UNITY', 'DOWN', 'RIGHT', 'UP', 'LEFT',
-    'NEG_TWO', 'NEG_UNITY', 'UP_RIGHT', 'DOWN_LEFT',
-    'ZERO_BY_TWO', 'TWO_BY_ZERO', 'TWO_BY_TWO', 'THREE_BY_THREE'
-]
-for tuple_name in tuple_constants:
-    if hasattr(dsl, tuple_name):
-        tuple_value = getattr(dsl, tuple_name)
-        # Assuming tuples are not directly used in Grid, skip or handle appropriately
-        # If tuples are part of Grid construction, consider adding helper functions
-        pass  # Modify as per your DSL's requirements
-    else:
-        print(f"Warning: '{tuple_name}' not found in dsl.py")
 
 # Add boolean constants converted to int
-if hasattr(dsl, 'T'):
-    pset.addTerminal(int(dsl.T), int, name="true")
-else:
-    print("Warning: 'T' (True) not found in dsl.py")
-    
-if hasattr(dsl, 'F'):
-    pset.addTerminal(int(dsl.F), int, name="false")
-else:
-    print("Warning: 'F' (False) not found in dsl.py")
+pset.addTerminal(int(getattr(dsl, 'T', 1)), int, name="true")
+pset.addTerminal(int(getattr(dsl, 'F', 0)), int, name="false")
 
-# Add identity function if it returns int
+# Add identity function if not defined
 if hasattr(dsl, 'identity_function'):
     pset.addPrimitive(FunctionWrapper(dsl.identity_function), [int], int, name="identity_function")
 else:
-    # If not defined, add a default identity function
     pset.addPrimitive(FunctionWrapper(lambda x: x), [int], int, name="identity_function")
 
 # ===============================
@@ -182,15 +127,9 @@ toolbox.register("compile", gp.compile, pset=pset)
 
 def compute_fitness(generated_grid: Any, target_grid: Any) -> float:
     try:
-        if len(generated_grid) != len(target_grid):
-            return float('inf')
-        mse = 0
-        for row_gen, row_tar in zip(generated_grid, target_grid):
-            if len(row_gen) != len(row_tar):
-                return float('inf')
-            for cell_gen, cell_tar in zip(row_gen, row_tar):
-                # Assuming cell_gen and cell_tar are integers
-                mse += (cell_gen - cell_tar) ** 2
+        mse = sum((cell_gen - cell_tar) ** 2
+                  for row_gen, row_tar in zip(generated_grid, target_grid)
+                  for cell_gen, cell_tar in zip(row_gen, row_tar))
         return mse / (len(target_grid) * len(target_grid[0]))
     except Exception as e:
         print(f"Error in compute_fitness: {e}")
@@ -200,7 +139,6 @@ def compute_fitness(generated_grid: Any, target_grid: Any) -> float:
 # Evaluation Function
 # ===============================
 
-# Define the target grid directly as a tuple of tuples
 TARGET_GRID = (
     (dsl.ZERO, dsl.ONE, dsl.ONE, dsl.ZERO, dsl.ZERO),
     (dsl.ONE, dsl.TWO, dsl.TWO, dsl.ONE, dsl.ZERO),
@@ -235,10 +173,10 @@ toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max
 # Genetic Programming Parameters
 # ===============================
 
-POPULATION_SIZE = 300
-GENERATIONS = 40
-CX_PROB = 0.5    # Crossover probability
-MUT_PROB = 0.2   # Mutation probability
+POPULATION_SIZE = 1000
+GENERATIONS = 1000
+CX_PROB = 0.5
+MUT_PROB = 0.2
 
 # ===============================
 # Visualization Function
@@ -246,17 +184,7 @@ MUT_PROB = 0.2   # Mutation probability
 
 def visualize_grid(grid: Any, title: str = "Grid", fig_size: tuple = (5, 5)):
     try:
-        # Convert grid data to a 2D list of integers for imshow
-        data = []
-        for row in grid:
-            data_row = []
-            for cell in row:
-                if isinstance(cell, int):
-                    data_row.append(cell)
-                else:
-                    # Handle any unexpected types by converting to int or assigning a default value
-                    data_row.append(0)
-            data.append(data_row)
+        data = [[cell if isinstance(cell, int) else 0 for cell in row] for row in grid]
         h, w = len(data), len(data[0]) if data else 0
         fig, ax = plt.subplots(figsize=fig_size)
         ax.imshow(data, cmap='tab10', vmin=0, vmax=9)
@@ -311,10 +239,7 @@ def main():
     except Exception as e:
         print(f"Error executing the best individual: {e}")
 
-# ===============================
 # Execute the Program
-# ===============================
-
 if __name__ == "__main__":
     main()
 
