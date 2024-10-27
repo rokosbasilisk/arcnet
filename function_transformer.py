@@ -1,12 +1,25 @@
 import ast
 import json
 import re
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
+
+# Define fixed difficulty bounds
+FIXED_DIFF_LB = 0.2
+FIXED_DIFF_UB = 0.8
+
+def unifint_fixed(bounds: Tuple[int, int]) -> int:
+    """
+    Generates a uniformly random integer based on fixed difficulty bounds.
+    """
+    a, b = bounds
+    d = (FIXED_DIFF_LB + FIXED_DIFF_UB) / 2  # Deterministic value
+    return min(max(a, round(a + (b - a) * d)), b)
 
 class SingleLineTransformer(ast.NodeTransformer):
     """
     Transforms generate_* functions into single-line expressions by eliminating intermediate variables.
     Handles functions returning dictionaries with 'input' and 'output' keys.
+    Replaces unifint calls with fixed values.
     """
     def __init__(self):
         super().__init__()
@@ -39,7 +52,6 @@ class SingleLineTransformer(ast.NodeTransformer):
                 # Handle for loops
                 loop_expr = self.handle_for_loop(stmt)
                 # Assign loop expression to 'go' if applicable
-                # Adjust based on actual variable being modified
                 self.symbol_table['go'] = loop_expr
             elif isinstance(stmt, ast.Return):
                 # Handle return statements
@@ -195,9 +207,28 @@ class SingleLineTransformer(ast.NodeTransformer):
 
     def visit_Call(self, node):
         """
-        Process function calls and recursively visit their arguments.
+        Replace unifint calls with fixed values.
         """
         self.generic_visit(node)  # Process arguments first
+        if isinstance(node.func, ast.Name) and node.func.id == 'unifint':
+            # Check if the first two arguments are diff_lb and diff_ub
+            if (len(node.args) >= 3 and
+                isinstance(node.args[0], ast.Name) and node.args[0].id == 'diff_lb' and
+                isinstance(node.args[1], ast.Name) and node.args[1].id == 'diff_ub'):
+                # Extract the bounds argument
+                bounds_arg = node.args[2]
+                if isinstance(bounds_arg, ast.Tuple) and len(bounds_arg.elts) == 2:
+                    a_node, b_node = bounds_arg.elts
+                    if isinstance(a_node, ast.Constant) and isinstance(b_node, ast.Constant):
+                        a = a_node.value
+                        b = b_node.value
+                        # Compute the fixed unifint value
+                        fixed_value = unifint_fixed((a, b))
+                        # Replace the call with a Constant node
+                        return ast.copy_location(
+                            ast.Constant(value=fixed_value),
+                            node
+                        )
         return node
 
     def visit_Name(self, node):
