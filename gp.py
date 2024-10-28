@@ -214,8 +214,8 @@ toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max
 # Genetic Programming Parameters
 # ===============================
 
-POPULATION_SIZE = 1000
-GENERATIONS = 1000
+POPULATION_SIZE = 100
+GENERATIONS = 100
 CX_PROB = 0.5
 MUT_PROB = 0.3
 

@@ -3,7 +3,7 @@ import operator
 import numpy as np
 import matplotlib.pyplot as plt
 from deap import base, creator, tools, gp, algorithms
-from typing import Callable, Any, get_origin, Union
+from typing import Callable, Any
 import inspect
 import json
 import dsl  # Ensure dsl.py is in the same directory or PYTHONPATH
@@ -14,7 +14,7 @@ import deterministic_utils as du  # Ensure deterministic_utils.py is available
 # ===============================
 
 pset = gp.PrimitiveSetTyped("MAIN", [int, int], int)
-pset.renameArguments(ARG0='x', ARG1='y')  # Optional: Rename arguments for clarity
+pset.renameArguments(ARG0='x', ARG1='y')
 
 # ===============================
 # Define Safe Wrapper for Primitives
@@ -34,12 +34,11 @@ def safe_wrap(func: Callable) -> Callable:
 # Add DSL and Utility Primitives
 # ===============================
 
-# Add functions from `dsl` and deterministic utilities (`du`) safely
 for module in (dsl, du):
     for name, func in inspect.getmembers(module, inspect.isfunction):
         sig = inspect.signature(func)
         ret_type = sig.return_annotation
-        if ret_type is int:  # Assuming output type `int`
+        if ret_type is int:
             arg_types = [int] * len(sig.parameters)
             wrapped_func = safe_wrap(func)
             pset.addPrimitive(wrapped_func, arg_types, int, name=name)
@@ -48,7 +47,6 @@ for module in (dsl, du):
 def if_then_else(condition: bool, output1: int, output2: int) -> int:
     return output1 if condition else output2
 
-# Add boolean primitives
 pset.addPrimitive(if_then_else, [bool, int, int], int, name="if_then_else")
 pset.addPrimitive(operator.lt, [int, int], bool, name="less_than")
 pset.addPrimitive(operator.eq, [int, int], bool, name="equal_to")
@@ -57,13 +55,11 @@ pset.addPrimitive(operator.and_, [bool, bool], bool, name="logical_and")
 pset.addPrimitive(operator.or_, [bool, bool], bool, name="logical_or")
 pset.addPrimitive(operator.not_, [bool], bool, name="logical_not")
 
-# Add boolean terminals
 pset.addTerminal(True, bool, name="True")
 pset.addTerminal(False, bool, name="False")
 
 # Random list generator for list-type terminals
 def generate_random_list() -> list:
-    """Generates a random list of integers."""
     return [random.randint(0, 10) for _ in range(random.randint(1, 5))]
 
 pset.addTerminal(generate_random_list, list, name="generate_random_list")
@@ -76,21 +72,24 @@ creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin)
 
 toolbox = base.Toolbox()
-toolbox.register("expr_init", gp.genHalfAndHalf, pset=pset, min_=1, max_=3)
+toolbox.register("expr_init", gp.genHalfAndHalf, pset=pset, min_=1, max_=5)  # Increased max depth
 toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr_init)
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 toolbox.register("compile", gp.compile, pset=pset)
 
 # ===============================
-# Fitness and Evaluation Functions
+# Strict Fitness and Evaluation Functions
 # ===============================
 
-def compute_fitness(generated_grid: Any, target_grid: Any) -> float:
-    """Calculates Mean Squared Error between the generated grid and target grid."""
+def compute_strict_fitness(generated_grid: Any, target_grid: Any) -> float:
+    """Calculates a strict Mean Squared Error with additional penalty."""
     mse = sum((cell_gen - cell_tar) ** 2
               for row_gen, row_tar in zip(generated_grid, target_grid)
               for cell_gen, cell_tar in zip(row_gen, row_tar))
-    return mse / (len(target_grid) * len(target_grid[0]))
+    penalty = sum(1 for row_gen, row_tar in zip(generated_grid, target_grid)
+                  for cell_gen, cell_tar in zip(row_gen, row_tar) if cell_gen != cell_tar)
+    strict_fitness = mse / (len(target_grid) * len(target_grid[0])) + penalty
+    return strict_fitness
 
 def eval_individual(individual: creator.Individual) -> tuple:
     """Evaluates an individual based on a target grid."""
@@ -98,13 +97,13 @@ def eval_individual(individual: creator.Individual) -> tuple:
     target_grid = getattr(individual, 'target_grid', TARGET_GRID)
     grid_size = len(target_grid)
     generated_grid = tuple(tuple(func(x, y) for y in range(grid_size)) for x in range(grid_size))
-    fitness = compute_fitness(generated_grid, target_grid)
+    fitness = compute_strict_fitness(generated_grid, target_grid)
     return (fitness,)
 
 toolbox.register("evaluate", eval_individual)
 toolbox.register("select", tools.selTournament, tournsize=3)
 toolbox.register("mate", gp.cxOnePoint)
-toolbox.register("expr_mut", gp.genFull, min_=0, max_=2)
+toolbox.register("expr_mut", gp.genFull, min_=0, max_=3)
 toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
 toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=17))
 toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max_value=17))
@@ -113,7 +112,7 @@ toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max
 # Population Initialization with Seeded Programs and Grids
 # ===============================
 
-def initialize_population(population_size, seed_file, seed_fraction=0.1):
+def initialize_population(population_size, seed_file, seed_fraction=0.2):
     """Initializes a population with seeded programs and grids."""
     pop = []
     with open(seed_file, 'r') as f:
@@ -142,14 +141,13 @@ def initialize_population(population_size, seed_file, seed_fraction=0.1):
 # ===============================
 # Main Evolutionary Loop
 # ===============================
-POPULATION_SIZE = 1000
+POPULATION_SIZE = 100
 GENERATIONS = 500
-CX_PROB = 0.5
-MUT_PROB = 0.2
+CX_PROB = 0.8  # Increased to favor crossover
+MUT_PROB = 0.8  # Increased mutation rate for higher diversity
+
 def visualize_grid(grid: Any, title: str = "Grid", fig_size: tuple = (5, 5)):
-    """
-    Visualizes a grid using matplotlib.
-    """
+    """Visualizes a grid using matplotlib."""
     try:
         data = [[cell if isinstance(cell, int) else 0 for cell in row] for row in grid]
         fig, ax = plt.subplots(figsize=fig_size)
@@ -163,6 +161,7 @@ def visualize_grid(grid: Any, title: str = "Grid", fig_size: tuple = (5, 5)):
         plt.show()
     except Exception as e:
         print(f"Error in visualize_grid: {e}")
+
 # ===============================
 # Define the Target Grid
 # ===============================
