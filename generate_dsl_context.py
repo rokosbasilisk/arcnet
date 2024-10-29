@@ -2,7 +2,7 @@ import ast
 import json
 
 DSL_FILE = 'dsl.py'
-OUTPUT_FILE = 'data/functions_context.json'
+OUTPUT_FILE = 'data/dsl_context.json'
 
 with open(DSL_FILE, 'r') as f:
     tree = ast.parse(f.read())
