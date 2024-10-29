@@ -133,3 +133,44 @@ def fix_bugs(
     dataset['9edfc990']['train'][1]['output'] = fill(dataset['9edfc990']['train'][1]['output'], 1, {(6, 13)})
     dataset['e5062a87']['train'][1]['output'] = fill(dataset['e5062a87']['train'][1]['output'], 2, {(1, 3), (1, 4), (1, 5), (1, 6)})
     dataset['e5062a87']['train'][0]['output'] = fill(dataset['e5062a87']['train'][0]['output'], 2, {(5, 2), (6, 3), (3, 6), (4, 7)})
+    
+    
+    
+## compression related utils ##
+
+def compress_grid(grid):
+    """Compress a grid with dimensions and RLE."""
+    rows = len(grid)
+    cols = len(grid[0]) if rows > 0 else 0
+    flattened = [str(cell) for row in grid for cell in row]
+    compressed = []
+    current_char = flattened[0]
+    count = 1
+
+    # Create the RLE string with count for each character.
+    for char in flattened[1:]:
+        if char == current_char:
+            count += 1
+        else:
+            compressed.append(f"{current_char}x{count}")
+            current_char = char
+            count = 1
+    compressed.append(f"{current_char}x{count}")
+
+    # Prefix with dimensions.
+    return f"{rows}x{cols}|" + ",".join(compressed)
+
+def decompress_grid(compressed):
+    """Decompress a grid from the optimized RLE format."""
+    dims, rle_data = compressed.split('|')
+    rows, cols = map(int, dims.split('x'))
+    flat_list = []
+
+    # Reconstruct the flattened list from RLE.
+    for segment in rle_data.split(','):
+        char, count = segment.split('x')
+        flat_list.extend([int(char)] * int(count))
+
+    # Convert the flattened list back into a 2D grid.
+    return [flat_list[i * cols:(i + 1) * cols] for i in range(rows)]
+

@@ -1,4 +1,7 @@
 from dsl import *
+
+
+
 def verify_007bbfb7(I: Grid) -> Grid:
     x0 = palette(I)
     x1 = other(x0, ZERO)
@@ -12,7 +15,9 @@ def verify_007bbfb7(I: Grid) -> Grid:
     x9 = apply(x8, x5)
     x10 = mapply(x6, x9)
     x11 = fill(x4, x1, x10)
-    return x11\n
+    return x11
+
+
 def verify_00d62c1b(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = mostcolor(I)
@@ -21,7 +26,9 @@ def verify_00d62c1b(I: Grid) -> Grid:
     x4 = compose(flip, x3)
     x5 = mfilter(x2, x4)
     x6 = fill(I, FOUR, x5)
-    return x6\n
+    return x6
+
+
 def verify_017c7c7b(I: Grid) -> Grid:
     x0 = palette(I)
     x1 = other(x0, ZERO)
@@ -40,7 +47,9 @@ def verify_017c7c7b(I: Grid) -> Grid:
     x14 = apply(toivec, x12)
     x15 = mapply(x13, x14)
     x16 = fill(x10, TWO, x15)
-    return x16\n
+    return x16
+
+
 def verify_025d127b(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = objects(I, T, T, T)
@@ -65,7 +74,9 @@ def verify_025d127b(I: Grid) -> Grid:
     x20 = fill(I, x0, x19)
     x21 = mapply(x18, x1)
     x22 = paint(x20, x21)
-    return x22\n
+    return x22
+
+
 def verify_045e512c(I: Grid) -> Grid:
     x0 = objects(I, T, T, T)
     x1 = argmax(x0, size)
@@ -100,7 +111,9 @@ def verify_045e512c(I: Grid) -> Grid:
     x30 = fork(recolor, x29, x22)
     x31 = mapply(x30, x4)
     x32 = paint(I, x31)
-    return x32\n
+    return x32
+
+
 def verify_0520fde7(I: Grid) -> Grid:
     x0 = width(I)
     x1 = halve(x0)
@@ -126,7 +139,9 @@ def verify_0520fde7(I: Grid) -> Grid:
     x21 = ofcolor(x13, x17)
     x22 = intersection(x20, x21)
     x23 = fill(x19, TWO, x22)
-    return x23\n
+    return x23
+
+
 def verify_05269061(I: Grid) -> Grid:
     x0 = shape(I)
     x1 = maximum(x0)
@@ -211,7 +226,9 @@ def verify_05269061(I: Grid) -> Grid:
     x80 = fork(combine, x74, x79)
     x81 = mapply(x80, x49)
     x82 = paint(I, x81)
-    return x82\n
+    return x82
+
+
 def verify_05f2a901(I: Grid) -> Grid:
     x0 = objects(I, T, T, T)
     x1 = fork(multiply, height, width)
@@ -220,7 +237,9 @@ def verify_05f2a901(I: Grid) -> Grid:
     x4 = other(x0, x3)
     x5 = gravitate(x4, x3)
     x6 = move(I, x4, x5)
-    return x6\n
+    return x6
+
+
 def verify_06df4c85(I: Grid) -> Grid:
     x0 = asobject(I)
     x1 = frontiers(I)
@@ -250,7 +269,9 @@ def verify_06df4c85(I: Grid) -> Grid:
     x25 = mapply(x24, x17)
     x26 = paint(I, x25)
     x27 = paint(x26, x2)
-    return x27\n
+    return x27
+
+
 def verify_08ed6ac7(I: Grid) -> Grid:
     x0 = first(I)
     x1 = mostcommon(x0)
@@ -281,7 +302,9 @@ def verify_08ed6ac7(I: Grid) -> Grid:
     x26 = fork(combine, x25, x23)
     x27 = apply(x26, x2)
     x28 = dmirror(x27)
-    return x28\n
+    return x28
+
+
 def verify_09629e4f(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = sfilter(x0, hline)
@@ -309,7 +332,9 @@ def verify_09629e4f(I: Grid) -> Grid:
     x23 = normalize(x11)
     x24 = mapply(x22, x23)
     x25 = paint(x8, x24)
-    return x25\n
+    return x25
+
+
 def verify_0962bcdd(I: Grid) -> Grid:
     x0 = objects(I, F, T, T)
     x1 = lbind(mapply, dneighbors)
@@ -325,7 +350,9 @@ def verify_0962bcdd(I: Grid) -> Grid:
     x11 = paint(I, x10)
     x12 = mapply(x9, x0)
     x13 = paint(x11, x12)
-    return x13\n
+    return x13
+
+
 def verify_0a938d79(I: Grid) -> Grid:
     x0 = portrait(I)
     x1 = branch(x0, dmirror, identity)
@@ -350,13 +377,17 @@ def verify_0a938d79(I: Grid) -> Grid:
     x20 = combine(x18, x19)
     x21 = paint(x2, x20)
     x22 = x1(x21)
-    return x22\n
+    return x22
+
+
 def verify_0b148d64(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(multiply, height, width)
     x2 = argmin(x0, x1)
     x3 = subgrid(x2, I)
-    return x3\n
+    return x3
+
+
 def verify_0ca9ddb6(I: Grid) -> Grid:
     x0 = ofcolor(I, ONE)
     x1 = ofcolor(I, TWO)
@@ -364,13 +395,17 @@ def verify_0ca9ddb6(I: Grid) -> Grid:
     x3 = mapply(ineighbors, x1)
     x4 = fill(I, SEVEN, x2)
     x5 = fill(x4, FOUR, x3)
-    return x5\n
+    return x5
+
+
 def verify_0d3d703e(I: Grid) -> Grid:
     x0 = switch(I, THREE, FOUR)
     x1 = switch(x0, EIGHT, NINE)
     x2 = switch(x1, TWO, SIX)
     x3 = switch(x2, ONE, FIVE)
-    return x3\n
+    return x3
+
+
 def verify_0dfd9992(I: Grid) -> Grid:
     x0 = palette(I)
     x1 = objects(I, T, F, F)
@@ -402,7 +437,9 @@ def verify_0dfd9992(I: Grid) -> Grid:
     x27 = lbind(shift, x12)
     x28 = mapply(x27, x26)
     x29 = paint(I, x28)
-    return x29\n
+    return x29
+
+
 def verify_0e206a2e(I: Grid) -> Grid:
     x0 = objects(I, F, F, T)
     x1 = matcher(numcolors, FOUR)
@@ -439,7 +476,9 @@ def verify_0e206a2e(I: Grid) -> Grid:
     x32 = compose(x23, x22)
     x33 = chain(x30, x31, x32)
     x34 = x33(x5)
-    return x34\n
+    return x34
+
+
 def verify_10fcaaa3(I: Grid) -> Grid:
     x0 = hconcat(I, I)
     x1 = vconcat(x0, x0)
@@ -449,7 +488,9 @@ def verify_10fcaaa3(I: Grid) -> Grid:
     x5 = difference(x2, x4)
     x6 = mapply(ineighbors, x5)
     x7 = underfill(x1, EIGHT, x6)
-    return x7\n
+    return x7
+
+
 def verify_11852cab(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = lbind(remove, x0)
@@ -519,7 +560,9 @@ def verify_11852cab(I: Grid) -> Grid:
     x65 = chain(x59, x64, x63)
     x66 = mapply(x65, x48)
     x67 = paint(I, x66)
-    return x67\n
+    return x67
+
+
 def verify_1190e5a7(I: Grid) -> Grid:
     x0 = asindices(I)
     x1 = corners(x0)
@@ -539,7 +582,9 @@ def verify_1190e5a7(I: Grid) -> Grid:
     x15 = apply(size, x14)
     x16 = increment(x15)
     x17 = canvas(x3, x16)
-    return x17\n
+    return x17
+
+
 def verify_137eaa0f(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = merge(x0)
@@ -573,7 +618,9 @@ def verify_137eaa0f(I: Grid) -> Grid:
     x29 = shape(x28)
     x30 = canvas(ZERO, x29)
     x31 = paint(x30, x28)
-    return x31\n
+    return x31
+
+
 def verify_150deff5(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = leastcolor(I)
@@ -649,7 +696,9 @@ def verify_150deff5(I: Grid) -> Grid:
     x71 = last(x69)
     x72 = paint(x70, x71)
     x73 = trim(x72)
-    return x73\n
+    return x73
+
+
 def verify_178fcbfb(I: Grid) -> Grid:
     x0 = ofcolor(I, TWO)
     x1 = ofcolor(I, THREE)
@@ -660,7 +709,9 @@ def verify_178fcbfb(I: Grid) -> Grid:
     x6 = fill(I, TWO, x3)
     x7 = fill(x6, THREE, x4)
     x8 = fill(x7, ONE, x5)
-    return x8\n
+    return x8
+
+
 def verify_1a07d186(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = mostcolor(I)
@@ -681,7 +732,9 @@ def verify_1a07d186(I: Grid) -> Grid:
     x16 = fork(mapply, x13, x15)
     x17 = mapply(x16, x0)
     x18 = paint(x9, x17)
-    return x18\n
+    return x18
+
+
 def verify_1b2d62fb(I: Grid) -> Grid:
     x0 = width(I)
     x1 = halve(x0)
@@ -703,7 +756,9 @@ def verify_1b2d62fb(I: Grid) -> Grid:
     x17 = ofcolor(x13, ZERO)
     x18 = intersection(x16, x17)
     x19 = fill(x15, EIGHT, x18)
-    return x19\n
+    return x19
+
+
 def verify_1b60fb0c(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = mapply(toindices, x0)
@@ -744,7 +799,9 @@ def verify_1b60fb0c(I: Grid) -> Grid:
     x36 = shift(x7, x35)
     x37 = difference(x36, x1)
     x38 = fill(I, TWO, x37)
-    return x38\n
+    return x38
+
+
 def verify_1bfc4729(I: Grid) -> Grid:
     x0 = tophalf(I)
     x1 = bottomhalf(I)
@@ -787,7 +844,9 @@ def verify_1bfc4729(I: Grid) -> Grid:
     x38 = astuple(x15, x14)
     x39 = connect(x37, x38)
     x40 = fill(x36, x3, x39)
-    return x40\n
+    return x40
+
+
 def verify_1c786137(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = lbind(colorfilter, x0)
@@ -805,7 +864,9 @@ def verify_1c786137(I: Grid) -> Grid:
     x13 = extract(x12, x6)
     x14 = subgrid(x13, I)
     x15 = trim(x14)
-    return x15\n
+    return x15
+
+
 def verify_1caeab9d(I: Grid) -> Grid:
     x0 = objects(I, T, T, T)
     x1 = ofcolor(I, ONE)
@@ -817,7 +878,9 @@ def verify_1caeab9d(I: Grid) -> Grid:
     x7 = cover(I, x6)
     x8 = mapply(x5, x0)
     x9 = paint(x7, x8)
-    return x9\n
+    return x9
+
+
 def verify_1cf80156(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = merge(x0)
@@ -828,7 +891,9 @@ def verify_1cf80156(I: Grid) -> Grid:
     x6 = matcher(color, x4)
     x7 = extract(x5, x6)
     x8 = subgrid(x7, I)
-    return x8\n
+    return x8
+
+
 def verify_1e0a9b12(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = rot270(I)
@@ -839,7 +904,9 @@ def verify_1e0a9b12(I: Grid) -> Grid:
     x6 = fork(combine, x3, x5)
     x7 = apply(x6, x1)
     x8 = rot90(x7)
-    return x8\n
+    return x8
+
+
 def verify_1e32b0e9(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = totuple(x0)
@@ -874,7 +941,9 @@ def verify_1e32b0e9(I: Grid) -> Grid:
     x30 = ofcolor(I, x20)
     x31 = difference(x29, x30)
     x32 = fill(I, x7, x31)
-    return x32\n
+    return x32
+
+
 def verify_1f0c79e5(I: Grid) -> Grid:
     x0 = objects(I, F, F, T)
     x1 = rbind(other, TWO)
@@ -895,7 +964,9 @@ def verify_1f0c79e5(I: Grid) -> Grid:
     x16 = fork(recolor, x2, x15)
     x17 = mapply(x16, x0)
     x18 = paint(I, x17)
-    return x18\n
+    return x18
+
+
 def verify_1f642eb9(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = fork(multiply, height, width)
@@ -918,7 +989,9 @@ def verify_1f642eb9(I: Grid) -> Grid:
     x18 = fork(shift, identity, x17)
     x19 = mapply(x18, x15)
     x20 = paint(I, x19)
-    return x20\n
+    return x20
+
+
 def verify_1f85a75f(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = totuple(x0)
@@ -933,7 +1006,9 @@ def verify_1f85a75f(I: Grid) -> Grid:
     x10 = matcher(color, x9)
     x11 = extract(x0, x10)
     x12 = subgrid(x11, I)
-    return x12\n
+    return x12
+
+
 def verify_1f876c06(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = compose(last, first)
@@ -942,7 +1017,9 @@ def verify_1f876c06(I: Grid) -> Grid:
     x4 = fork(recolor, color, x3)
     x5 = mapply(x4, x0)
     x6 = paint(I, x5)
-    return x6\n
+    return x6
+
+
 def verify_1fad071e(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = colorfilter(x0, ONE)
@@ -957,7 +1034,9 @@ def verify_1fad071e(I: Grid) -> Grid:
     x10 = mostcolor(I)
     x11 = canvas(x10, x9)
     x12 = hconcat(x8, x11)
-    return x12\n
+    return x12
+
+
 def verify_2013d3e2(I: Grid) -> Grid:
     x0 = lbind(apply, last)
     x1 = compose(positive, first)
@@ -988,7 +1067,9 @@ def verify_2013d3e2(I: Grid) -> Grid:
     x26 = x25(I)
     x27 = lefthalf(x26)
     x28 = tophalf(x27)
-    return x28\n
+    return x28
+
+
 def verify_2204b7a8(I: Grid) -> Grid:
     x0 = first(I)
     x1 = dedupe(x0)
@@ -1025,7 +1106,9 @@ def verify_2204b7a8(I: Grid) -> Grid:
     x32 = even(x31)
     x33 = branch(x32, x21, x29)
     x34 = x7(x33, x28)
-    return x34\n
+    return x34
+
+
 def verify_22168020(I: Grid) -> Grid:
     x0 = palette(I)
     x1 = mostcolor(I)
@@ -1037,7 +1120,9 @@ def verify_22168020(I: Grid) -> Grid:
     x7 = fork(recolor, identity, x6)
     x8 = mapply(x7, x2)
     x9 = paint(I, x8)
-    return x9\n
+    return x9
+
+
 def verify_22233c11(I: Grid) -> Grid:
     x0 = objects(I, T, T, T)
     x1 = rbind(upscale, TWO)
@@ -1051,7 +1136,9 @@ def verify_22233c11(I: Grid) -> Grid:
     x9 = fork(difference, x6, x8)
     x10 = mapply(x9, x0)
     x11 = fill(I, EIGHT, x10)
-    return x11\n
+    return x11
+
+
 def verify_2281f1f4(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
@@ -1074,7 +1161,9 @@ def verify_2281f1f4(I: Grid) -> Grid:
     x18 = mostcolor(I)
     x19 = initset(x17)
     x20 = fill(x6, x18, x19)
-    return x20\n
+    return x20
+
+
 def verify_228f6490(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = objects(I, T, T, F)
@@ -1103,7 +1192,9 @@ def verify_228f6490(I: Grid) -> Grid:
     x24 = cover(I, x23)
     x25 = mapply(x22, x17)
     x26 = paint(x24, x25)
-    return x26\n
+    return x26
+
+
 def verify_22eb0ac0(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = asobject(I)
@@ -1149,7 +1240,9 @@ def verify_22eb0ac0(I: Grid) -> Grid:
     x41 = sfilter(x40, x39)
     x42 = toobject(x41, I)
     x43 = paint(x38, x42)
-    return x43\n
+    return x43
+
+
 def verify_234bbc79(I: Grid) -> Grid:
     x0 = objects(I, F, F, T)
     x1 = order(x0, leftmost)
@@ -1239,7 +1332,9 @@ def verify_234bbc79(I: Grid) -> Grid:
     x85 = fork(paint, identity, x84)
     x86 = branch(x76, x85, identity)
     x87 = x86(x72)
-    return x87\n
+    return x87
+
+
 def verify_23581191(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = palette(I)
@@ -1261,7 +1356,9 @@ def verify_23581191(I: Grid) -> Grid:
     x17 = fill(I, x8, x13)
     x18 = fill(x17, x9, x14)
     x19 = fill(x18, TWO, x16)
-    return x19\n
+    return x19
+
+
 def verify_239be575(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = lbind(apply, normalize)
@@ -1294,7 +1391,9 @@ def verify_239be575(I: Grid) -> Grid:
     x28 = positive(x27)
     x29 = branch(x28, x21, ZERO)
     x30 = canvas(x29, UNITY)
-    return x30\n
+    return x30
+
+
 def verify_23b5c85d(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(multiply, height, width)
@@ -1302,7 +1401,9 @@ def verify_23b5c85d(I: Grid) -> Grid:
     x3 = sfilter(x0, x2)
     x4 = argmin(x3, x1)
     x5 = subgrid(x4, I)
-    return x5\n
+    return x5
+
+
 def verify_253bf280(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
@@ -1315,7 +1416,9 @@ def verify_253bf280(I: Grid) -> Grid:
     x8 = fill(I, THREE, x7)
     x9 = leastcolor(I)
     x10 = fill(x8, x9, x1)
-    return x10\n
+    return x10
+
+
 def verify_25d487eb(I: Grid) -> Grid:
     x0 = objects(I, F, F, T)
     x1 = lbind(matcher, first)
@@ -1335,7 +1438,9 @@ def verify_25d487eb(I: Grid) -> Grid:
     x15 = fork(recolor, leastcolor, x14)
     x16 = mapply(x15, x0)
     x17 = underpaint(I, x16)
-    return x17\n
+    return x17
+
+
 def verify_25d8a9c8(I: Grid) -> Grid:
     x0 = width(I)
     x1 = rbind(branch, ZERO)
@@ -1346,12 +1451,16 @@ def verify_25d8a9c8(I: Grid) -> Grid:
     x6 = rbind(repeat, x0)
     x7 = compose(x6, x5)
     x8 = apply(x7, I)
-    return x8\n
+    return x8
+
+
 def verify_25ff71a9(I: Grid) -> Grid:
     x0 = objects(I, T, T, T)
     x1 = first(x0)
     x2 = move(I, x1, DOWN)
-    return x2\n
+    return x2
+
+
 def verify_264363fd(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = fork(multiply, height, width)
@@ -1402,7 +1511,9 @@ def verify_264363fd(I: Grid) -> Grid:
     x46 = fork(shift, x45, ulcorner)
     x47 = mapply(x46, x11)
     x48 = paint(x9, x47)
-    return x48\n
+    return x48
+
+
 def verify_272f95fa(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = index(I, ORIGIN)
@@ -1425,7 +1536,9 @@ def verify_272f95fa(I: Grid) -> Grid:
     x18 = fill(x17, ONE, x13)
     x19 = fill(x18, FOUR, x14)
     x20 = fill(x19, THREE, x15)
-    return x20\n
+    return x20
+
+
 def verify_27a28665(I: Grid) -> Grid:
     x0 = lbind(apply, last)
     x1 = compose(positive, first)
@@ -1466,13 +1579,17 @@ def verify_27a28665(I: Grid) -> Grid:
     x36 = branch(x33, THREE, x35)
     x37 = branch(x34, SIX, x36)
     x38 = canvas(x37, UNITY)
-    return x38\n
+    return x38
+
+
 def verify_28bf18c6(I: Grid) -> Grid:
     x0 = objects(I, T, T, T)
     x1 = first(x0)
     x2 = subgrid(x1, I)
     x3 = hconcat(x2, x2)
-    return x3\n
+    return x3
+
+
 def verify_28e73c20(I: Grid) -> Grid:
     x0 = astuple(RIGHT, DOWN)
     x1 = astuple(DOWN, LEFT)
@@ -1563,7 +1680,9 @@ def verify_28e73c20(I: Grid) -> Grid:
     x86 = add(x85, UP)
     x87 = crop(x84, DOWN, x86)
     x88 = dmirror(x87)
-    return x88\n
+    return x88
+
+
 def verify_29623171(I: Grid) -> Grid:
     x0 = compress(I)
     x1 = leastcolor(x0)
@@ -1604,7 +1723,9 @@ def verify_29623171(I: Grid) -> Grid:
     x36 = mfilter(x31, x35)
     x37 = replace(I, x1, x2)
     x38 = fill(x37, x1, x36)
-    return x38\n
+    return x38
+
+
 def verify_29c11459(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = product(x0, x0)
@@ -1646,7 +1767,9 @@ def verify_29c11459(I: Grid) -> Grid:
     x37 = paint(I, x36)
     x38 = merge(x0)
     x39 = paint(x37, x38)
-    return x39\n
+    return x39
+
+
 def verify_29ec7d0e(I: Grid) -> Grid:
     x0 = palette(I)
     x1 = objects(I, T, F, F)
@@ -1678,7 +1801,9 @@ def verify_29ec7d0e(I: Grid) -> Grid:
     x27 = lbind(shift, x12)
     x28 = mapply(x27, x26)
     x29 = paint(I, x28)
-    return x29\n
+    return x29
+
+
 def verify_2bcee788(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(multiply, height, width)
@@ -1702,7 +1827,9 @@ def verify_2bcee788(I: Grid) -> Grid:
     x19 = shift(x8, x18)
     x20 = fill(I, THREE, x2)
     x21 = paint(x20, x19)
-    return x21\n
+    return x21
+
+
 def verify_2bee17df(I: Grid) -> Grid:
     x0 = trim(I)
     x1 = mostcolor(x0)
@@ -1725,7 +1852,9 @@ def verify_2bee17df(I: Grid) -> Grid:
     x18 = combine(x16, x17)
     x19 = shift(x18, UNITY)
     x20 = fill(I, THREE, x19)
-    return x20\n
+    return x20
+
+
 def verify_2c608aff(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(equality, toindices, backdrop)
@@ -1753,7 +1882,9 @@ def verify_2c608aff(I: Grid) -> Grid:
     x23 = fork(connect, identity, x22)
     x24 = mapply(x23, x19)
     x25 = fill(I, x8, x24)
-    return x25\n
+    return x25
+
+
 def verify_2dc579da(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = mfilter(x0, hline)
@@ -1805,7 +1936,9 @@ def verify_2dc579da(I: Grid) -> Grid:
     x47 = compose(flip, x46)
     x48 = extract(x40, x47)
     x49 = subgrid(x48, I)
-    return x49\n
+    return x49
+
+
 def verify_2dd70a9a(I: Grid) -> Grid:
     x0 = ofcolor(I, TWO)
     x1 = vline(x0)
@@ -1878,11 +2011,15 @@ def verify_2dd70a9a(I: Grid) -> Grid:
     x68 = fill(x3, THREE, x67)
     x69 = fill(x68, TWO, x5)
     x70 = x2(x69)
-    return x70\n
+    return x70
+
+
 def verify_2dee498d(I: Grid) -> Grid:
     x0 = hsplit(I, THREE)
     x1 = first(x0)
-    return x1\n
+    return x1
+
+
 def verify_31aa019c(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
@@ -1894,7 +2031,9 @@ def verify_31aa019c(I: Grid) -> Grid:
     x7 = initset(x2)
     x8 = fill(x6, x0, x7)
     x9 = fill(x8, TWO, x3)
-    return x9\n
+    return x9
+
+
 def verify_321b1fc6(I: Grid) -> Grid:
     x0 = objects(I, F, F, T)
     x1 = argmax(x0, numcolors)
@@ -1905,14 +2044,18 @@ def verify_321b1fc6(I: Grid) -> Grid:
     x6 = mapply(x5, x4)
     x7 = paint(I, x6)
     x8 = cover(x7, x1)
-    return x8\n
+    return x8
+
+
 def verify_32597951(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(multiply, height, width)
     x2 = argmin(x0, x1)
     x3 = delta(x2)
     x4 = fill(I, THREE, x3)
-    return x4\n
+    return x4
+
+
 def verify_3345333e(I: Grid) -> Grid:
     x0 = asindices(I)
     x1 = box(x0)
@@ -1961,7 +2104,9 @@ def verify_3345333e(I: Grid) -> Grid:
     x44 = fill(I, x3, x7)
     x45 = shift(x43, x42)
     x46 = fill(x44, x11, x45)
-    return x46\n
+    return x46
+
+
 def verify_3428a4f5(I: Grid) -> Grid:
     x0 = width(I)
     x1 = halve(x0)
@@ -1989,7 +2134,9 @@ def verify_3428a4f5(I: Grid) -> Grid:
     x23 = intersection(x20, x21)
     x24 = difference(x22, x23)
     x25 = fill(x19, THREE, x24)
-    return x25\n
+    return x25
+
+
 def verify_3618c87e(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = objects(I, T, F, F)
@@ -2032,7 +2179,9 @@ def verify_3618c87e(I: Grid) -> Grid:
     x38 = x32(x37)
     x39 = apply(x38, x30)
     x40 = fill(x9, x5, x39)
-    return x40\n
+    return x40
+
+
 def verify_3631a71a(I: Grid) -> Grid:
     x0 = lbind(compose, flip)
     x1 = lbind(matcher, first)
@@ -2069,7 +2218,9 @@ def verify_3631a71a(I: Grid) -> Grid:
     x32 = compose(x31, x29)
     x33 = argmax(x30, x32)
     x34 = x29(x33)
-    return x34\n
+    return x34
+
+
 def verify_363442ee(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = merge(x0)
@@ -2087,7 +2238,9 @@ def verify_363442ee(I: Grid) -> Grid:
     x13 = lbind(shift, x12)
     x14 = mapply(x13, x7)
     x15 = paint(I, x14)
-    return x15\n
+    return x15
+
+
 def verify_36d67576(I: Grid) -> Grid:
     x0 = objects(I, F, T, T)
     x1 = argmax(x0, size)
@@ -2140,7 +2293,9 @@ def verify_36d67576(I: Grid) -> Grid:
     x48 = equality(x47, ZERO)
     x49 = branch(x48, identity, x43)
     x50 = x49(I)
-    return x50\n
+    return x50
+
+
 def verify_36fdfd69(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
@@ -2162,7 +2317,9 @@ def verify_36fdfd69(I: Grid) -> Grid:
     x17 = x16(x1)
     x18 = fill(I, FOUR, x17)
     x19 = fill(x18, x0, x1)
-    return x19\n
+    return x19
+
+
 def verify_3906de3d(I: Grid) -> Grid:
     x0 = first(I)
     x1 = dedupe(x0)
@@ -2205,7 +2362,9 @@ def verify_3906de3d(I: Grid) -> Grid:
     x38 = fill(x36, x25, x37)
     x39 = ofcolor(x34, ZERO)
     x40 = fill(x38, x24, x39)
-    return x40\n
+    return x40
+
+
 def verify_39a8645d(I: Grid) -> Grid:
     x0 = objects(I, T, T, T)
     x1 = totuple(x0)
@@ -2215,7 +2374,9 @@ def verify_39a8645d(I: Grid) -> Grid:
     x5 = shape(x3)
     x6 = canvas(x4, x5)
     x7 = paint(x6, x3)
-    return x7\n
+    return x7
+
+
 def verify_39e1d7f9(I: Grid) -> Grid:
     x0 = compress(I)
     x1 = objects(x0, F, F, T)
@@ -2287,12 +2448,16 @@ def verify_39e1d7f9(I: Grid) -> Grid:
     x67 = paint(x64, x66)
     x68 = shape(I)
     x69 = crop(x67, ORIGIN, x68)
-    return x69\n
+    return x69
+
+
 def verify_3aa6fb7a(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = mapply(corners, x0)
     x2 = underfill(I, ONE, x1)
-    return x2\n
+    return x2
+
+
 def verify_3ac3eb23(I: Grid) -> Grid:
     x0 = astuple(identity, dmirror)
     x1 = astuple(cmirror, hmirror)
@@ -2328,13 +2493,17 @@ def verify_3ac3eb23(I: Grid) -> Grid:
     x31 = mapply(x30, x11)
     x32 = paint(x10, x31)
     x33 = x9(x32)
-    return x33\n
+    return x33
+
+
 def verify_3af2c5a8(I: Grid) -> Grid:
     x0 = vmirror(I)
     x1 = hconcat(I, x0)
     x2 = hmirror(x1)
     x3 = vconcat(x1, x2)
-    return x3\n
+    return x3
+
+
 def verify_3bd67248(I: Grid) -> Grid:
     x0 = astuple(identity, identity)
     x1 = astuple(rot90, rot270)
@@ -2374,7 +2543,9 @@ def verify_3bd67248(I: Grid) -> Grid:
     x35 = mapply(x32, x34)
     x36 = fill(x25, TWO, x35)
     x37 = x16(x36)
-    return x37\n
+    return x37
+
+
 def verify_3bdb4ada(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(multiply, height, width)
@@ -2396,7 +2567,9 @@ def verify_3bdb4ada(I: Grid) -> Grid:
     x17 = mapply(x16, x5)
     x18 = color(x4)
     x19 = fill(I, x18, x17)
-    return x19\n
+    return x19
+
+
 def verify_3befdf3e(I: Grid) -> Grid:
     x0 = objects(I, F, F, T)
     x1 = rbind(compose, last)
@@ -2425,10 +2598,14 @@ def verify_3befdf3e(I: Grid) -> Grid:
     x24 = fork(combine, x22, x23)
     x25 = mapply(x24, x0)
     x26 = paint(I, x25)
-    return x26\n
+    return x26
+
+
 def verify_3c9b0459(I: Grid) -> Grid:
     x0 = rot180(I)
-    return x0\n
+    return x0
+
+
 def verify_3de23699(I: Grid) -> Grid:
     x0 = asindices(I)
     x1 = corners(x0)
@@ -2446,7 +2623,9 @@ def verify_3de23699(I: Grid) -> Grid:
     x13 = combine(x10, x11)
     x14 = subgrid(x13, x12)
     x15 = trim(x14)
-    return x15\n
+    return x15
+
+
 def verify_3e980e27(I: Grid) -> Grid:
     x0 = ofcolor(I, THREE)
     x1 = ofcolor(I, TWO)
@@ -2499,7 +2678,9 @@ def verify_3e980e27(I: Grid) -> Grid:
     x48 = branch(x46, x42, identity)
     x49 = compose(x47, x48)
     x50 = x49(I)
-    return x50\n
+    return x50
+
+
 def verify_3eda0437(I: Grid) -> Grid:
     x0 = matcher(identity, ZERO)
     x1 = rbind(sfilter, x0)
@@ -2546,7 +2727,9 @@ def verify_3eda0437(I: Grid) -> Grid:
     x42 = branch(x37, x40, x41)
     x43 = x42(x26)
     x44 = paint(I, x43)
-    return x44\n
+    return x44
+
+
 def verify_3f7978a0(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = objects(I, T, F, F)
@@ -2579,7 +2762,9 @@ def verify_3f7978a0(I: Grid) -> Grid:
     x28 = initset(x27)
     x29 = insert(x25, x28)
     x30 = subgrid(x29, I)
-    return x30\n
+    return x30
+
+
 def verify_40853293(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(recolor, color, backdrop)
@@ -2588,7 +2773,9 @@ def verify_40853293(I: Grid) -> Grid:
     x4 = mfilter(x2, vline)
     x5 = paint(I, x3)
     x6 = paint(x5, x4)
-    return x6\n
+    return x6
+
+
 def verify_4093f84a(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = merge(x0)
@@ -2630,7 +2817,9 @@ def verify_4093f84a(I: Grid) -> Grid:
     x37 = hconcat(x36, x35)
     x38 = x14(x37)
     x39 = replace(x38, x10, x6)
-    return x39\n
+    return x39
+
+
 def verify_41e4d17e(I: Grid) -> Grid:
     x0 = lbind(equality, NINE)
     x1 = compose(x0, size)
@@ -2642,14 +2831,18 @@ def verify_41e4d17e(I: Grid) -> Grid:
     x7 = compose(x6, center)
     x8 = mapply(x7, x5)
     x9 = underfill(I, SIX, x8)
-    return x9\n
+    return x9
+
+
 def verify_4258a5f9(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
     x2 = mapply(neighbors, x1)
     x3 = difference(x2, x1)
     x4 = fill(I, ONE, x3)
-    return x4\n
+    return x4
+
+
 def verify_4290ef0e(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = fgpartition(I)
@@ -2695,20 +2888,26 @@ def verify_4290ef0e(I: Grid) -> Grid:
     x41 = paint(x40, x34)
     x42 = rot90(x41)
     x43 = paint(x42, x34)
-    return x43\n
+    return x43
+
+
 def verify_42a50994(I: Grid) -> Grid:
     x0 = objects(I, F, T, T)
     x1 = sizefilter(x0, ONE)
     x2 = merge(x1)
     x3 = cover(I, x2)
-    return x3\n
+    return x3
+
+
 def verify_4347f46a(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = fork(difference, toindices, box)
     x2 = mapply(x1, x0)
     x3 = mostcolor(I)
     x4 = fill(I, x3, x2)
-    return x4\n
+    return x4
+
+
 def verify_444801d8(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = sizefilter(x0, ONE)
@@ -2729,14 +2928,18 @@ def verify_444801d8(I: Grid) -> Grid:
     x16 = fork(recolor, x4, x15)
     x17 = mapply(x16, x2)
     x18 = paint(I, x17)
-    return x18\n
+    return x18
+
+
 def verify_445eab21(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = fork(multiply, height, width)
     x2 = argmax(x0, x1)
     x3 = color(x2)
     x4 = canvas(x3, TWO_BY_TWO)
-    return x4\n
+    return x4
+
+
 def verify_447fd412(I: Grid) -> Grid:
     x0 = asobject(I)
     x1 = shape(I)
@@ -2783,13 +2986,17 @@ def verify_447fd412(I: Grid) -> Grid:
     x42 = mapply(x40, x41)
     x43 = paint(x7, x42)
     x44 = subgrid(x2, x43)
-    return x44\n
+    return x44
+
+
 def verify_44d8ac46(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = apply(delta, x0)
     x2 = mfilter(x1, square)
     x3 = fill(I, TWO, x2)
-    return x3\n
+    return x3
+
+
 def verify_44f52bb0(I: Grid) -> Grid:
     x0 = vmirror(I)
     x1 = equality(x0, I)
@@ -2798,7 +3005,9 @@ def verify_44f52bb0(I: Grid) -> Grid:
     x4 = either(x1, x3)
     x5 = branch(x4, ONE, SEVEN)
     x6 = canvas(x5, UNITY)
-    return x6\n
+    return x6
+
+
 def verify_4522001f(I: Grid) -> Grid:
     x0 = shape(I)
     x1 = multiply(THREE, x0)
@@ -2843,7 +3052,9 @@ def verify_4522001f(I: Grid) -> Grid:
     x40 = fork(combine, x34, x39)
     x41 = mapply(x40, x20)
     x42 = fill(x19, x6, x41)
-    return x42\n
+    return x42
+
+
 def verify_4612dd53(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
@@ -2862,7 +3073,9 @@ def verify_4612dd53(I: Grid) -> Grid:
     x14 = ulcorner(x1)
     x15 = shift(x13, x14)
     x16 = underfill(I, TWO, x15)
-    return x16\n
+    return x16
+
+
 def verify_46442a0e(I: Grid) -> Grid:
     x0 = rot90(I)
     x1 = rot180(I)
@@ -2870,7 +3083,9 @@ def verify_46442a0e(I: Grid) -> Grid:
     x3 = hconcat(I, x0)
     x4 = hconcat(x2, x1)
     x5 = vconcat(x3, x4)
-    return x5\n
+    return x5
+
+
 def verify_469497ad(I: Grid) -> Grid:
     x0 = numcolors(I)
     x1 = decrement(x0)
@@ -2904,13 +3119,17 @@ def verify_469497ad(I: Grid) -> Grid:
     x29 = ofcolor(x2, x17)
     x30 = intersection(x28, x29)
     x31 = fill(x2, TWO, x30)
-    return x31\n
+    return x31
+
+
 def verify_46f33fce(I: Grid) -> Grid:
     x0 = rot180(I)
     x1 = downscale(x0, TWO)
     x2 = rot180(x1)
     x3 = upscale(x2, FOUR)
-    return x3\n
+    return x3
+
+
 def verify_47c1f68c(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = merge(x0)
@@ -2949,7 +3168,9 @@ def verify_47c1f68c(I: Grid) -> Grid:
     x34 = ofcolor(x32, x4)
     x35 = difference(x33, x34)
     x36 = fill(x32, x2, x35)
-    return x36\n
+    return x36
+
+
 def verify_484b58aa(I: Grid) -> Grid:
     x0 = palette(I)
     x1 = objects(I, T, F, F)
@@ -2981,7 +3202,9 @@ def verify_484b58aa(I: Grid) -> Grid:
     x27 = lbind(shift, x12)
     x28 = mapply(x27, x26)
     x29 = paint(I, x28)
-    return x29\n
+    return x29
+
+
 def verify_48d8fb45(I: Grid) -> Grid:
     x0 = objects(I, F, T, T)
     x1 = argmax(x0, numcolors)
@@ -2993,7 +3216,9 @@ def verify_48d8fb45(I: Grid) -> Grid:
     x7 = mostcolor(I)
     x8 = canvas(x7, x5)
     x9 = paint(x8, x6)
-    return x9\n
+    return x9
+
+
 def verify_4938f0c2(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = matcher(size, FOUR)
@@ -3014,7 +3239,9 @@ def verify_4938f0c2(I: Grid) -> Grid:
     x16 = fork(shift, identity, x15)
     x17 = mapply(x16, x10)
     x18 = paint(I, x17)
-    return x18\n
+    return x18
+
+
 def verify_496994bd(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = vsplit(I, TWO)
@@ -3027,7 +3254,9 @@ def verify_496994bd(I: Grid) -> Grid:
     x8 = compose(flip, x7)
     x9 = sfilter(x6, x8)
     x10 = paint(I, x9)
-    return x10\n
+    return x10
+
+
 def verify_49d1d64f(I: Grid) -> Grid:
     x0 = shape(I)
     x1 = increment(x0)
@@ -3044,7 +3273,9 @@ def verify_49d1d64f(I: Grid) -> Grid:
     x12 = shift(x5, DOWN)
     x13 = paint(x11, x12)
     x14 = paint(x13, x5)
-    return x14\n
+    return x14
+
+
 def verify_4be741c5(I: Grid) -> Grid:
     x0 = first(I)
     x1 = dedupe(x0)
@@ -3058,11 +3289,15 @@ def verify_4be741c5(I: Grid) -> Grid:
     x9 = crop(x8, ORIGIN, x7)
     x10 = apply(dedupe, x9)
     x11 = x4(x10)
-    return x11\n
+    return x11
+
+
 def verify_4c4377d9(I: Grid) -> Grid:
     x0 = hmirror(I)
     x1 = vconcat(x0, I)
-    return x1\n
+    return x1
+
+
 def verify_4c5c2cf0(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = compose(dneighbors, center)
@@ -3086,7 +3321,9 @@ def verify_4c5c2cf0(I: Grid) -> Grid:
     x19 = fork(shift, identity, x18)
     x20 = mapply(x19, x13)
     x21 = paint(I, x20)
-    return x21\n
+    return x21
+
+
 def verify_50846271(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
@@ -3180,7 +3417,9 @@ def verify_50846271(I: Grid) -> Grid:
     x89 = fill(x48, x0, x88)
     x90 = replace(x89, x0, EIGHT)
     x91 = fill(x90, x0, x1)
-    return x91\n
+    return x91
+
+
 def verify_508bd3b6(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = palette(I)
@@ -3237,13 +3476,17 @@ def verify_508bd3b6(I: Grid) -> Grid:
     x52 = combine(x50, x51)
     x53 = difference(x52, x13)
     x54 = fill(I, THREE, x53)
-    return x54\n
+    return x54
+
+
 def verify_50cb2852(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = compose(backdrop, inbox)
     x2 = mapply(x1, x0)
     x3 = fill(I, EIGHT, x2)
-    return x3\n
+    return x3
+
+
 def verify_5117e062(I: Grid) -> Grid:
     x0 = objects(I, F, T, T)
     x1 = argmax(x0, numcolors)
@@ -3253,7 +3496,9 @@ def verify_5117e062(I: Grid) -> Grid:
     x5 = shape(x1)
     x6 = canvas(x4, x5)
     x7 = fill(x6, x2, x3)
-    return x7\n
+    return x7
+
+
 def verify_5168d44c(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(multiply, height, width)
@@ -3320,7 +3565,9 @@ def verify_5168d44c(I: Grid) -> Grid:
     x62 = color(x11)
     x63 = replace(I, x62, x6)
     x64 = paint(x63, x61)
-    return x64\n
+    return x64
+
+
 def verify_539a4f51(I: Grid) -> Grid:
     x0 = astuple(identity, cmirror)
     x1 = astuple(hmirror, vmirror)
@@ -3362,7 +3609,9 @@ def verify_539a4f51(I: Grid) -> Grid:
     x37 = combine(x34, x36)
     x38 = paint(x35, x37)
     x39 = x15(x38)
-    return x39\n
+    return x39
+
+
 def verify_53b68214(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = merge(x0)
@@ -3401,14 +3650,18 @@ def verify_53b68214(I: Grid) -> Grid:
     x34 = compose(x32, x33)
     x35 = mapply(x34, x31)
     x36 = paint(x5, x35)
-    return x36\n
+    return x36
+
+
 def verify_543a7ed5(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = mapply(outbox, x0)
     x2 = fill(I, THREE, x1)
     x3 = mapply(delta, x0)
     x4 = fill(x2, FOUR, x3)
-    return x4\n
+    return x4
+
+
 def verify_54d82841(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = mapply(delta, x0)
@@ -3433,7 +3686,9 @@ def verify_54d82841(I: Grid) -> Grid:
     x20 = branch(x13, x19, x18)
     x21 = apply(x20, x8)
     x22 = fill(I, FOUR, x21)
-    return x22\n
+    return x22
+
+
 def verify_54d9e175(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = merge(x0)
@@ -3450,7 +3705,9 @@ def verify_54d9e175(I: Grid) -> Grid:
     x12 = fork(recolor, x11, toindices)
     x13 = mapply(x12, x6)
     x14 = paint(I, x13)
-    return x14\n
+    return x14
+
+
 def verify_5521c0d9(I: Grid) -> Grid:
     x0 = asindices(I)
     x1 = box(x0)
@@ -3486,12 +3743,16 @@ def verify_5521c0d9(I: Grid) -> Grid:
     x31 = fill(x21, x29, x30)
     x32 = paint(x31, x28)
     x33 = x20(x32)
-    return x33\n
+    return x33
+
+
 def verify_5582e5ca(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = shape(I)
     x2 = canvas(x0, x1)
-    return x2\n
+    return x2
+
+
 def verify_5614dbcf(I: Grid) -> Grid:
     x0 = canvas(ZERO, THREE_BY_THREE)
     x1 = asindices(x0)
@@ -3516,7 +3777,9 @@ def verify_5614dbcf(I: Grid) -> Grid:
     x20 = mapply(x19, x10)
     x21 = paint(I, x20)
     x22 = downscale(x21, THREE)
-    return x22\n
+    return x22
+
+
 def verify_56dc2b01(I: Grid) -> Grid:
     x0 = ofcolor(I, TWO)
     x1 = hline(x0)
@@ -3546,13 +3809,17 @@ def verify_56dc2b01(I: Grid) -> Grid:
     x25 = paint(x24, x19)
     x26 = fill(x25, EIGHT, x23)
     x27 = x2(x26)
-    return x27\n
+    return x27
+
+
 def verify_56ff96f3(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = fork(recolor, color, backdrop)
     x2 = mapply(x1, x0)
     x3 = paint(I, x2)
-    return x3\n
+    return x3
+
+
 def verify_57aa92db(I: Grid) -> Grid:
     x0 = objects(I, F, T, T)
     x1 = palette(I)
@@ -3587,7 +3854,9 @@ def verify_57aa92db(I: Grid) -> Grid:
     x30 = remove(x14, x0)
     x31 = mapply(x29, x30)
     x32 = paint(I, x31)
-    return x32\n
+    return x32
+
+
 def verify_5ad4f10b(I: Grid) -> Grid:
     x0 = asindices(I)
     x1 = box(x0)
@@ -3621,12 +3890,16 @@ def verify_5ad4f10b(I: Grid) -> Grid:
     x29 = sfilter(x28, x25)
     x30 = maximum(x29)
     x31 = downscale(x22, x30)
-    return x31\n
+    return x31
+
+
 def verify_5bd6f4ac(I: Grid) -> Grid:
     x0 = rot270(I)
     x1 = crop(x0, ORIGIN, THREE_BY_THREE)
     x2 = rot90(x1)
-    return x2\n
+    return x2
+
+
 def verify_5c0a986e(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = colorfilter(x0, TWO)
@@ -3641,7 +3914,9 @@ def verify_5c0a986e(I: Grid) -> Grid:
     x10 = mapply(x8, x2)
     x11 = combine(x9, x10)
     x12 = paint(I, x11)
-    return x12\n
+    return x12
+
+
 def verify_5c2c9af4(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
@@ -3668,7 +3943,9 @@ def verify_5c2c9af4(I: Grid) -> Grid:
     x22 = pair(x19, x21)
     x23 = mapply(box, x22)
     x24 = fill(I, x0, x23)
-    return x24\n
+    return x24
+
+
 def verify_5daaa586(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = objects(I, T, F, F)
@@ -3699,15 +3976,21 @@ def verify_5daaa586(I: Grid) -> Grid:
     x26 = fork(connect, first, last)
     x27 = mapply(x26, x25)
     x28 = fill(x7, x11, x27)
-    return x28\n
+    return x28
+
+
 def verify_60b61512(I: Grid) -> Grid:
     x0 = objects(I, T, T, T)
     x1 = mapply(delta, x0)
     x2 = fill(I, SEVEN, x1)
-    return x2\n
+    return x2
+
+
 def verify_6150a2bd(I: Grid) -> Grid:
     x0 = rot180(I)
-    return x0\n
+    return x0
+
+
 def verify_623ea044(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
@@ -3720,13 +4003,17 @@ def verify_623ea044(I: Grid) -> Grid:
     x8 = fork(combine, x4, x7)
     x9 = mapply(x8, x1)
     x10 = fill(I, x0, x9)
-    return x10\n
+    return x10
+
+
 def verify_62c24649(I: Grid) -> Grid:
     x0 = vmirror(I)
     x1 = hconcat(I, x0)
     x2 = hmirror(x1)
     x3 = vconcat(x1, x2)
-    return x3\n
+    return x3
+
+
 def verify_63613498(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = mostcolor(I)
@@ -3754,7 +4041,9 @@ def verify_63613498(I: Grid) -> Grid:
     x23 = argmax(x22, x21)
     x24 = color(x12)
     x25 = fill(I, x24, x23)
-    return x25\n
+    return x25
+
+
 def verify_6430c8c4(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = sfilter(x0, hline)
@@ -3774,7 +4063,9 @@ def verify_6430c8c4(I: Grid) -> Grid:
     x15 = intersection(x13, x14)
     x16 = canvas(x12, x8)
     x17 = fill(x16, THREE, x15)
-    return x17\n
+    return x17
+
+
 def verify_6455b5f5(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = asindices(I)
@@ -3790,7 +4081,9 @@ def verify_6455b5f5(I: Grid) -> Grid:
     x11 = fill(I, ONE, x10)
     x12 = merge(x9)
     x13 = fill(x11, EIGHT, x12)
-    return x13\n
+    return x13
+
+
 def verify_662c240a(I: Grid) -> Grid:
     x0 = portrait(I)
     x1 = branch(x0, vsplit, hsplit)
@@ -3802,7 +4095,9 @@ def verify_662c240a(I: Grid) -> Grid:
     x7 = fork(equality, identity, dmirror)
     x8 = compose(flip, x7)
     x9 = extract(x6, x8)
-    return x9\n
+    return x9
+
+
 def verify_67385a82(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = palette(I)
@@ -3812,7 +4107,9 @@ def verify_67385a82(I: Grid) -> Grid:
     x5 = difference(x3, x4)
     x6 = merge(x5)
     x7 = fill(I, EIGHT, x6)
-    return x7\n
+    return x7
+
+
 def verify_673ef223(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = merge(x0)
@@ -3867,7 +4164,9 @@ def verify_673ef223(I: Grid) -> Grid:
     x50 = mapply(x44, x49)
     x51 = fill(x34, x20, x50)
     x52 = fill(x51, x19, x35)
-    return x52\n
+    return x52
+
+
 def verify_6773b310(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = merge(x0)
@@ -3900,10 +4199,14 @@ def verify_6773b310(I: Grid) -> Grid:
     x28 = increment(x27)
     x29 = canvas(x10, x28)
     x30 = fill(x29, ONE, x22)
-    return x30\n
+    return x30
+
+
 def verify_67a3c6ac(I: Grid) -> Grid:
     x0 = vmirror(I)
-    return x0\n
+    return x0
+
+
 def verify_67a423a3(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = palette(I)
@@ -3918,13 +4221,17 @@ def verify_67a423a3(I: Grid) -> Grid:
     x10 = intersection(x7, x9)
     x11 = outbox(x10)
     x12 = fill(I, FOUR, x11)
-    return x12\n
+    return x12
+
+
 def verify_67e8384a(I: Grid) -> Grid:
     x0 = vmirror(I)
     x1 = hconcat(I, x0)
     x2 = hmirror(x1)
     x3 = vconcat(x1, x2)
-    return x3\n
+    return x3
+
+
 def verify_681b3aeb(I: Grid) -> Grid:
     x0 = objects(I, T, T, T)
     x1 = totuple(x0)
@@ -3968,7 +4275,9 @@ def verify_681b3aeb(I: Grid) -> Grid:
     x39 = invert(x38)
     x40 = shift(x32, x39)
     x41 = fill(x37, x6, x40)
-    return x41\n
+    return x41
+
+
 def verify_6855a6e4(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(difference, toindices, box)
@@ -4022,10 +4331,14 @@ def verify_6855a6e4(I: Grid) -> Grid:
     x49 = combine(x39, x47)
     x50 = fill(x48, x24, x49)
     x51 = x18(x50)
-    return x51\n
+    return x51
+
+
 def verify_68b16354(I: Grid) -> Grid:
     x0 = hmirror(I)
-    return x0\n
+    return x0
+
+
 def verify_694f12f3(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = fork(multiply, height, width)
@@ -4038,7 +4351,9 @@ def verify_694f12f3(I: Grid) -> Grid:
     x8 = x4(x6)
     x9 = fill(I, ONE, x7)
     x10 = fill(x9, TWO, x8)
-    return x10\n
+    return x10
+
+
 def verify_6a1e5592(I: Grid) -> Grid:
     x0 = astuple(identity, dmirror)
     x1 = astuple(cmirror, hmirror)
@@ -4126,7 +4441,9 @@ def verify_6a1e5592(I: Grid) -> Grid:
     x83 = cover(x21, x82)
     x84 = fill(x83, ONE, x81)
     x85 = x20(x84)
-    return x85\n
+    return x85
+
+
 def verify_6aa20dc0(I: Grid) -> Grid:
     x0 = objects(I, F, T, T)
     x1 = mostcolor(I)
@@ -4179,7 +4496,9 @@ def verify_6aa20dc0(I: Grid) -> Grid:
     x48 = product(x22, x15)
     x49 = mapply(x47, x48)
     x50 = paint(I, x49)
-    return x50\n
+    return x50
+
+
 def verify_6b9890af(I: Grid) -> Grid:
     x0 = objects(I, T, T, T)
     x1 = fork(equality, toindices, box)
@@ -4204,7 +4523,9 @@ def verify_6b9890af(I: Grid) -> Grid:
     x20 = asobject(x19)
     x21 = shift(x20, UNITY)
     x22 = paint(x8, x21)
-    return x22\n
+    return x22
+
+
 def verify_6c434453(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = rbind(greater, TWO)
@@ -4221,7 +4542,9 @@ def verify_6c434453(I: Grid) -> Grid:
     x12 = fork(intersection, x11, backdrop)
     x13 = mapply(x12, x5)
     x14 = fill(x8, TWO, x13)
-    return x14\n
+    return x14
+
+
 def verify_6cdd2623(I: Grid) -> Grid:
     x0 = asindices(I)
     x1 = box(x0)
@@ -4242,7 +4565,9 @@ def verify_6cdd2623(I: Grid) -> Grid:
     x16 = shape(I)
     x17 = canvas(x15, x16)
     x18 = fill(x17, x8, x14)
-    return x18\n
+    return x18
+
+
 def verify_6cf79266(I: Grid) -> Grid:
     x0 = canvas(ZERO, THREE_BY_THREE)
     x1 = asobject(x0)
@@ -4250,7 +4575,9 @@ def verify_6cf79266(I: Grid) -> Grid:
     x3 = lbind(shift, x1)
     x4 = mapply(x3, x2)
     x5 = fill(I, ONE, x4)
-    return x5\n
+    return x5
+
+
 def verify_6d0160f0(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = merge(x0)
@@ -4291,11 +4618,15 @@ def verify_6d0160f0(I: Grid) -> Grid:
     x36 = multiply(x32, x35)
     x37 = shift(x30, x36)
     x38 = paint(x26, x37)
-    return x38\n
+    return x38
+
+
 def verify_6d0aefbc(I: Grid) -> Grid:
     x0 = vmirror(I)
     x1 = hconcat(I, x0)
-    return x1\n
+    return x1
+
+
 def verify_6d58a25d(I: Grid) -> Grid:
     x0 = astuple(ONE, THREE)
     x1 = astuple(TWO, FOUR)
@@ -4357,13 +4688,17 @@ def verify_6d58a25d(I: Grid) -> Grid:
     x57 = mapply(x56, x45)
     x58 = fill(x30, x38, x57)
     x59 = x29(x58)
-    return x59\n
+    return x59
+
+
 def verify_6d75e8bb(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = argmin(x0, size)
     x2 = delta(x1)
     x3 = fill(I, TWO, x2)
-    return x3\n
+    return x3
+
+
 def verify_6e02f1e3(I: Grid) -> Grid:
     x0 = numcolors(I)
     x1 = equality(x0, THREE)
@@ -4382,7 +4717,9 @@ def verify_6e02f1e3(I: Grid) -> Grid:
     x14 = canvas(ZERO, x13)
     x15 = connect(x5, x12)
     x16 = fill(x14, FIVE, x15)
-    return x16\n
+    return x16
+
+
 def verify_6e19193c(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = rbind(shoot, UNITY)
@@ -4421,7 +4758,9 @@ def verify_6e19193c(I: Grid) -> Grid:
     x34 = combine(x32, x33)
     x35 = combine(x31, x34)
     x36 = paint(I, x35)
-    return x36\n
+    return x36
+
+
 def verify_6e82a1ae(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = matcher(size, TWO)
@@ -4433,7 +4772,9 @@ def verify_6e82a1ae(I: Grid) -> Grid:
     x7 = fill(I, THREE, x2)
     x8 = fill(x7, TWO, x4)
     x9 = fill(x8, ONE, x6)
-    return x9\n
+    return x9
+
+
 def verify_6ecd11f4(I: Grid) -> Grid:
     x0 = objects(I, F, T, T)
     x1 = argmax(x0, numcolors)
@@ -4478,16 +4819,22 @@ def verify_6ecd11f4(I: Grid) -> Grid:
     x40 = compose(x39, last)
     x41 = sfilter(x12, x40)
     x42 = paint(x36, x41)
-    return x42\n
+    return x42
+
+
 def verify_6f8cd79b(I: Grid) -> Grid:
     x0 = asindices(I)
     x1 = box(x0)
     x2 = fill(I, EIGHT, x1)
-    return x2\n
+    return x2
+
+
 def verify_6fa7a44f(I: Grid) -> Grid:
     x0 = hmirror(I)
     x1 = vconcat(I, x0)
-    return x1\n
+    return x1
+
+
 def verify_72322fa7(I: Grid) -> Grid:
     x0 = objects(I, F, T, T)
     x1 = matcher(numcolors, TWO)
@@ -4516,13 +4863,17 @@ def verify_72322fa7(I: Grid) -> Grid:
     x24 = fork(combine, x20, x23)
     x25 = mapply(x24, x3)
     x26 = paint(I, x25)
-    return x26\n
+    return x26
+
+
 def verify_72ca375d(I: Grid) -> Grid:
     x0 = objects(I, T, T, T)
     x1 = fork(equality, identity, vmirror)
     x2 = extract(x0, x1)
     x3 = subgrid(x2, I)
-    return x3\n
+    return x3
+
+
 def verify_73251a56(I: Grid) -> Grid:
     x0 = palette(I)
     x1 = asindices(I)
@@ -4582,7 +4933,9 @@ def verify_73251a56(I: Grid) -> Grid:
     x55 = branch(x52, mostcolor, x54)
     x56 = x55(x50)
     x57 = replace(x46, x38, x56)
-    return x57\n
+    return x57
+
+
 def verify_7447852a(I: Grid) -> Grid:
     x0 = index(I, ORIGIN)
     x1 = shape(I)
@@ -4601,11 +4954,15 @@ def verify_7447852a(I: Grid) -> Grid:
     x14 = sfilter(x9, x13)
     x15 = mapply(first, x14)
     x16 = fill(I, FOUR, x15)
-    return x16\n
+    return x16
+
+
 def verify_7468f01a(I: Grid) -> Grid:
     x0 = compress(I)
     x1 = vmirror(x0)
-    return x1\n
+    return x1
+
+
 def verify_746b3537(I: Grid) -> Grid:
     x0 = first(I)
     x1 = dedupe(x0)
@@ -4618,10 +4975,14 @@ def verify_746b3537(I: Grid) -> Grid:
     x8 = apply(color, x7)
     x9 = repeat(x8, ONE)
     x10 = x4(x9)
-    return x10\n
+    return x10
+
+
 def verify_74dd1130(I: Grid) -> Grid:
     x0 = dmirror(I)
-    return x0\n
+    return x0
+
+
 def verify_75b8110e(I: Grid) -> Grid:
     x0 = tophalf(I)
     x1 = lefthalf(x0)
@@ -4653,7 +5014,9 @@ def verify_75b8110e(I: Grid) -> Grid:
     x27 = paint(x26, x23)
     x28 = paint(x27, x24)
     x29 = paint(x28, x25)
-    return x29\n
+    return x29
+
+
 def verify_760b3cac(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = matcher(shape, THREE_BY_THREE)
@@ -4704,7 +5067,9 @@ def verify_760b3cac(I: Grid) -> Grid:
     x46 = multiply(x45, x42)
     x47 = shift(x44, x46)
     x48 = paint(I, x47)
-    return x48\n
+    return x48
+
+
 def verify_776ffc46(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = fork(equality, toindices, box)
@@ -4725,7 +5090,9 @@ def verify_776ffc46(I: Grid) -> Grid:
     x16 = matcher(x15, x14)
     x17 = mfilter(x0, x16)
     x18 = fill(I, x13, x17)
-    return x18\n
+    return x18
+
+
 def verify_77fdfe62(I: Grid) -> Grid:
     x0 = trim(I)
     x1 = trim(x0)
@@ -4765,7 +5132,9 @@ def verify_77fdfe62(I: Grid) -> Grid:
     x35 = hconcat(x31, x32)
     x36 = hconcat(x33, x34)
     x37 = vconcat(x35, x36)
-    return x37\n
+    return x37
+
+
 def verify_780d0b14(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = merge(x0)
@@ -4784,7 +5153,9 @@ def verify_780d0b14(I: Grid) -> Grid:
     x14 = fill(I, x2, x13)
     x15 = paint(x14, x12)
     x16 = compress(x15)
-    return x16\n
+    return x16
+
+
 def verify_7837ac64(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = fork(equality, toindices, backdrop)
@@ -4824,7 +5195,9 @@ def verify_7837ac64(I: Grid) -> Grid:
     x35 = compose(x33, x34)
     x36 = chain(x31, x32, x35)
     x37 = apply(x36, x30)
-    return x37\n
+    return x37
+
+
 def verify_794b24be(I: Grid) -> Grid:
     x0 = palette(I)
     x1 = remove(ONE, x0)
@@ -4840,7 +5213,9 @@ def verify_794b24be(I: Grid) -> Grid:
     x11 = equality(x5, FOUR)
     x12 = branch(x11, x10, x8)
     x13 = fill(x9, TWO, x12)
-    return x13\n
+    return x13
+
+
 def verify_7b6016b9(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = asindices(I)
@@ -4853,14 +5228,18 @@ def verify_7b6016b9(I: Grid) -> Grid:
     x8 = mfilter(x5, x7)
     x9 = fill(I, TWO, x8)
     x10 = replace(x9, x4, THREE)
-    return x10\n
+    return x10
+
+
 def verify_7b7f7511(I: Grid) -> Grid:
     x0 = lefthalf(I)
     x1 = righthalf(I)
     x2 = equality(x0, x1)
     x3 = branch(x2, lefthalf, tophalf)
     x4 = x3(I)
-    return x4\n
+    return x4
+
+
 def verify_7c008303(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = merge(x0)
@@ -4891,7 +5270,9 @@ def verify_7c008303(I: Grid) -> Grid:
     x26 = compose(x25, last)
     x27 = sfilter(x21, x26)
     x28 = paint(x13, x27)
-    return x28\n
+    return x28
+
+
 def verify_7ddcd7ec(I: Grid) -> Grid:
     x0 = objects(I, F, F, T)
     x1 = argmax(x0, size)
@@ -4901,7 +5282,9 @@ def verify_7ddcd7ec(I: Grid) -> Grid:
     x5 = fork(recolor, color, x4)
     x6 = mapply(x5, x2)
     x7 = paint(I, x6)
-    return x7\n
+    return x7
+
+
 def verify_7df24a62(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = compose(maximum, shape)
@@ -4950,7 +5333,9 @@ def verify_7df24a62(I: Grid) -> Grid:
     x44 = mapply(x43, x23)
     x45 = paint(x15, x44)
     x46 = trim(x45)
-    return x46\n
+    return x46
+
+
 def verify_7e0986d6(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = objects(I, T, F, T)
@@ -4963,7 +5348,9 @@ def verify_7e0986d6(I: Grid) -> Grid:
     x8 = fork(recolor, color, backdrop)
     x9 = mapply(x8, x7)
     x10 = paint(x6, x9)
-    return x10\n
+    return x10
+
+
 def verify_7f4411dc(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = totuple(x0)
@@ -4980,7 +5367,9 @@ def verify_7f4411dc(I: Grid) -> Grid:
     x12 = occurrences(I, x5)
     x13 = mapply(x11, x12)
     x14 = paint(x10, x13)
-    return x14\n
+    return x14
+
+
 def verify_7fe24cdd(I: Grid) -> Grid:
     x0 = rot90(I)
     x1 = rot180(I)
@@ -4988,7 +5377,9 @@ def verify_7fe24cdd(I: Grid) -> Grid:
     x3 = hconcat(I, x0)
     x4 = hconcat(x2, x1)
     x5 = vconcat(x3, x4)
-    return x5\n
+    return x5
+
+
 def verify_80af3007(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(multiply, height, width)
@@ -5040,7 +5431,9 @@ def verify_80af3007(I: Grid) -> Grid:
     x47 = lbind(shift, x44)
     x48 = mapply(x47, x46)
     x49 = fill(x43, x3, x48)
-    return x49\n
+    return x49
+
+
 def verify_810b9b61(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = rbind(greater, TWO)
@@ -5049,7 +5442,9 @@ def verify_810b9b61(I: Grid) -> Grid:
     x4 = fork(both, x2, x3)
     x5 = mfilter(x0, x4)
     x6 = fill(I, THREE, x5)
-    return x6\n
+    return x6
+
+
 def verify_82819916(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = sfilter(x0, hline)
@@ -5099,7 +5494,9 @@ def verify_82819916(I: Grid) -> Grid:
     x45 = mapply(x44, x27)
     x46 = paint(x5, x45)
     x47 = x4(x46)
-    return x47\n
+    return x47
+
+
 def verify_83302e8f(I: Grid) -> Grid:
     x0 = index(I, ORIGIN)
     x1 = objects(I, T, F, F)
@@ -5113,7 +5510,9 @@ def verify_83302e8f(I: Grid) -> Grid:
     x9 = ofcolor(I, x0)
     x10 = fill(I, FOUR, x9)
     x11 = fill(x10, THREE, x8)
-    return x11\n
+    return x11
+
+
 def verify_834ec97d(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = argmin(x0, size)
@@ -5132,7 +5531,9 @@ def verify_834ec97d(I: Grid) -> Grid:
     x14 = apply(x13, x10)
     x15 = mapply(x11, x14)
     x16 = fill(x4, FOUR, x15)
-    return x16\n
+    return x16
+
+
 def verify_8403a5d5(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = argmin(x0, size)
@@ -5156,7 +5557,9 @@ def verify_8403a5d5(I: Grid) -> Grid:
     x19 = apply(x18, x14)
     x20 = combine(x15, x19)
     x21 = fill(x8, FIVE, x20)
-    return x21\n
+    return x21
+
+
 def verify_846bdb03(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(equality, corners, toindices)
@@ -5197,7 +5600,9 @@ def verify_846bdb03(I: Grid) -> Grid:
     x36 = shift(x35, UNITY)
     x37 = paint(x11, x36)
     x38 = x10(x37)
-    return x38\n
+    return x38
+
+
 def verify_855e0971(I: Grid) -> Grid:
     x0 = lbind(greater, THREE)
     x1 = chain(x0, size, dedupe)
@@ -5230,7 +5635,9 @@ def verify_855e0971(I: Grid) -> Grid:
     x28 = fork(paint, identity, x27)
     x29 = mapply(x28, x23)
     x30 = x5(x29)
-    return x30\n
+    return x30
+
+
 def verify_85c4e7cd(I: Grid) -> Grid:
     x0 = asindices(I)
     x1 = box(x0)
@@ -5255,7 +5662,9 @@ def verify_85c4e7cd(I: Grid) -> Grid:
     x20 = apply(last, x19)
     x21 = mpapply(recolor, x20, x12)
     x22 = paint(I, x21)
-    return x22\n
+    return x22
+
+
 def verify_868de0fa(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = sfilter(x0, square)
@@ -5266,7 +5675,9 @@ def verify_868de0fa(I: Grid) -> Grid:
     x6 = merge(x4)
     x7 = fill(I, TWO, x5)
     x8 = fill(x7, SEVEN, x6)
-    return x8\n
+    return x8
+
+
 def verify_8731374e(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = argmax(x0, size)
@@ -5297,7 +5708,9 @@ def verify_8731374e(I: Grid) -> Grid:
     x26 = fork(combine, vfrontier, hfrontier)
     x27 = mapply(x26, x25)
     x28 = fill(x23, x24, x27)
-    return x28\n
+    return x28
+
+
 def verify_88a10436(I: Grid) -> Grid:
     x0 = objects(I, F, F, T)
     x1 = argmax(x0, size)
@@ -5311,7 +5724,9 @@ def verify_88a10436(I: Grid) -> Grid:
     x9 = lbind(shift, x6)
     x10 = mapply(x9, x8)
     x11 = paint(I, x10)
-    return x11\n
+    return x11
+
+
 def verify_88a62173(I: Grid) -> Grid:
     x0 = lefthalf(I)
     x1 = righthalf(I)
@@ -5323,7 +5738,9 @@ def verify_88a62173(I: Grid) -> Grid:
     x7 = astuple(x4, x5)
     x8 = combine(x6, x7)
     x9 = leastcommon(x8)
-    return x9\n
+    return x9
+
+
 def verify_890034e9(I: Grid) -> Grid:
     x0 = rbind(greater, TWO)
     x1 = chain(x0, minimum, shape)
@@ -5343,7 +5760,9 @@ def verify_890034e9(I: Grid) -> Grid:
     x15 = lbind(shift, x14)
     x16 = mapply(x15, x12)
     x17 = fill(I, x8, x16)
-    return x17\n
+    return x17
+
+
 def verify_8a004b2b(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(equality, toindices, corners)
@@ -5401,11 +5820,15 @@ def verify_8a004b2b(I: Grid) -> Grid:
     x53 = shift(x48, x52)
     x54 = paint(I, x53)
     x55 = subgrid(x3, x54)
-    return x55\n
+    return x55
+
+
 def verify_8be77c9e(I: Grid) -> Grid:
     x0 = hmirror(I)
     x1 = vconcat(I, x0)
-    return x1\n
+    return x1
+
+
 def verify_8d5021e8(I: Grid) -> Grid:
     x0 = vmirror(I)
     x1 = hconcat(x0, I)
@@ -5413,7 +5836,9 @@ def verify_8d5021e8(I: Grid) -> Grid:
     x3 = vconcat(x1, x2)
     x4 = vconcat(x3, x1)
     x5 = hmirror(x4)
-    return x5\n
+    return x5
+
+
 def verify_8d510a79(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = totuple(x0)
@@ -5443,7 +5868,9 @@ def verify_8d510a79(I: Grid) -> Grid:
     x25 = mapply(x23, x11)
     x26 = fill(I, TWO, x24)
     x27 = fill(x26, ONE, x25)
-    return x27\n
+    return x27
+
+
 def verify_8e1813be(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = matcher(height, ONE)
@@ -5464,7 +5891,9 @@ def verify_8e1813be(I: Grid) -> Grid:
     x16 = size(x4)
     x17 = repeat(x15, x16)
     x18 = x12(x17)
-    return x18\n
+    return x18
+
+
 def verify_8e5a5113(I: Grid) -> Grid:
     x0 = portrait(I)
     x1 = branch(x0, identity, rot90)
@@ -5508,7 +5937,9 @@ def verify_8e5a5113(I: Grid) -> Grid:
     x39 = mapply(x38, x13)
     x40 = paint(x3, x39)
     x41 = x2(x40)
-    return x41\n
+    return x41
+
+
 def verify_8eb1be9a(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = merge(x0)
@@ -5521,7 +5952,9 @@ def verify_8eb1be9a(I: Grid) -> Grid:
     x8 = fork(combine, x6, x7)
     x9 = mapply(x8, x4)
     x10 = paint(I, x9)
-    return x10\n
+    return x10
+
+
 def verify_8efcae92(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = fork(multiply, height, width)
@@ -5547,7 +5980,9 @@ def verify_8efcae92(I: Grid) -> Grid:
     x21 = argmin(x19, x20)
     x22 = rbind(colorcount, x21)
     x23 = argmax(x17, x22)
-    return x23\n
+    return x23
+
+
 def verify_8f2ea7aa(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = merge(x0)
@@ -5563,7 +5998,9 @@ def verify_8f2ea7aa(I: Grid) -> Grid:
     x11 = lbind(shift, x2)
     x12 = mapply(x11, x10)
     x13 = paint(x6, x12)
-    return x13\n
+    return x13
+
+
 def verify_90c28cc7(I: Grid) -> Grid:
     x0 = matcher(identity, ZERO)
     x1 = compose(flip, x0)
@@ -5577,7 +6014,9 @@ def verify_90c28cc7(I: Grid) -> Grid:
     x9 = dmirror(x8)
     x10 = dedupe(x9)
     x11 = dmirror(x10)
-    return x11\n
+    return x11
+
+
 def verify_90f3ed37(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
@@ -5653,7 +6092,9 @@ def verify_90f3ed37(I: Grid) -> Grid:
     x71 = fork(difference, x70, identity)
     x72 = mapply(x71, x29)
     x73 = fill(I, ONE, x72)
-    return x73\n
+    return x73
+
+
 def verify_913fb3ed(I: Grid) -> Grid:
     x0 = lbind(ofcolor, I)
     x1 = lbind(mapply, neighbors)
@@ -5667,7 +6108,9 @@ def verify_913fb3ed(I: Grid) -> Grid:
     x9 = insert(x6, x8)
     x10 = mapply(x3, x9)
     x11 = paint(I, x10)
-    return x11\n
+    return x11
+
+
 def verify_91413438(I: Grid) -> Grid:
     x0 = palette(I)
     x1 = other(x0, ZERO)
@@ -5686,7 +6129,9 @@ def verify_91413438(I: Grid) -> Grid:
     x14 = dmirror(x13)
     x15 = hsplit(x14, x3)
     x16 = merge(x15)
-    return x16\n
+    return x16
+
+
 def verify_91714a58(I: Grid) -> Grid:
     x0 = shape(I)
     x1 = asindices(I)
@@ -5715,10 +6160,14 @@ def verify_91714a58(I: Grid) -> Grid:
     x24 = mapply(x22, x23)
     x25 = combine(x20, x24)
     x26 = fill(x7, x8, x25)
-    return x26\n
+    return x26
+
+
 def verify_9172f3a0(I: Grid) -> Grid:
     x0 = upscale(I, THREE)
-    return x0\n
+    return x0
+
+
 def verify_928ad970(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
@@ -5729,7 +6178,9 @@ def verify_928ad970(I: Grid) -> Grid:
     x6 = other(x4, x5)
     x7 = inbox(x1)
     x8 = fill(I, x6, x7)
-    return x8\n
+    return x8
+
+
 def verify_93b581b8(I: Grid) -> Grid:
     x0 = objects(I, F, F, T)
     x1 = apply(toindices, x0)
@@ -5754,7 +6205,9 @@ def verify_93b581b8(I: Grid) -> Grid:
     x20 = fork(combine, x18, x19)
     x21 = mapply(x20, x1)
     x22 = paint(I, x21)
-    return x22\n
+    return x22
+
+
 def verify_941d9a10(I: Grid) -> Grid:
     x0 = asindices(I)
     x1 = corners(x0)
@@ -5786,7 +6239,9 @@ def verify_941d9a10(I: Grid) -> Grid:
     x27 = fill(I, ONE, x7)
     x28 = fill(x27, THREE, x8)
     x29 = fill(x28, TWO, x26)
-    return x29\n
+    return x29
+
+
 def verify_94f9d214(I: Grid) -> Grid:
     x0 = astuple(vsplit, hsplit)
     x1 = rbind(rbind, TWO)
@@ -5811,7 +6266,9 @@ def verify_94f9d214(I: Grid) -> Grid:
     x20 = ofcolor(x12, x16)
     x21 = intersection(x19, x20)
     x22 = fill(x18, TWO, x21)
-    return x22\n
+    return x22
+
+
 def verify_952a094c(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = merge(x0)
@@ -5841,14 +6298,18 @@ def verify_952a094c(I: Grid) -> Grid:
     x25 = add(UP_RIGHT, x24)
     x26 = initset(x25)
     x27 = fill(x21, x23, x26)
-    return x27\n
+    return x27
+
+
 def verify_9565186b(I: Grid) -> Grid:
     x0 = shape(I)
     x1 = partition(I)
     x2 = argmax(x1, size)
     x3 = canvas(FIVE, x0)
     x4 = paint(x3, x2)
-    return x4\n
+    return x4
+
+
 def verify_95990924(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = apply(ulcorner, x0)
@@ -5863,7 +6324,9 @@ def verify_95990924(I: Grid) -> Grid:
     x10 = fill(x9, TWO, x6)
     x11 = fill(x10, THREE, x7)
     x12 = fill(x11, FOUR, x8)
-    return x12\n
+    return x12
+
+
 def verify_963e52fc(I: Grid) -> Grid:
     x0 = width(I)
     x1 = asobject(I)
@@ -5881,7 +6344,9 @@ def verify_963e52fc(I: Grid) -> Grid:
     x13 = rot270(x12)
     x14 = astuple(x3, x8)
     x15 = crop(x13, ORIGIN, x14)
-    return x15\n
+    return x15
+
+
 def verify_97999447(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = asobject(I)
@@ -5903,7 +6368,9 @@ def verify_97999447(I: Grid) -> Grid:
     x17 = prapply(shift, x6, x16)
     x18 = merge(x17)
     x19 = fill(x11, FIVE, x18)
-    return x19\n
+    return x19
+
+
 def verify_97a05b5b(I: Grid) -> Grid:
     x0 = objects(I, F, F, T)
     x1 = fork(multiply, height, width)
@@ -5956,7 +6423,9 @@ def verify_97a05b5b(I: Grid) -> Grid:
     x48 = fork(shift, x46, x47)
     x49 = mapply(x48, x5)
     x50 = paint(x10, x49)
-    return x50\n
+    return x50
+
+
 def verify_98cf29f8(I: Grid) -> Grid:
     x0 = asindices(I)
     x1 = box(x0)
@@ -5997,7 +6466,9 @@ def verify_98cf29f8(I: Grid) -> Grid:
     x36 = shift(x33, x34)
     x37 = fill(x35, x18, x36)
     x38 = trim(x37)
-    return x38\n
+    return x38
+
+
 def verify_995c5fa3(I: Grid) -> Grid:
     x0 = width(I)
     x1 = increment(x0)
@@ -6038,7 +6509,9 @@ def verify_995c5fa3(I: Grid) -> Grid:
     x36 = apply(x35, x12)
     x37 = rbind(repeat, x2)
     x38 = apply(x37, x36)
-    return x38\n
+    return x38
+
+
 def verify_99b1bc43(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = sfilter(x0, vline)
@@ -6060,7 +6533,9 @@ def verify_99b1bc43(I: Grid) -> Grid:
     x17 = intersection(x14, x15)
     x18 = difference(x16, x17)
     x19 = fill(x13, THREE, x18)
-    return x19\n
+    return x19
+
+
 def verify_99fa7670(I: Grid) -> Grid:
     x0 = shape(I)
     x1 = objects(I, T, F, T)
@@ -6087,7 +6562,9 @@ def verify_99fa7670(I: Grid) -> Grid:
     x22 = pair(x15, x16)
     x23 = mapply(x21, x22)
     x24 = underpaint(x6, x23)
-    return x24\n
+    return x24
+
+
 def verify_9aec4887(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = fork(multiply, height, width)
@@ -6123,7 +6600,9 @@ def verify_9aec4887(I: Grid) -> Grid:
     x31 = fork(recolor, color, x30)
     x32 = mapply(x31, x17)
     x33 = paint(x15, x32)
-    return x33\n
+    return x33
+
+
 def verify_9af7a82c(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = order(x0, size)
@@ -6140,7 +6619,9 @@ def verify_9af7a82c(I: Grid) -> Grid:
     x12 = apply(x11, x1)
     x13 = merge(x12)
     x14 = cmirror(x13)
-    return x14\n
+    return x14
+
+
 def verify_9d9215db(I: Grid) -> Grid:
     x0 = hmirror(I)
     x1 = fgpartition(x0)
@@ -6190,7 +6671,9 @@ def verify_9d9215db(I: Grid) -> Grid:
     x45 = compose(rot90, x44)
     x46 = power(x45, FOUR)
     x47 = x46(x13)
-    return x47\n
+    return x47
+
+
 def verify_9dfd6313(I: Grid) -> Grid:
     x0 = shape(I)
     x1 = decrement(x0)
@@ -6236,7 +6719,9 @@ def verify_9dfd6313(I: Grid) -> Grid:
     x41 = extract(x30, x40)
     x42 = last(x41)
     x43 = x42(I)
-    return x43\n
+    return x43
+
+
 def verify_9ecd008a(I: Grid) -> Grid:
     x0 = ofcolor(I, ZERO)
     x1 = rbind(colorcount, ZERO)
@@ -6247,7 +6732,9 @@ def verify_9ecd008a(I: Grid) -> Grid:
     x6 = astuple(x4, x5)
     x7 = argmin(x6, x3)
     x8 = subgrid(x0, x7)
-    return x8\n
+    return x8
+
+
 def verify_9edfc990(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = colorfilter(x0, ZERO)
@@ -6256,7 +6743,9 @@ def verify_9edfc990(I: Grid) -> Grid:
     x4 = mfilter(x1, x3)
     x5 = recolor(ONE, x4)
     x6 = paint(I, x5)
-    return x6\n
+    return x6
+
+
 def verify_9f236235(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = merge(x0)
@@ -6275,7 +6764,9 @@ def verify_9f236235(I: Grid) -> Grid:
     x14 = chain(x12, x13, x11)
     x15 = apply(x14, x8)
     x16 = vmirror(x15)
-    return x16\n
+    return x16
+
+
 def verify_a1570a43(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = merge(x0)
@@ -6291,7 +6782,9 @@ def verify_a1570a43(I: Grid) -> Grid:
     x11 = increment(x10)
     x12 = shift(x9, x11)
     x13 = paint(x8, x12)
-    return x13\n
+    return x13
+
+
 def verify_a2fd1cf0(I: Grid) -> Grid:
     x0 = ofcolor(I, TWO)
     x1 = ofcolor(I, THREE)
@@ -6313,7 +6806,9 @@ def verify_a2fd1cf0(I: Grid) -> Grid:
     x17 = connect(x15, x16)
     x18 = combine(x11, x17)
     x19 = underfill(I, EIGHT, x18)
-    return x19\n
+    return x19
+
+
 def verify_a3325580(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = valmax(x0, size)
@@ -6325,7 +6820,9 @@ def verify_a3325580(I: Grid) -> Grid:
     x7 = apply(x6, x4)
     x8 = merge(x7)
     x9 = dmirror(x8)
-    return x9\n
+    return x9
+
+
 def verify_a3df8b1e(I: Grid) -> Grid:
     x0 = portrait(I)
     x1 = branch(x0, identity, dmirror)
@@ -6384,10 +6881,14 @@ def verify_a3df8b1e(I: Grid) -> Grid:
     x54 = mapply(last, x53)
     x55 = fill(x2, x30, x54)
     x56 = x1(x55)
-    return x56\n
+    return x56
+
+
 def verify_a416b8f3(I: Grid) -> Grid:
     x0 = hconcat(I, I)
-    return x0\n
+    return x0
+
+
 def verify_a48eeaf7(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = fork(equality, toindices, backdrop)
@@ -6405,7 +6906,9 @@ def verify_a48eeaf7(I: Grid) -> Grid:
     x13 = apply(x12, x6)
     x14 = cover(I, x4)
     x15 = fill(x14, x5, x13)
-    return x15\n
+    return x15
+
+
 def verify_a5313dff(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = rbind(bordering, I)
@@ -6420,7 +6923,9 @@ def verify_a5313dff(I: Grid) -> Grid:
     x10 = compose(flip, x9)
     x11 = mfilter(x8, x10)
     x12 = fill(I, ONE, x11)
-    return x12\n
+    return x12
+
+
 def verify_a5f85a15(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
@@ -6433,7 +6938,9 @@ def verify_a5f85a15(I: Grid) -> Grid:
     x8 = lbind(shift, x5)
     x9 = mapply(x8, x7)
     x10 = fill(I, FOUR, x9)
-    return x10\n
+    return x10
+
+
 def verify_a61ba2ce(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = fork(contained, lrcorner, toindices)
@@ -6476,7 +6983,9 @@ def verify_a61ba2ce(I: Grid) -> Grid:
     x38 = subtract(x19, x37)
     x39 = shift(x36, x38)
     x40 = paint(x35, x39)
-    return x40\n
+    return x40
+
+
 def verify_a61f2674(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = argmax(x0, size)
@@ -6485,7 +6994,9 @@ def verify_a61f2674(I: Grid) -> Grid:
     x4 = cover(I, x3)
     x5 = fill(x4, ONE, x1)
     x6 = fill(x5, TWO, x2)
-    return x6\n
+    return x6
+
+
 def verify_a64e4611(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = shape(I)
@@ -6553,7 +7064,9 @@ def verify_a64e4611(I: Grid) -> Grid:
     x63 = fill(x26, THREE, x62)
     x64 = x60(x63)
     x65 = trim(x64)
-    return x65\n
+    return x65
+
+
 def verify_a65b410d(I: Grid) -> Grid:
     x0 = astuple(identity, rot90)
     x1 = astuple(rot180, rot270)
@@ -6598,7 +7111,9 @@ def verify_a65b410d(I: Grid) -> Grid:
     x40 = combine(x32, x39)
     x41 = fill(x38, ONE, x40)
     x42 = x21(x41)
-    return x42\n
+    return x42
+
+
 def verify_a68b268e(I: Grid) -> Grid:
     x0 = tophalf(I)
     x1 = lefthalf(x0)
@@ -6631,7 +7146,9 @@ def verify_a68b268e(I: Grid) -> Grid:
     x28 = paint(x27, x25)
     x29 = paint(x28, x24)
     x30 = paint(x29, x23)
-    return x30\n
+    return x30
+
+
 def verify_a699fb00(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = height(I)
@@ -6642,14 +7159,18 @@ def verify_a699fb00(I: Grid) -> Grid:
     x6 = fork(paint, identity, x5)
     x7 = apply(x6, x2)
     x8 = merge(x7)
-    return x8\n
+    return x8
+
+
 def verify_a740d043(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = merge(x0)
     x2 = subgrid(x1, I)
     x3 = mostcolor(I)
     x4 = replace(x2, x3, ZERO)
-    return x4\n
+    return x4
+
+
 def verify_a78176bb(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = objects(I, T, T, F)
@@ -6689,7 +7210,9 @@ def verify_a78176bb(I: Grid) -> Grid:
     x35 = cover(x8, x34)
     x36 = paint(x35, x33)
     x37 = x7(x36)
-    return x37\n
+    return x37
+
+
 def verify_a79310a0(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = merge(x0)
@@ -6697,7 +7220,9 @@ def verify_a79310a0(I: Grid) -> Grid:
     x3 = fill(I, x2, x1)
     x4 = shift(x1, DOWN)
     x5 = fill(x3, TWO, x4)
-    return x5\n
+    return x5
+
+
 def verify_a85d4709(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = height(I)
@@ -6727,7 +7252,9 @@ def verify_a85d4709(I: Grid) -> Grid:
     x25 = rbind(repeat, x24)
     x26 = compose(x25, x23)
     x27 = apply(x26, x2)
-    return x27\n
+    return x27
+
+
 def verify_a87f7484(I: Grid) -> Grid:
     x0 = height(I)
     x1 = halve(x0)
@@ -6776,7 +7303,9 @@ def verify_a87f7484(I: Grid) -> Grid:
     x44 = mostcommon(x43)
     x45 = matcher(x10, x44)
     x46 = argmin(x42, x45)
-    return x46\n
+    return x46
+
+
 def verify_a8c38be5(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = mostcolor(I)
@@ -6935,7 +7464,9 @@ def verify_a8c38be5(I: Grid) -> Grid:
     x154 = astuple(x151, x153)
     x155 = shift(x149, x154)
     x156 = paint(x148, x155)
-    return x156\n
+    return x156
+
+
 def verify_a8d7556c(I: Grid) -> Grid:
     x0 = initset(ORIGIN)
     x1 = recolor(ZERO, x0)
@@ -6944,7 +7475,9 @@ def verify_a8d7556c(I: Grid) -> Grid:
     x4 = lbind(shift, x2)
     x5 = mapply(x4, x3)
     x6 = fill(I, TWO, x5)
-    return x6\n
+    return x6
+
+
 def verify_a9f96cdd(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
@@ -6962,7 +7495,9 @@ def verify_a9f96cdd(I: Grid) -> Grid:
     x13 = combine(x7, x9)
     x14 = combine(x12, x13)
     x15 = paint(x11, x14)
-    return x15\n
+    return x15
+
+
 def verify_aabf363d(I: Grid) -> Grid:
     x0 = fork(multiply, height, width)
     x1 = lbind(ofcolor, I)
@@ -6975,7 +7510,9 @@ def verify_aabf363d(I: Grid) -> Grid:
     x8 = other(x7, x5)
     x9 = replace(I, x5, x4)
     x10 = replace(x9, x8, x5)
-    return x10\n
+    return x10
+
+
 def verify_aba27056(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = merge(x0)
@@ -7022,7 +7559,9 @@ def verify_aba27056(I: Grid) -> Grid:
     x42 = mapply(x41, x6)
     x43 = combine(x42, x40)
     x44 = fill(x3, FOUR, x43)
-    return x44\n
+    return x44
+
+
 def verify_ac0a08a4(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = colorcount(I, x0)
@@ -7031,7 +7570,9 @@ def verify_ac0a08a4(I: Grid) -> Grid:
     x4 = multiply(x2, x3)
     x5 = subtract(x4, x1)
     x6 = upscale(I, x5)
-    return x6\n
+    return x6
+
+
 def verify_ae3edfdc(I: Grid) -> Grid:
     x0 = ofcolor(I, ONE)
     x1 = center(x0)
@@ -7055,7 +7596,9 @@ def verify_ae3edfdc(I: Grid) -> Grid:
     x19 = cover(I, x18)
     x20 = fill(x19, SEVEN, x16)
     x21 = fill(x20, THREE, x17)
-    return x21\n
+    return x21
+
+
 def verify_ae4f1146(I: Grid) -> Grid:
     x0 = asindices(I)
     x1 = box(x0)
@@ -7065,7 +7608,9 @@ def verify_ae4f1146(I: Grid) -> Grid:
     x5 = rbind(colorcount, ONE)
     x6 = argmax(x4, x5)
     x7 = subgrid(x6, I)
-    return x7\n
+    return x7
+
+
 def verify_aedd82e4(I: Grid) -> Grid:
     x0 = shape(I)
     x1 = canvas(ZERO, x0)
@@ -7077,7 +7622,9 @@ def verify_aedd82e4(I: Grid) -> Grid:
     x7 = sizefilter(x6, ONE)
     x8 = merge(x7)
     x9 = fill(I, ONE, x8)
-    return x9\n
+    return x9
+
+
 def verify_af902bf9(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = palette(I)
@@ -7119,7 +7666,9 @@ def verify_af902bf9(I: Grid) -> Grid:
     x37 = astuple(x6, I)
     x38 = x36(x37)
     x39 = last(x38)
-    return x39\n
+    return x39
+
+
 def verify_b0c4d837(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(multiply, height, width)
@@ -7165,7 +7714,9 @@ def verify_b0c4d837(I: Grid) -> Grid:
     x41 = vmirror(x37)
     x42 = vconcat(x34, x41)
     x43 = vconcat(x42, x40)
-    return x43\n
+    return x43
+
+
 def verify_b190f7f5(I: Grid) -> Grid:
     x0 = lbind(contained, TWO)
     x1 = lbind(apply, numcolors)
@@ -7211,10 +7762,14 @@ def verify_b190f7f5(I: Grid) -> Grid:
     x41 = fork(recolor, first, x40)
     x42 = mapply(x41, x34)
     x43 = paint(x37, x42)
-    return x43\n
+    return x43
+
+
 def verify_b1948b0a(I: Grid) -> Grid:
     x0 = replace(I, SIX, TWO)
-    return x0\n
+    return x0
+
+
 def verify_b230c067(I: Grid) -> Grid:
     x0 = objects(I, T, T, T)
     x1 = lbind(sfilter, x0)
@@ -7226,13 +7781,17 @@ def verify_b230c067(I: Grid) -> Grid:
     x7 = merge(x6)
     x8 = fill(I, TWO, x5)
     x9 = fill(x8, ONE, x7)
-    return x9\n
+    return x9
+
+
 def verify_b27ca6d3(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = sizefilter(x0, TWO)
     x2 = mapply(outbox, x1)
     x3 = fill(I, THREE, x2)
-    return x3\n
+    return x3
+
+
 def verify_b2862040(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = mostcolor(I)
@@ -7245,7 +7804,9 @@ def verify_b2862040(I: Grid) -> Grid:
     x8 = rbind(adjacent, x5)
     x9 = mfilter(x7, x8)
     x10 = fill(I, EIGHT, x9)
-    return x10\n
+    return x10
+
+
 def verify_b527c5c6(I: Grid) -> Grid:
     x0 = objects(I, F, F, T)
     x1 = lbind(matcher, first)
@@ -7272,7 +7833,9 @@ def verify_b527c5c6(I: Grid) -> Grid:
     x22 = fork(combine, x19, x21)
     x23 = mapply(x22, x0)
     x24 = paint(I, x23)
-    return x24\n
+    return x24
+
+
 def verify_b548a754(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(equality, toindices, box)
@@ -7294,7 +7857,9 @@ def verify_b548a754(I: Grid) -> Grid:
     x17 = color(x6)
     x18 = box(x14)
     x19 = fill(x16, x17, x18)
-    return x19\n
+    return x19
+
+
 def verify_b60334d2(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = mostcolor(I)
@@ -7304,7 +7869,9 @@ def verify_b60334d2(I: Grid) -> Grid:
     x5 = mapply(ineighbors, x2)
     x6 = fill(x3, ONE, x4)
     x7 = fill(x6, x0, x5)
-    return x7\n
+    return x7
+
+
 def verify_b6afb2da(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = fork(equality, toindices, backdrop)
@@ -7320,7 +7887,9 @@ def verify_b6afb2da(I: Grid) -> Grid:
     x11 = fill(x9, FOUR, x10)
     x12 = mapply(corners, x7)
     x13 = fill(x11, ONE, x12)
-    return x13\n
+    return x13
+
+
 def verify_b7249182(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = merge(x0)
@@ -7362,7 +7931,9 @@ def verify_b7249182(I: Grid) -> Grid:
     x37 = fill(x36, x10, x34)
     x38 = cover(x37, x21)
     x39 = x3(x38)
-    return x39\n
+    return x39
+
+
 def verify_b775ac94(I: Grid) -> Grid:
     x0 = objects(I, F, T, T)
     x1 = neighbors(ORIGIN)
@@ -7410,7 +7981,9 @@ def verify_b775ac94(I: Grid) -> Grid:
     x43 = fork(mapply, x42, x15)
     x44 = mapply(x43, x0)
     x45 = paint(I, x44)
-    return x45\n
+    return x45
+
+
 def verify_b782dc8a(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = palette(I)
@@ -7437,7 +8010,9 @@ def verify_b782dc8a(I: Grid) -> Grid:
     x22 = sfilter(x19, x21)
     x23 = fill(I, x4, x19)
     x24 = fill(x23, x0, x22)
-    return x24\n
+    return x24
+
+
 def verify_b8825c91(I: Grid) -> Grid:
     x0 = replace(I, FOUR, NEG_ONE)
     x1 = dmirror(x0)
@@ -7453,7 +8028,9 @@ def verify_b8825c91(I: Grid) -> Grid:
     x11 = vmirror(x10)
     x12 = papply(pair, x11, x10)
     x13 = apply(x3, x12)
-    return x13\n
+    return x13
+
+
 def verify_b8cdaf2b(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = astuple(dmirror, cmirror)
@@ -7476,12 +8053,16 @@ def verify_b8cdaf2b(I: Grid) -> Grid:
     x18 = combine(x16, x17)
     x19 = underfill(x11, x0, x18)
     x20 = x10(x19)
-    return x20\n
+    return x20
+
+
 def verify_b91ae062(I: Grid) -> Grid:
     x0 = numcolors(I)
     x1 = decrement(x0)
     x2 = upscale(I, x1)
-    return x2\n
+    return x2
+
+
 def verify_b94a9452(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(multiply, height, width)
@@ -7492,7 +8073,9 @@ def verify_b94a9452(I: Grid) -> Grid:
     x6 = mostcolor(x5)
     x7 = leastcolor(x5)
     x8 = switch(x5, x6, x7)
-    return x8\n
+    return x8
+
+
 def verify_b9b7f026(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = fork(equality, toindices, backdrop)
@@ -7500,7 +8083,9 @@ def verify_b9b7f026(I: Grid) -> Grid:
     x3 = extract(x0, x2)
     x4 = color(x3)
     x5 = canvas(x4, UNITY)
-    return x5\n
+    return x5
+
+
 def verify_ba26e723(I: Grid) -> Grid:
     x0 = asobject(I)
     x1 = matcher(first, ZERO)
@@ -7514,7 +8099,9 @@ def verify_ba26e723(I: Grid) -> Grid:
     x9 = compose(x7, last)
     x10 = sfilter(x8, x9)
     x11 = fill(I, SIX, x10)
-    return x11\n
+    return x11
+
+
 def verify_ba97ae07(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = totuple(x0)
@@ -7523,7 +8110,9 @@ def verify_ba97ae07(I: Grid) -> Grid:
     x4 = ofcolor(I, x3)
     x5 = backdrop(x4)
     x6 = fill(I, x3, x5)
-    return x6\n
+    return x6
+
+
 def verify_bb43febb(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = fork(equality, toindices, backdrop)
@@ -7534,7 +8123,9 @@ def verify_bb43febb(I: Grid) -> Grid:
     x6 = compose(backdrop, inbox)
     x7 = mapply(x6, x5)
     x8 = fill(I, TWO, x7)
-    return x8\n
+    return x8
+
+
 def verify_bbc9ae5d(I: Grid) -> Grid:
     x0 = index(I, ORIGIN)
     x1 = width(I)
@@ -7547,7 +8138,9 @@ def verify_bbc9ae5d(I: Grid) -> Grid:
     x8 = asobject(I)
     x9 = mapply(x7, x8)
     x10 = paint(x4, x9)
-    return x10\n
+    return x10
+
+
 def verify_bc1d5164(I: Grid) -> Grid:
     x0 = height(I)
     x1 = halve(x0)
@@ -7587,7 +8180,9 @@ def verify_bc1d5164(I: Grid) -> Grid:
     x35 = combine(x32, x33)
     x36 = combine(x34, x35)
     x37 = fill(x9, x26, x36)
-    return x37\n
+    return x37
+
+
 def verify_bd4472b8(I: Grid) -> Grid:
     x0 = compose(positive, size)
     x1 = rbind(sfilter, hline)
@@ -7626,7 +8221,9 @@ def verify_bd4472b8(I: Grid) -> Grid:
     x34 = shift(x33, TWO_BY_ZERO)
     x35 = paint(x21, x34)
     x36 = x20(x35)
-    return x36\n
+    return x36
+
+
 def verify_bda2d7a6(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = compose(maximum, shape)
@@ -7649,7 +8246,9 @@ def verify_bda2d7a6(I: Grid) -> Grid:
     x18 = combine(x17, x16)
     x19 = mpapply(recolor, x14, x18)
     x20 = paint(I, x19)
-    return x20\n
+    return x20
+
+
 def verify_bdad9b1f(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = sfilter(x0, hline)
@@ -7666,7 +8265,9 @@ def verify_bdad9b1f(I: Grid) -> Grid:
     x12 = toindices(x8)
     x13 = intersection(x11, x12)
     x14 = fill(x10, FOUR, x13)
-    return x14\n
+    return x14
+
+
 def verify_be94b721(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = argmax(x0, size)
@@ -7677,7 +8278,9 @@ def verify_be94b721(I: Grid) -> Grid:
     x6 = canvas(x2, x5)
     x7 = normalize(x4)
     x8 = paint(x6, x7)
-    return x8\n
+    return x8
+
+
 def verify_beb8660c(I: Grid) -> Grid:
     x0 = astuple(identity, rot90)
     x1 = astuple(rot180, rot270)
@@ -7717,7 +8320,9 @@ def verify_beb8660c(I: Grid) -> Grid:
     x35 = canvas(x23, x18)
     x36 = paint(x35, x34)
     x37 = x15(x36)
-    return x37\n
+    return x37
+
+
 def verify_c0f76784(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = mostcolor(I)
@@ -7731,12 +8336,16 @@ def verify_c0f76784(I: Grid) -> Grid:
     x9 = fill(I, SIX, x4)
     x10 = fill(x9, SEVEN, x6)
     x11 = fill(x10, EIGHT, x8)
-    return x11\n
+    return x11
+
+
 def verify_c1d99e64(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = merge(x0)
     x2 = fill(I, TWO, x1)
-    return x2\n
+    return x2
+
+
 def verify_c3e719e8(I: Grid) -> Grid:
     x0 = shape(I)
     x1 = multiply(x0, x0)
@@ -7749,7 +8358,9 @@ def verify_c3e719e8(I: Grid) -> Grid:
     x8 = lbind(shift, x7)
     x9 = mapply(x8, x6)
     x10 = paint(x2, x9)
-    return x10\n
+    return x10
+
+
 def verify_c3f564a4(I: Grid) -> Grid:
     x0 = height(I)
     x1 = vsplit(I, x0)
@@ -7792,7 +8403,9 @@ def verify_c3f564a4(I: Grid) -> Grid:
     x38 = lbind(shift, x23)
     x39 = mapply(x38, x37)
     x40 = paint(I, x39)
-    return x40\n
+    return x40
+
+
 def verify_c444b776(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = merge(x0)
@@ -7807,10 +8420,14 @@ def verify_c444b776(I: Grid) -> Grid:
     x10 = lbind(shift, x9)
     x11 = mapply(x10, x8)
     x12 = paint(I, x11)
-    return x12\n
+    return x12
+
+
 def verify_c59eb873(I: Grid) -> Grid:
     x0 = upscale(I, TWO)
-    return x0\n
+    return x0
+
+
 def verify_c8cbb738(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = valmax(x0, height)
@@ -7846,10 +8463,14 @@ def verify_c8cbb738(I: Grid) -> Grid:
     x31 = fork(shift, identity, x30)
     x32 = mapply(x31, x7)
     x33 = paint(x5, x32)
-    return x33\n
+    return x33
+
+
 def verify_c8f0f002(I: Grid) -> Grid:
     x0 = replace(I, SEVEN, FIVE)
-    return x0\n
+    return x0
+
+
 def verify_c909285e(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = lbind(contained, ONE)
@@ -7860,11 +8481,15 @@ def verify_c909285e(I: Grid) -> Grid:
     x6 = fork(multiply, height, width)
     x7 = argmin(x5, x6)
     x8 = subgrid(x7, I)
-    return x8\n
+    return x8
+
+
 def verify_c9e6f938(I: Grid) -> Grid:
     x0 = vmirror(I)
     x1 = hconcat(I, x0)
-    return x1\n
+    return x1
+
+
 def verify_c9f8e694(I: Grid) -> Grid:
     x0 = astuple(identity, dmirror)
     x1 = astuple(cmirror, vmirror)
@@ -7884,7 +8509,9 @@ def verify_c9f8e694(I: Grid) -> Grid:
     x15 = hupscale(x14, x11)
     x16 = fill(x15, ZERO, x12)
     x17 = x8(x16)
-    return x17\n
+    return x17
+
+
 def verify_caa06a1f(I: Grid) -> Grid:
     x0 = asindices(I)
     x1 = box(x0)
@@ -7942,7 +8569,9 @@ def verify_caa06a1f(I: Grid) -> Grid:
     x53 = add(x49, x52)
     x54 = shift(x28, x53)
     x55 = paint(I, x54)
-    return x55\n
+    return x55
+
+
 def verify_cbded52d(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = merge(x0)
@@ -7999,7 +8628,9 @@ def verify_cbded52d(I: Grid) -> Grid:
     x52 = fork(recolor, identity, x51)
     x53 = mapply(x52, x7)
     x54 = paint(I, x53)
-    return x54\n
+    return x54
+
+
 def verify_cce03e0d(I: Grid) -> Grid:
     x0 = ofcolor(I, TWO)
     x1 = shape(I)
@@ -8011,7 +8642,9 @@ def verify_cce03e0d(I: Grid) -> Grid:
     x7 = lbind(shift, x6)
     x8 = mapply(x7, x5)
     x9 = paint(x3, x8)
-    return x9\n
+    return x9
+
+
 def verify_cdecee7f(I: Grid) -> Grid:
     x0 = asobject(I)
     x1 = mostcolor(I)
@@ -8040,7 +8673,9 @@ def verify_cdecee7f(I: Grid) -> Grid:
     x24 = vmirror(x22)
     x25 = vconcat(x21, x24)
     x26 = vconcat(x25, x23)
-    return x26\n
+    return x26
+
+
 def verify_ce22a75a(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
@@ -8048,7 +8683,9 @@ def verify_ce22a75a(I: Grid) -> Grid:
     x3 = apply(outbox, x2)
     x4 = mapply(backdrop, x3)
     x5 = fill(I, ONE, x4)
-    return x5\n
+    return x5
+
+
 def verify_ce4f8723(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = sfilter(x0, hline)
@@ -8072,7 +8709,9 @@ def verify_ce4f8723(I: Grid) -> Grid:
     x19 = ofcolor(x7, x17)
     x20 = combine(x18, x19)
     x21 = fill(x13, THREE, x20)
-    return x21\n
+    return x21
+
+
 def verify_ce602527(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = rbind(bordering, I)
@@ -8106,7 +8745,9 @@ def verify_ce602527(I: Grid) -> Grid:
     x29 = downscale(x13, TWO)
     x30 = downscale(x18, TWO)
     x31 = branch(x28, x29, x30)
-    return x31\n
+    return x31
+
+
 def verify_ce9e57f2(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = asindices(I)
@@ -8125,7 +8766,9 @@ def verify_ce9e57f2(I: Grid) -> Grid:
     x14 = fork(sfilter, toindices, x13)
     x15 = mapply(x14, x0)
     x16 = fill(I, EIGHT, x15)
-    return x16\n
+    return x16
+
+
 def verify_cf98881b(I: Grid) -> Grid:
     x0 = width(I)
     x1 = increment(x0)
@@ -8157,7 +8800,9 @@ def verify_cf98881b(I: Grid) -> Grid:
     x27 = fill(x23, x22, x26)
     x28 = fill(x27, x21, x25)
     x29 = fill(x28, x20, x24)
-    return x29\n
+    return x29
+
+
 def verify_d037b0a7(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = merge(x0)
@@ -8166,7 +8811,9 @@ def verify_d037b0a7(I: Grid) -> Grid:
     x4 = fork(recolor, first, x3)
     x5 = mapply(x4, x1)
     x6 = paint(I, x5)
-    return x6\n
+    return x6
+
+
 def verify_d06dbe63(I: Grid) -> Grid:
     x0 = double(TEN)
     x1 = interval(ZERO, x0, ONE)
@@ -8212,7 +8859,9 @@ def verify_d06dbe63(I: Grid) -> Grid:
     x41 = mapply(x40, x33)
     x42 = fill(I, FIVE, x41)
     x43 = fill(x42, x32, x33)
-    return x43\n
+    return x43
+
+
 def verify_d07ae81c(I: Grid) -> Grid:
     x0 = lbind(ofcolor, I)
     x1 = lbind(mapply, neighbors)
@@ -8250,7 +8899,9 @@ def verify_d07ae81c(I: Grid) -> Grid:
     x33 = intersection(x32, x29)
     x34 = fill(I, x9, x31)
     x35 = fill(x34, x10, x33)
-    return x35\n
+    return x35
+
+
 def verify_d0f5fe59(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = size(x0)
@@ -8260,10 +8911,14 @@ def verify_d0f5fe59(I: Grid) -> Grid:
     x5 = shoot(ORIGIN, UNITY)
     x6 = leastcolor(I)
     x7 = fill(x4, x6, x5)
-    return x7\n
+    return x7
+
+
 def verify_d10ecb37(I: Grid) -> Grid:
     x0 = crop(I, ORIGIN, TWO_BY_TWO)
-    return x0\n
+    return x0
+
+
 def verify_d13f3404(I: Grid) -> Grid:
     x0 = asobject(I)
     x1 = mostcolor(I)
@@ -8280,7 +8935,9 @@ def verify_d13f3404(I: Grid) -> Grid:
     x12 = mostcolor(I)
     x13 = canvas(x12, x11)
     x14 = paint(x13, x9)
-    return x14\n
+    return x14
+
+
 def verify_d22278a0(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = totuple(x0)
@@ -8328,7 +8985,9 @@ def verify_d22278a0(I: Grid) -> Grid:
     x43 = pair(x4, x9)
     x44 = mapply(x42, x43)
     x45 = paint(x10, x44)
-    return x45\n
+    return x45
+
+
 def verify_d23f8c26(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = matcher(first, x0)
@@ -8342,7 +9001,9 @@ def verify_d23f8c26(I: Grid) -> Grid:
     x9 = fork(both, x2, x7)
     x10 = sfilter(x8, x9)
     x11 = fill(I, x0, x10)
-    return x11\n
+    return x11
+
+
 def verify_d2abd087(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = matcher(size, SIX)
@@ -8351,7 +9012,9 @@ def verify_d2abd087(I: Grid) -> Grid:
     x4 = mfilter(x0, x2)
     x5 = fill(I, TWO, x3)
     x6 = fill(x5, ONE, x4)
-    return x6\n
+    return x6
+
+
 def verify_d364b489(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = merge(x0)
@@ -8364,7 +9027,9 @@ def verify_d364b489(I: Grid) -> Grid:
     x8 = fill(x6, SIX, x7)
     x9 = shift(x2, LEFT)
     x10 = fill(x8, SEVEN, x9)
-    return x10\n
+    return x10
+
+
 def verify_d406998b(I: Grid) -> Grid:
     x0 = vmirror(I)
     x1 = fgpartition(x0)
@@ -8376,7 +9041,9 @@ def verify_d406998b(I: Grid) -> Grid:
     x7 = sfilter(x3, x6)
     x8 = fill(x0, THREE, x7)
     x9 = vmirror(x8)
-    return x9\n
+    return x9
+
+
 def verify_d43fd935(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = asobject(I)
@@ -8400,7 +9067,9 @@ def verify_d43fd935(I: Grid) -> Grid:
     x19 = fork(recolor, color, x18)
     x20 = mapply(x19, x15)
     x21 = paint(I, x20)
-    return x21\n
+    return x21
+
+
 def verify_d4469b4b(I: Grid) -> Grid:
     x0 = palette(I)
     x1 = contained(ONE, x0)
@@ -8411,7 +9080,9 @@ def verify_d4469b4b(I: Grid) -> Grid:
     x6 = x5(x4)
     x7 = canvas(ZERO, THREE_BY_THREE)
     x8 = fill(x7, FIVE, x6)
-    return x8\n
+    return x8
+
+
 def verify_d4a91cb9(I: Grid) -> Grid:
     x0 = ofcolor(I, EIGHT)
     x1 = ofcolor(I, TWO)
@@ -8424,7 +9095,9 @@ def verify_d4a91cb9(I: Grid) -> Grid:
     x8 = connect(x6, x3)
     x9 = combine(x7, x8)
     x10 = underfill(I, FOUR, x9)
-    return x10\n
+    return x10
+
+
 def verify_d4f3cd78(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = merge(x0)
@@ -8456,24 +9129,32 @@ def verify_d4f3cd78(I: Grid) -> Grid:
     x27 = mapply(x26, x4)
     x28 = combine(x27, x6)
     x29 = fill(I, EIGHT, x28)
-    return x29\n
+    return x29
+
+
 def verify_d511f180(I: Grid) -> Grid:
     x0 = switch(I, FIVE, EIGHT)
-    return x0\n
+    return x0
+
+
 def verify_d5d6de2d(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = merge(x0)
     x2 = cover(I, x1)
     x3 = mapply(delta, x0)
     x4 = fill(x2, THREE, x3)
-    return x4\n
+    return x4
+
+
 def verify_d631b094(I: Grid) -> Grid:
     x0 = palette(I)
     x1 = other(x0, ZERO)
     x2 = colorcount(I, x1)
     x3 = astuple(ONE, x2)
     x4 = canvas(x1, x3)
-    return x4\n
+    return x4
+
+
 def verify_d687bc17(I: Grid) -> Grid:
     x0 = trim(I)
     x1 = asobject(x0)
@@ -8501,7 +9182,9 @@ def verify_d687bc17(I: Grid) -> Grid:
     x23 = fork(shift, identity, x22)
     x24 = mapply(x23, x19)
     x25 = paint(x15, x24)
-    return x25\n
+    return x25
+
+
 def verify_d6ad076f(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = product(x0, x0)
@@ -8551,7 +9234,9 @@ def verify_d6ad076f(I: Grid) -> Grid:
     x45 = compose(flip, x44)
     x46 = sfilter(x41, x45)
     x47 = fill(I, EIGHT, x46)
-    return x47\n
+    return x47
+
+
 def verify_d89b689b(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = sfilter(x0, square)
@@ -8567,7 +9252,9 @@ def verify_d89b689b(I: Grid) -> Grid:
     x11 = merge(x4)
     x12 = cover(I, x11)
     x13 = paint(x12, x10)
-    return x13\n
+    return x13
+
+
 def verify_d8c310e9(I: Grid) -> Grid:
     x0 = astuple(identity, rot90)
     x1 = astuple(rot180, rot270)
@@ -8607,7 +9294,9 @@ def verify_d8c310e9(I: Grid) -> Grid:
     x35 = mapply(x34, x33)
     x36 = paint(x20, x35)
     x37 = x19(x36)
-    return x37\n
+    return x37
+
+
 def verify_d90796e8(I: Grid) -> Grid:
     x0 = ofcolor(I, TWO)
     x1 = ofcolor(I, THREE)
@@ -8621,7 +9310,9 @@ def verify_d90796e8(I: Grid) -> Grid:
     x9 = sfilter(x1, x7)
     x10 = cover(I, x8)
     x11 = fill(x10, EIGHT, x9)
-    return x11\n
+    return x11
+
+
 def verify_d9f24cd1(I: Grid) -> Grid:
     x0 = astuple(identity, identity)
     x1 = astuple(rot90, rot270)
@@ -8669,7 +9360,9 @@ def verify_d9f24cd1(I: Grid) -> Grid:
     x43 = mapply(vfrontier, x37)
     x44 = fill(x42, x26, x43)
     x45 = x16(x44)
-    return x45\n
+    return x45
+
+
 def verify_d9fac9be(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = palette(I)
@@ -8687,7 +9380,9 @@ def verify_d9fac9be(I: Grid) -> Grid:
     x13 = positive(x12)
     x14 = branch(x13, x5, x4)
     x15 = canvas(x14, UNITY)
-    return x15\n
+    return x15
+
+
 def verify_dae9d2b5(I: Grid) -> Grid:
     x0 = hsplit(I, TWO)
     x1 = apply(numcolors, x0)
@@ -8710,7 +9405,9 @@ def verify_dae9d2b5(I: Grid) -> Grid:
     x18 = ofcolor(x6, x14)
     x19 = combine(x17, x18)
     x20 = fill(x16, SIX, x19)
-    return x20\n
+    return x20
+
+
 def verify_db3e9e38(I: Grid) -> Grid:
     x0 = astuple(identity, dmirror)
     x1 = astuple(cmirror, hmirror)
@@ -8756,7 +9453,9 @@ def verify_db3e9e38(I: Grid) -> Grid:
     x41 = combine(x36, x38)
     x42 = paint(x40, x41)
     x43 = x8(x42)
-    return x43\n
+    return x43
+
+
 def verify_db93a21d(I: Grid) -> Grid:
     x0 = objects(I, T, T, T)
     x1 = merge(x0)
@@ -8777,7 +9476,9 @@ def verify_db93a21d(I: Grid) -> Grid:
     x16 = ofcolor(I, x15)
     x17 = intersection(x14, x16)
     x18 = fill(x5, THREE, x17)
-    return x18\n
+    return x18
+
+
 def verify_dbc1a6ce(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
@@ -8798,7 +9499,9 @@ def verify_dbc1a6ce(I: Grid) -> Grid:
     x16 = combine(x9, x15)
     x17 = difference(x16, x1)
     x18 = fill(I, EIGHT, x17)
-    return x18\n
+    return x18
+
+
 def verify_dc0a314f(I: Grid) -> Grid:
     x0 = replace(I, THREE, NEG_ONE)
     x1 = dmirror(x0)
@@ -8816,12 +9519,16 @@ def verify_dc0a314f(I: Grid) -> Grid:
     x13 = apply(x3, x12)
     x14 = ofcolor(I, THREE)
     x15 = subgrid(x14, x13)
-    return x15\n
+    return x15
+
+
 def verify_dc1df850(I: Grid) -> Grid:
     x0 = ofcolor(I, TWO)
     x1 = mapply(neighbors, x0)
     x2 = underfill(I, ONE, x1)
-    return x2\n
+    return x2
+
+
 def verify_dc433765(I: Grid) -> Grid:
     x0 = mostcolor(I)
     x1 = palette(I)
@@ -8835,7 +9542,9 @@ def verify_dc433765(I: Grid) -> Grid:
     x9 = sign(x8)
     x10 = recolor(x3, x4)
     x11 = move(I, x10, x9)
-    return x11\n
+    return x11
+
+
 def verify_ddf7fa4f(I: Grid) -> Grid:
     x0 = width(I)
     x1 = decrement(x0)
@@ -8921,7 +9630,9 @@ def verify_ddf7fa4f(I: Grid) -> Grid:
     x81 = x78(x80)
     x82 = first(x81)
     x83 = paint(I, x82)
-    return x83\n
+    return x83
+
+
 def verify_de1cd16c(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = totuple(x0)
@@ -8944,7 +9655,9 @@ def verify_de1cd16c(I: Grid) -> Grid:
     x18 = argmax(x16, x17)
     x19 = mostcolor(x18)
     x20 = canvas(x19, UNITY)
-    return x20\n
+    return x20
+
+
 def verify_ded97339(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = lbind(recolor, NEG_ONE)
@@ -8963,7 +9676,9 @@ def verify_ded97339(I: Grid) -> Grid:
     x14 = ofcolor(x13, NEG_ONE)
     x15 = combine(x8, x14)
     x16 = fill(I, x0, x15)
-    return x16\n
+    return x16
+
+
 def verify_e179c5f4(I: Grid) -> Grid:
     x0 = portrait(I)
     x1 = branch(x0, identity, dmirror)
@@ -9023,7 +9738,9 @@ def verify_e179c5f4(I: Grid) -> Grid:
     x55 = fill(x2, x30, x54)
     x56 = x1(x55)
     x57 = replace(x56, x28, EIGHT)
-    return x57\n
+    return x57
+
+
 def verify_e21d9049(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = merge(x0)
@@ -9075,7 +9792,9 @@ def verify_e21d9049(I: Grid) -> Grid:
     x47 = mapply(x46, x45)
     x48 = combine(x34, x47)
     x49 = paint(I, x48)
-    return x49\n
+    return x49
+
+
 def verify_e26a3af2(I: Grid) -> Grid:
     x0 = rot90(I)
     x1 = apply(mostcommon, I)
@@ -9092,7 +9811,9 @@ def verify_e26a3af2(I: Grid) -> Grid:
     x12 = branch(x8, x4, x11)
     x13 = branch(x8, vupscale, hupscale)
     x14 = x13(x12, x10)
-    return x14\n
+    return x14
+
+
 def verify_e3497940(I: Grid) -> Grid:
     x0 = lefthalf(I)
     x1 = righthalf(I)
@@ -9107,7 +9828,9 @@ def verify_e3497940(I: Grid) -> Grid:
     x10 = sfilter(x7, x9)
     x11 = merge(x10)
     x12 = paint(x0, x11)
-    return x12\n
+    return x12
+
+
 def verify_e40b9e2f(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = merge(x0)
@@ -9224,7 +9947,9 @@ def verify_e40b9e2f(I: Grid) -> Grid:
     x112 = combine(x99, x105)
     x113 = combine(x112, x111)
     x114 = paint(I, x113)
-    return x114\n
+    return x114
+
+
 def verify_e48d4e1a(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = merge(x0)
@@ -9251,7 +9976,9 @@ def verify_e48d4e1a(I: Grid) -> Grid:
     x22 = vfrontier(x20)
     x23 = combine(x21, x22)
     x24 = fill(x11, x2, x23)
-    return x24\n
+    return x24
+
+
 def verify_e5062a87(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = ofcolor(I, x0)
@@ -9262,7 +9989,9 @@ def verify_e5062a87(I: Grid) -> Grid:
     x6 = lbind(shift, x5)
     x7 = mapply(x6, x4)
     x8 = fill(I, x0, x7)
-    return x8\n
+    return x8
+
+
 def verify_e509e548(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = fork(add, height, width)
@@ -9280,7 +10009,9 @@ def verify_e509e548(I: Grid) -> Grid:
     x13 = fill(x11, ONE, x12)
     x14 = merge(x9)
     x15 = fill(x13, SIX, x14)
-    return x15\n
+    return x15
+
+
 def verify_e50d258f(I: Grid) -> Grid:
     x0 = asindices(I)
     x1 = box(x0)
@@ -9293,7 +10024,9 @@ def verify_e50d258f(I: Grid) -> Grid:
     x8 = rbind(colorcount, TWO)
     x9 = argmax(x7, x8)
     x10 = subgrid(x9, I)
-    return x10\n
+    return x10
+
+
 def verify_e6721834(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = sfilter(x0, hline)
@@ -9337,7 +10070,9 @@ def verify_e6721834(I: Grid) -> Grid:
     x39 = fork(shift, identity, x38)
     x40 = mapply(x39, x35)
     x41 = paint(x9, x40)
-    return x41\n
+    return x41
+
+
 def verify_e73095fd(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = mostcolor(I)
@@ -9354,7 +10089,9 @@ def verify_e73095fd(I: Grid) -> Grid:
     x12 = chain(x11, x10, x7)
     x13 = mfilter(x4, x12)
     x14 = fill(I, FOUR, x13)
-    return x14\n
+    return x14
+
+
 def verify_e76a88a6(I: Grid) -> Grid:
     x0 = objects(I, F, F, T)
     x1 = argmax(x0, numcolors)
@@ -9364,7 +10101,9 @@ def verify_e76a88a6(I: Grid) -> Grid:
     x5 = lbind(shift, x2)
     x6 = mapply(x5, x4)
     x7 = paint(I, x6)
-    return x7\n
+    return x7
+
+
 def verify_e8593010(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = sizefilter(x0, ONE)
@@ -9376,7 +10115,9 @@ def verify_e8593010(I: Grid) -> Grid:
     x7 = fill(x5, TWO, x6)
     x8 = merge(x3)
     x9 = fill(x7, ONE, x8)
-    return x9\n
+    return x9
+
+
 def verify_e8dc4411(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = argmax(x0, size)
@@ -9413,7 +10154,9 @@ def verify_e8dc4411(I: Grid) -> Grid:
     x32 = color(x2)
     x33 = recolor(x32, x31)
     x34 = paint(I, x33)
-    return x34\n
+    return x34
+
+
 def verify_e9614598(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = merge(x0)
@@ -9421,7 +10164,9 @@ def verify_e9614598(I: Grid) -> Grid:
     x3 = dneighbors(x2)
     x4 = insert(x2, x3)
     x5 = fill(I, THREE, x4)
-    return x5\n
+    return x5
+
+
 def verify_e98196ab(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = sfilter(x0, hline)
@@ -9434,7 +10179,9 @@ def verify_e98196ab(I: Grid) -> Grid:
     x8 = fgpartition(x7)
     x9 = merge(x8)
     x10 = paint(x6, x9)
-    return x10\n
+    return x10
+
+
 def verify_e9afcf9a(I: Grid) -> Grid:
     x0 = asobject(I)
     x1 = height(I)
@@ -9451,7 +10198,9 @@ def verify_e9afcf9a(I: Grid) -> Grid:
     x12 = fork(astuple, first, x11)
     x13 = apply(x12, x8)
     x14 = paint(I, x13)
-    return x14\n
+    return x14
+
+
 def verify_ea32f347(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = merge(x0)
@@ -9460,7 +10209,9 @@ def verify_ea32f347(I: Grid) -> Grid:
     x4 = argmax(x0, size)
     x5 = fill(x2, ONE, x4)
     x6 = fill(x5, TWO, x3)
-    return x6\n
+    return x6
+
+
 def verify_ea786f4a(I: Grid) -> Grid:
     x0 = shape(I)
     x1 = halve(x0)
@@ -9474,7 +10225,9 @@ def verify_ea786f4a(I: Grid) -> Grid:
     x9 = index(I, x1)
     x10 = x8(x1)
     x11 = fill(I, x9, x10)
-    return x11\n
+    return x11
+
+
 def verify_eb281b96(I: Grid) -> Grid:
     x0 = height(I)
     x1 = width(I)
@@ -9487,7 +10240,9 @@ def verify_eb281b96(I: Grid) -> Grid:
     x8 = astuple(x7, x1)
     x9 = crop(x6, DOWN, x8)
     x10 = vconcat(x6, x9)
-    return x10\n
+    return x10
+
+
 def verify_eb5a1d5d(I: Grid) -> Grid:
     x0 = compose(dmirror, dedupe)
     x1 = x0(I)
@@ -9498,7 +10253,9 @@ def verify_eb5a1d5d(I: Grid) -> Grid:
     x6 = x5(x2)
     x7 = dmirror(x6)
     x8 = x5(x7)
-    return x8\n
+    return x8
+
+
 def verify_ec883f72(I: Grid) -> Grid:
     x0 = fork(multiply, height, width)
     x1 = partition(I)
@@ -9524,7 +10281,9 @@ def verify_ec883f72(I: Grid) -> Grid:
     x21 = combine(x19, x20)
     x22 = color(x5)
     x23 = fill(I, x22, x21)
-    return x23\n
+    return x23
+
+
 def verify_ecdecbb3(I: Grid) -> Grid:
     x0 = leastcolor(I)
     x1 = objects(I, T, F, T)
@@ -9585,10 +10344,14 @@ def verify_ecdecbb3(I: Grid) -> Grid:
     x56 = intersection(x39, x54)
     x57 = mapply(neighbors, x56)
     x58 = fill(x55, x4, x57)
-    return x58\n
+    return x58
+
+
 def verify_ed36ccf7(I: Grid) -> Grid:
     x0 = rot270(I)
-    return x0\n
+    return x0
+
+
 def verify_ef135b50(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = fork(multiply, height, width)
@@ -9614,7 +10377,9 @@ def verify_ef135b50(I: Grid) -> Grid:
     x21 = difference(x18, x20)
     x22 = intersection(x21, x7)
     x23 = fill(I, NINE, x22)
-    return x23\n
+    return x23
+
+
 def verify_f15e1fac(I: Grid) -> Grid:
     x0 = rbind(ofcolor, TWO)
     x1 = compose(lowermost, x0)
@@ -9669,7 +10434,9 @@ def verify_f15e1fac(I: Grid) -> Grid:
     x50 = fill(x19, x14, x49)
     x51 = x18(x50)
     x52 = x9(x51)
-    return x52\n
+    return x52
+
+
 def verify_f1cefba8(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(multiply, height, width)
@@ -9697,11 +10464,15 @@ def verify_f1cefba8(I: Grid) -> Grid:
     x23 = fill(x21, x7, x22)
     x24 = inbox(x5)
     x25 = fill(x23, x7, x24)
-    return x25\n
+    return x25
+
+
 def verify_f25fbde4(I: Grid) -> Grid:
     x0 = compress(I)
     x1 = upscale(x0, TWO)
-    return x1\n
+    return x1
+
+
 def verify_f25ffba3(I: Grid) -> Grid:
     x0 = tophalf(I)
     x1 = numcolors(x0)
@@ -9720,7 +10491,9 @@ def verify_f25ffba3(I: Grid) -> Grid:
     x14 = sfilter(x10, x13)
     x15 = paint(x8, x14)
     x16 = x7(x15)
-    return x16\n
+    return x16
+
+
 def verify_f2829549(I: Grid) -> Grid:
     x0 = frontiers(I)
     x1 = sfilter(x0, hline)
@@ -9740,7 +10513,9 @@ def verify_f2829549(I: Grid) -> Grid:
     x15 = ofcolor(x7, x11)
     x16 = intersection(x14, x15)
     x17 = fill(x13, THREE, x16)
-    return x17\n
+    return x17
+
+
 def verify_f35d900a(I: Grid) -> Grid:
     x0 = objects(I, T, F, T)
     x1 = palette(I)
@@ -9763,7 +10538,9 @@ def verify_f35d900a(I: Grid) -> Grid:
     x18 = sfilter(x10, x17)
     x19 = paint(I, x7)
     x20 = fill(x19, FIVE, x18)
-    return x20\n
+    return x20
+
+
 def verify_f5b8619d(I: Grid) -> Grid:
     x0 = fgpartition(I)
     x1 = mapply(toindices, x0)
@@ -9771,7 +10548,9 @@ def verify_f5b8619d(I: Grid) -> Grid:
     x3 = underfill(I, EIGHT, x2)
     x4 = hconcat(x3, x3)
     x5 = vconcat(x4, x4)
-    return x5\n
+    return x5
+
+
 def verify_f76d97a5(I: Grid) -> Grid:
     x0 = palette(I)
     x1 = remove(FIVE, x0)
@@ -9780,7 +10559,9 @@ def verify_f76d97a5(I: Grid) -> Grid:
     x4 = fill(I, ZERO, x3)
     x5 = ofcolor(I, FIVE)
     x6 = fill(x4, x2, x5)
-    return x6\n
+    return x6
+
+
 def verify_f8a8fe49(I: Grid) -> Grid:
     x0 = partition(I)
     x1 = fork(multiply, height, width)
@@ -9822,7 +10603,9 @@ def verify_f8a8fe49(I: Grid) -> Grid:
     x37 = combine(x29, x36)
     x38 = paint(x26, x37)
     x39 = x11(x38)
-    return x39\n
+    return x39
+
+
 def verify_f8b3ba0a(I: Grid) -> Grid:
     x0 = compress(I)
     x1 = astuple(THREE, ONE)
@@ -9837,7 +10620,9 @@ def verify_f8b3ba0a(I: Grid) -> Grid:
     x10 = decrement(x9)
     x11 = astuple(x10, ONE)
     x12 = crop(x8, DOWN, x11)
-    return x12\n
+    return x12
+
+
 def verify_f8c80d96(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = compose(maximum, shape)
@@ -9882,7 +10667,9 @@ def verify_f8c80d96(I: Grid) -> Grid:
     x40 = mapply(x39, x31)
     x41 = fill(I, x5, x40)
     x42 = replace(x41, x3, FIVE)
-    return x42\n
+    return x42
+
+
 def verify_f8ff0b80(I: Grid) -> Grid:
     x0 = objects(I, T, T, T)
     x1 = order(x0, size)
@@ -9891,7 +10678,9 @@ def verify_f8ff0b80(I: Grid) -> Grid:
     x4 = apply(x3, x2)
     x5 = merge(x4)
     x6 = hmirror(x5)
-    return x6\n
+    return x6
+
+
 def verify_f9012d9b(I: Grid) -> Grid:
     x0 = lbind(contained, ZERO)
     x1 = compose(flip, x0)
@@ -9935,7 +10724,9 @@ def verify_f9012d9b(I: Grid) -> Grid:
     x39 = mapply(x22, x38)
     x40 = paint(I, x39)
     x41 = subgrid(x17, x40)
-    return x41\n
+    return x41
+
+
 def verify_fafffa47(I: Grid) -> Grid:
     x0 = tophalf(I)
     x1 = numcolors(x0)
@@ -9967,7 +10758,9 @@ def verify_fafffa47(I: Grid) -> Grid:
     x27 = ofcolor(x19, x23)
     x28 = intersection(x26, x27)
     x29 = fill(x25, TWO, x28)
-    return x29\n
+    return x29
+
+
 def verify_fcb5c309(I: Grid) -> Grid:
     x0 = objects(I, T, F, F)
     x1 = lbind(contained, F)
@@ -9996,7 +10789,9 @@ def verify_fcb5c309(I: Grid) -> Grid:
     x24 = argmax(x23, x22)
     x25 = subgrid(x24, I)
     x26 = replace(x25, x15, x19)
-    return x26\n
+    return x26
+
+
 def verify_fcc82909(I: Grid) -> Grid:
     x0 = objects(I, F, F, T)
     x1 = lbind(add, DOWN)
@@ -10010,7 +10805,9 @@ def verify_fcc82909(I: Grid) -> Grid:
     x9 = compose(backdrop, x8)
     x10 = mapply(x9, x0)
     x11 = fill(I, THREE, x10)
-    return x11\n
+    return x11
+
+
 def verify_feca6190(I: Grid) -> Grid:
     x0 = asobject(I)
     x1 = matcher(first, ZERO)
@@ -10030,7 +10827,9 @@ def verify_feca6190(I: Grid) -> Grid:
     x15 = fork(recolor, first, x14)
     x16 = mapply(x15, x3)
     x17 = paint(x8, x16)
-    return x17\n
+    return x17
+
+
 def verify_ff28f65a(I: Grid) -> Grid:
     x0 = palette(I)
     x1 = remove(TWO, x0)
@@ -10050,7 +10849,9 @@ def verify_ff28f65a(I: Grid) -> Grid:
     x15 = fill(x14, ONE, x12)
     x16 = hsplit(x15, THREE)
     x17 = merge(x16)
-    return x17\n
+    return x17
+
+
 def verify_ff805c23(I: Grid) -> Grid:
     x0 = palette(I)
     x1 = lbind(rbind, sfilter)
@@ -10095,4 +10896,5 @@ def verify_ff805c23(I: Grid) -> Grid:
     x40 = ofcolor(I, x38)
     x41 = subgrid(x40, x39)
     return x41
-####endfunctions####
+
+
