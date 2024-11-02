@@ -1,6 +1,6 @@
 from dsl import *
 from utils import *
-
+from random choice, randint, sample, shuffle
 
 
 def generate_dbc1a6ce(diff_lb: float, diff_ub: float) -> dict:

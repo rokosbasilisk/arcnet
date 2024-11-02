@@ -7,9 +7,9 @@ import inspect
 from PIL import Image
 import io
 from typing import Tuple
-from dsl import *  # Import DSL functions
-from verifiers import *  # Import the verifiers containing transformation functions
-
+from re_arc.dsl import *  # Import DSL functions
+from re_arc.verifiers import *  # Import the verifiers containing transformation functions
+from re_arc.deterministic_utils import *
 # Define constants
 GRID_SIZE = (30, 30)
 BLACK = 0
@@ -38,7 +38,7 @@ def run_expression_visualizer():
 
     if st.button("Run"):
         try:
-            dsl = importlib.import_module('dsl')
+            dsl = importlib.import_module('re_arc.dsl')
             exec_namespace = {name: obj for name, obj in inspect.getmembers(dsl, inspect.isfunction)}
 
             if 'execute_loop' not in exec_namespace:

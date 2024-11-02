@@ -17,7 +17,38 @@ Piece = Union[Grid, Patch]
 TupleTuple = Tuple[Tuple]
 ContainerContainer = Container[Container]
 
+## deterministic_utils ##
+import itertools
 
+
+def choice(seq):
+    """Deterministic choice function using a fixed index."""
+    index = 0  # Always choose the first element deterministically
+    return seq[index] if seq else None
+
+def unifint(
+    diff_lb: float,
+    diff_ub: float,
+    bounds: Tuple[int, int]
+) -> int:
+    """
+    Deterministic unifint with a fixed difficulty value.
+    """
+    a, b = bounds
+    d = 0.5  # Fixed value for determinism
+    return min(max(a, round(a + (b - a) * d)), b)
+
+def randint(a, b):
+    """Deterministic randint using a fixed value."""
+    value = (a + b) // 2  # Always use the midpoint for determinism
+    return value
+
+def sample(seq, k):
+    """Deterministic sample function using the first k elements."""
+    size = min(k, len(seq))
+    return seq[:size] if size > 0 else []
+
+##############################
 
 # constants
 

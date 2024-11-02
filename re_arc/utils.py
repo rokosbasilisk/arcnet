@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap, Normalize
-
-from random import choice, randint, sample, shuffle, uniform
-
+from random import uniform
 from dsl import *
 
 
@@ -21,9 +19,8 @@ def unifint(
     bounds: interval [a, b] determining the integer values that can be sampled
     """
     a, b = bounds
-    d = uniform(diff_lb, diff_ub)
-    global rng
-    rng.append(d)
+    d = 0.5 #$uniform(diff_lb, diff_ub)
+    # d value fixed to ensure deterministicness
     return min(max(a, round(a + (b - a) * d)), b)
 
 
