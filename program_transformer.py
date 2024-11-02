@@ -4,10 +4,6 @@ import re
 import argparse
 from typing import Dict
 
-# Define fixed difficulty bounds for unifint
-FIXED_DIFF_LB = 0
-FIXED_DIFF_UB = 1
-
 class SingleLineTransformer(ast.NodeTransformer):
     """
     Transforms generate_* functions into single-line expressions by eliminating intermediate variables.
@@ -74,7 +70,7 @@ def transform_generators(file_path: str) -> Dict[str, str]:
             expr_code = ast.unparse(transformer.expr).strip() if transformer.expr else "{}"
 
             # Replace all instances of diff_lb and diff_ub with 0 and 1
-            expr_code = expr_code.replace("diff_lb", "FIXED_DIFF_LB").replace("diff_ub", "FIXED_DIFF_UB")
+            expr_code = expr_code.replace("diff_lb", "0").replace("diff_ub", "1")
             
             expressions[hash_id] = expr_code
 

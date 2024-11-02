@@ -1,9 +1,8 @@
 import logging
 import json
 import inspect
-import dsl
-from deterministic_utils import choice, unifint, randint, sample
-
+from re_arc import dsl
+from re_arc.dsl import *
 # -------------------------------
 # Utility Functions
 # -------------------------------
@@ -114,5 +113,5 @@ logging.basicConfig(level=logging.INFO)
 # Example Usage
 # -------------------------------
 
-generate_grids('generators_deterministic_expressions.json', 'generated_grids.json')
+generate_grids('data/generated_expressions.json', 'data/generated_grids.json')
 
