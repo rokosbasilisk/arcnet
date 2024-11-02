@@ -390,7 +390,7 @@ def main():
 
     # Initialize GP components
     print("Initializing Genetic Programming components...")
-    POPULATION_SIZE = 200
+    POPULATION_SIZE = 100
     GENERATIONS = 100
     CX_PROB = 0.5  # Crossover probability
     MUT_PROB = 0.2  # Mutation probability
