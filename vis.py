@@ -10,6 +10,7 @@ from typing import Tuple
 from re_arc.dsl import *  # Import DSL functions
 from re_arc.verifiers import *  # Import the verifiers containing transformation functions
 from re_arc.deterministic_utils import *
+
 # Define constants
 GRID_SIZE = (30, 30)
 BLACK = 0
@@ -48,10 +49,11 @@ def run_expression_visualizer():
 
             result = eval(expression, exec_namespace)
 
-            if result is not None:
-                display_result(result)
+            if isinstance(result, (tuple, list)) and all(isinstance(row, (tuple, list)) for row in result):
+                # Display the result as a grid
+                display_grid(result, "Resulting Grid", fig_size=(3, 3))
             else:
-                st.error("No recognizable result found in the expression.")
+                st.error("No recognizable grid structure found in the expression result.")
         except Exception as e:
             st.error(f"Error while executing the expression: {e}")
 
@@ -135,7 +137,10 @@ def load_transform_function_template(hash_id: str):
     return """def transform_grid(I: Grid) -> Grid:\n    return I"""
 
 def display_result(result):
-    if isinstance(result, Image.Image):
+    if isinstance(result, (tuple, list)) and all(isinstance(row, (tuple, list)) for row in result):
+        # Display as a grid
+        display_grid(result, "Generated Grid", fig_size=(3, 3))
+    elif isinstance(result, Image.Image):
         buf = io.BytesIO()
         result.save(buf, format="PNG")
         byte_im = buf.getvalue()
