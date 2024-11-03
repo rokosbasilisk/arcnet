@@ -9,7 +9,6 @@ import io
 from typing import Tuple
 from re_arc.dsl import *  # Import DSL functions
 from re_arc.verifiers import *  # Import the verifiers containing transformation functions
-from re_arc.deterministic_utils import *
 
 # Define constants
 GRID_SIZE = (30, 30)
@@ -27,8 +26,10 @@ def main(mode="expression"):
         run_expression_visualizer()
     elif mode == "transformer":
         run_grid_transformer()
+    elif mode == "generator":
+        run_generator_mode()
     else:
-        st.error("Invalid mode selected. Choose 'expression' or 'transformer'.")
+        st.error("Invalid mode selected. Choose 'expression', 'transformer', or 'generator'.")
 
 def run_expression_visualizer():
     """Run the Expression Visualizer interface."""
@@ -50,7 +51,6 @@ def run_expression_visualizer():
             result = eval(expression, exec_namespace)
 
             if isinstance(result, (tuple, list)) and all(isinstance(row, (tuple, list)) for row in result):
-                # Display the result as a grid
                 display_grid(result, "Resulting Grid", fig_size=(3, 3))
             else:
                 st.error("No recognizable grid structure found in the expression result.")
@@ -61,7 +61,6 @@ def run_grid_transformer():
     """Run the Grid Transformer Visualizer interface."""
     st.subheader("Grid Transformer Visualizer")
 
-    # Load data
     data = load_data()
     hash_ids = list(data.keys())
     hash_id = get_current_hash_id(hash_ids)
@@ -73,7 +72,6 @@ def run_grid_transformer():
     example_data = data[hash_id]['train'][0]['input']
     input_grid = tuple(tuple(row) for row in example_data)
 
-    # Display input and output grids side by side using columns
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Input Grid")
@@ -95,7 +93,6 @@ def run_grid_transformer():
         except Exception as e:
             st.error(f"An error occurred: {e}")
 
-    # Navigation buttons
     navigation_controls(hash_ids)
 
     st.write("""
@@ -105,6 +102,67 @@ def run_grid_transformer():
     3. Click 'Run Transformation' to view input and output grids.
     4. Use 'Previous' and 'Next' to navigate different hash IDs.
     """)
+
+def run_generator_mode():
+    """Run the Grid Generator interface."""
+    st.subheader("Grid Generator")
+
+    st.write("Paste your generator function below and click 'Run' to generate grids.")
+    generator_code = st.text_area(
+        "Generator Function",
+        height=300,
+        value="""def generate_example(diff_lb: float, diff_ub: float) -> dict:
+    dim_bounds = (3, 30)
+    colopts = remove(8, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, dim_bounds)
+    w = unifint(diff_lb, diff_ub, dim_bounds)
+    bgc = choice(colopts)
+    c = canvas(bgc, (h, w))
+    inds = totuple(asindices(c))
+    card_bounds = (0, max(1, (h * w) // 4))
+    num = unifint(diff_lb, diff_ub, card_bounds)
+    s = sample(inds, num)
+    fgcol = choice(remove(bgc, colopts))
+    gi = fill(c, fgcol, s)
+    resh = frozenset()
+    for x, r in enumerate(gi):
+        if r.count(fgcol) > 1:
+            resh = combine(resh, connect((x, r.index(fgcol)), (x, -1 + w - r[::-1].index(fgcol))))
+    go = fill(c, 8, resh)
+    resv = frozenset()
+    for x, r in enumerate(dmirror(gi)):
+        if r.count(fgcol) > 1:
+            resv = combine(resv, connect((x, r.index(fgcol)), (x, -1 + h - r[::-1].index(fgcol))))
+    go = dmirror(fill(dmirror(go), 8, resv))
+    go = fill(go, fgcol, s)
+    return {'input': gi, 'output': go}"""
+    )
+
+    diff_lb = st.number_input("diff_lb", value=0.0)
+    diff_ub = st.number_input("diff_ub", value=1.0)
+
+    if st.button("Run Generator"):
+        try:
+            exec(generator_code, globals())
+            generate_function_name = generator_code.split("(")[0].split()[-1]
+            generate_function = globals().get(generate_function_name)
+
+            if generate_function:
+                result = generate_function(diff_lb, diff_ub)
+                gi = result['input']
+                go = result['output']
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.subheader("Generated Input Grid (gi)")
+                    display_grid(gi, "Input Grid", fig_size=(3, 3))
+                with col2:
+                    st.subheader("Generated Output Grid (go)")
+                    display_grid(go, "Output Grid", fig_size=(3, 3))
+            else:
+                st.error("Could not find the generator function. Please check your code.")
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
 
 def load_data():
     with open(DATA_FILE, 'r') as f:
@@ -129,29 +187,6 @@ def display_grid(grid: Tuple[Tuple[int]], title: str, fig_size=(4, 4)):
     ax.set_title(title)
     st.pyplot(fig)
 
-def load_transform_function_template(hash_id: str):
-    func_name = f'verify_{hash_id}'
-    if func_name in globals():
-        func_source = inspect.getsource(globals()[func_name])
-        return func_source.replace(func_name, 'transform_grid')
-    return """def transform_grid(I: Grid) -> Grid:\n    return I"""
-
-def display_result(result):
-    if isinstance(result, (tuple, list)) and all(isinstance(row, (tuple, list)) for row in result):
-        # Display as a grid
-        display_grid(result, "Generated Grid", fig_size=(3, 3))
-    elif isinstance(result, Image.Image):
-        buf = io.BytesIO()
-        result.save(buf, format="PNG")
-        byte_im = buf.getvalue()
-        st.image(byte_im, caption='Generated Grid', use_column_width=True)
-    elif isinstance(result, dict):
-        st.json(result)
-    elif isinstance(result, list):
-        st.write(result)
-    else:
-        st.write(result)
-
 def navigation_controls(hash_ids):
     col1, col2, col3 = st.columns([1, 2, 1])
     with col1:
@@ -161,7 +196,6 @@ def navigation_controls(hash_ids):
         if st.button("Next") and st.session_state.current_index < len(hash_ids) - 1:
             st.session_state.current_index += 1
 
-# Extra functions for expression execution
 def execute_loop(iterable, func):
     result = None
     for item in iterable:
@@ -171,9 +205,8 @@ def execute_loop(iterable, func):
 def if_then_else(condition, output1, output2):
     return output1 if condition else output2
 
-# Run the main app with mode selection
 if __name__ == "__main__":
     st.sidebar.title("App Mode")
-    app_mode = st.sidebar.selectbox("Choose Mode", ["expression", "transformer"])
+    app_mode = st.sidebar.selectbox("Choose Mode", ["expression", "transformer", "generator"])
     main(mode=app_mode)
 
