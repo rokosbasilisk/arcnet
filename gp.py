@@ -14,45 +14,26 @@ import re_arc.deterministic_utils as du  # Ensure re_arc/deterministic_utils.py 
 import os
 
 # ===============================
-# Siamese Network Model to Predict Fitness
+# Neural Network for Guiding Primitive Selection
 # ===============================
 
-class SiameseNetwork(nn.Module):
-    def __init__(self):
-        super(SiameseNetwork, self).__init__()
-        # Feature extractor for each grid using Convolutional Layers
-        self.feature_extractor = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=3, padding=1),  # [1, 30, 30] -> [16, 30, 30]
+class PrimitiveSelector(nn.Module):
+    def __init__(self, input_size, output_size):
+        super(PrimitiveSelector, self).__init__()
+        self.network = nn.Sequential(
+            nn.Linear(input_size, 128),
             nn.ReLU(),
-            nn.MaxPool2d(2, 2),                          # [16, 15, 15]
-            nn.Conv2d(16, 32, kernel_size=3, padding=1), # [32, 15, 15]
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2),                          # [32, 7, 7]
-            nn.Flatten(),                                 # [32*7*7 = 1568]
-            nn.Linear(1568, 512),
-            nn.ReLU(),
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-        )
-        # Distance computation
-        self.distance_layer = nn.Sequential(
             nn.Linear(128, 64),
             nn.ReLU(),
-            nn.Linear(64, 1)
+            nn.Linear(64, output_size),
+            nn.Softmax(dim=1)
         )
     
-    def forward(self, x1, x2):
-        f1 = self.feature_extractor(x1)
-        f2 = self.feature_extractor(x2)
-        # Compute absolute difference
-        diff = torch.abs(f1 - f2)
-        distance = self.distance_layer(diff)
-        return distance
+    def forward(self, x):
+        return self.network(x)
 
 # ===============================
-# Define the Primitive Set
+# Define the Primitive Set with Enhanced Conditionals
 # ===============================
 
 pset = gp.PrimitiveSetTyped("MAIN", [int, int, list], int)
@@ -86,7 +67,7 @@ for module in (dsl, du):
             pset.addPrimitive(wrapped_func, arg_types, int, name=name)
 
 # ===============================
-# Add Additional Primitives and Terminals
+# Add Enhanced Conditionals and Logical Primitives
 # ===============================
 
 def if_then_else(condition: bool, output1: int, output2: int) -> int:
@@ -130,13 +111,13 @@ creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin)
 
 toolbox = base.Toolbox()
-toolbox.register("expr_init", gp.genHalfAndHalf, pset=pset, min_=1, max_=5)
+toolbox.register("expr_init", gp.genFull, pset=pset, min_=1, max_=3)
 toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr_init)
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 toolbox.register("compile", gp.compile, pset=pset)
 
 # ===============================
-# Define Fitness Function
+# Define Fitness Function: Overlapping Grids
 # ===============================
 
 def pad_grid(grid, target_rows, target_cols, pad_value=0):
@@ -155,57 +136,44 @@ def pad_grid(grid, target_rows, target_cols, pad_value=0):
     padded_grid = padded_grid[:target_rows]
     return padded_grid
 
-def compute_strict_fitness(generated_grid, target_grid):
-    """Calculates a strict fitness score with MSE and penalty for mismatches."""
+def compute_overlap_fitness(generated_grid, target_grid):
+    """Calculates fitness based on the number of overlapping cells."""
     if generated_grid is None:
         return float('inf')
     try:
-        mse = sum((cell_gen - cell_tar) ** 2 for row_gen, row_tar in zip(generated_grid, target_grid)
-                  for cell_gen, cell_tar in zip(row_gen, row_tar))
-        penalty = sum(1 for row_gen, row_tar in zip(generated_grid, target_grid)
-                      for cell_gen, cell_tar in zip(row_gen, row_tar) if cell_gen != cell_tar)
-        # Normalize fitness by the number of cells to keep it manageable
-        total_cells = len(target_grid) * len(target_grid[0])
-        return (mse + penalty) / total_cells
+        overlap = sum(
+            1 for row_gen, row_tar in zip(generated_grid, target_grid)
+            for cell_gen, cell_tar in zip(row_gen, row_tar)
+            if cell_gen == cell_tar and cell_gen != 0
+        )
+        total = len(target_grid) * len(target_grid[0])
+        return (total - overlap) / total  # Lower is better
     except TypeError:
         return float('inf')
 
-def eval_individual(individual, training_samples, network, device):
-    """Evaluates an individual based on multiple training samples using the Siamese network."""
+def eval_individual(individual, training_samples):
+    """Evaluates an individual based on grid overlap over training samples."""
     total_fitness = 0.0
     samples_evaluated = 0
     try:
         func = toolbox.compile(expr=individual)
-        network.eval()
-        with torch.no_grad():
-            for idx, sample in enumerate(training_samples):
-                input_grid = sample['input']
-                target_grid = sample['output']
-                # Enforce fixed grid size of 30x30 by padding if necessary
-                input_grid_padded = pad_grid(input_grid, 30, 30)
-                target_grid_padded = pad_grid(target_grid, 30, 30)
-                # Generate the grid using the individual
-                generated_grid = [[func(x, y, input_grid_padded) for y in range(30)] for x in range(30)]
-                # Clamp generated values to [0, 9]
-                generated_grid = [
-                    [max(0, min(cell, 9)) if isinstance(cell, int) else 0 for cell in row]
-                    for row in generated_grid
-                ]
-                # Convert grids to tensors and normalize
-                generated_tensor = torch.tensor(generated_grid, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(device)  # Shape: [1, 1, 30, 30]
-                target_tensor = torch.tensor(target_grid_padded, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(device)    # Shape: [1, 1, 30, 30]
-                # Normalize tensors to [0, 1]
-                generated_tensor /= 9.0
-                target_tensor /= 9.0
-                # Compute distance using the network
-                distance = network(generated_tensor, target_tensor)
-                if distance is not None and distance.numel() > 0:
-                    fitness = distance.item()
-                else:
-                    print(f"Warning: Distance is invalid for sample {idx}. Assigning high fitness.")
-                    fitness = float('inf')
-                total_fitness += fitness
-                samples_evaluated += 1
+        for sample in training_samples:
+            input_grid = sample['input']
+            target_grid = sample['output']
+            # Enforce fixed grid size of 30x30 by padding if necessary
+            input_grid_padded = pad_grid(input_grid, 30, 30)
+            target_grid_padded = pad_grid(target_grid, 30, 30)
+            # Generate the grid using the individual
+            generated_grid = [[func(x, y, input_grid_padded) for y in range(30)] for x in range(30)]
+            # Clamp generated values to [0, 9]
+            generated_grid = [
+                [max(0, min(cell, 9)) if isinstance(cell, int) else 0 for cell in row]
+                for row in generated_grid
+            ]
+            # Compute fitness as overlap measure
+            fitness = compute_overlap_fitness(generated_grid, target_grid_padded)
+            total_fitness += fitness
+            samples_evaluated += 1
     except Exception as e:
         print(f"Error evaluating individual: {e}")
         return (float('inf'),)
@@ -214,7 +182,7 @@ def eval_individual(individual, training_samples, network, device):
     # Return average fitness over samples
     return (total_fitness / samples_evaluated,)
 
-toolbox.register("evaluate", eval_individual, training_samples=[], network=None, device='cpu')  # Placeholder, will set later
+toolbox.register("evaluate", eval_individual, training_samples=[])  # Placeholder, will set later
 toolbox.register("mate", gp.cxOnePoint)
 
 # ===============================
@@ -223,101 +191,6 @@ toolbox.register("mate", gp.cxOnePoint)
 
 mutate_expr = partial(gp.genFull, pset=pset, min_=1, max_=3)
 toolbox.register("mutate", gp.mutUniform, expr=mutate_expr, pset=pset)
-
-# ===============================
-# Siamese Network Training Functions
-# ===============================
-
-def prepare_dataset(seeds):
-    """Prepares grid pairs and their distances from seed data."""
-    pairs = []
-    distances = []
-    for data in seeds.values():
-        train_samples = data.get('train', [])
-        for sample in train_samples:
-            input_grid = sample.get('input')
-            target_grid = sample.get('output')
-            if input_grid and target_grid:
-                input_padded = pad_grid(input_grid, 30, 30)
-                target_padded = pad_grid(target_grid, 30, 30)
-                # Compute distance (MSE)
-                mse = np.mean((np.array(input_padded) - np.array(target_padded)) ** 2)
-                pairs.append((input_padded, target_padded))
-                distances.append(mse)
-    return pairs, distances
-
-def load_dataset_for_network(seed_file, train_size=80, val_size=20):
-    """Loads the dataset from seed_file and splits into training and validation sets for the network."""
-    try:
-        with open(seed_file, 'r') as f:
-            seeds = json.load(f)
-        pairs, distances = prepare_dataset(seeds)
-        # Shuffle the data
-        combined = list(zip(pairs, distances))
-        random.shuffle(combined)
-        if combined:
-            pairs[:], distances[:] = zip(*combined)
-        else:
-            pairs, distances = [], []
-        # Split into training and validation
-        train_pairs = pairs[:train_size]
-        train_distances = distances[:train_size]
-        val_pairs = pairs[train_size:train_size + val_size]
-        val_distances = distances[train_size:train_size + val_size]
-        return (train_pairs, train_distances), (val_pairs, val_distances)
-    except FileNotFoundError:
-        print(f"Seed file '{seed_file}' not found.")
-        return ([], []), ([], [])
-
-def train_siamese_network(model, optimizer, loss_fn, train_pairs, train_distances, val_pairs, val_distances, device, epochs=50, batch_size=16):
-    """Trains the Siamese network with batch processing and validation."""
-    model.to(device)
-    # Prepare training data
-    train_inputs = torch.tensor([pair[0] for pair in train_pairs], dtype=torch.float32).unsqueeze(1)  # Shape: [N, 1, 30, 30]
-    train_targets = torch.tensor([pair[1] for pair in train_pairs], dtype=torch.float32).unsqueeze(1)  # Shape: [N, 1, 30, 30]
-    train_distances = torch.tensor(train_distances, dtype=torch.float32).unsqueeze(1)  # Shape: [N, 1]
-
-    train_dataset = torch.utils.data.TensorDataset(train_inputs, train_targets, train_distances)
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-
-    # Prepare validation data
-    val_inputs = torch.tensor([pair[0] for pair in val_pairs], dtype=torch.float32).unsqueeze(1).to(device)
-    val_targets = torch.tensor([pair[1] for pair in val_pairs], dtype=torch.float32).unsqueeze(1).to(device)
-    val_distances = torch.tensor(val_distances, dtype=torch.float32).unsqueeze(1).to(device)
-
-    for epoch in range(1, epochs + 1):
-        model.train()
-        total_loss = 0.0
-        for batch_inputs, batch_targets, batch_distances in train_loader:
-            optimizer.zero_grad()
-            batch_inputs = batch_inputs.to(device)
-            batch_targets = batch_targets.to(device)
-            batch_distances = batch_distances.to(device)
-            # Normalize tensors to [0, 1]
-            batch_inputs /= 9.0
-            batch_targets /= 9.0
-            # Compute distance
-            predicted_distances = model(batch_inputs, batch_targets)
-            # Compute loss
-            loss = loss_fn(predicted_distances, batch_distances)
-            loss.backward()
-            # Gradient Clipping to prevent exploding gradients
-            nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-            optimizer.step()
-            total_loss += loss.item()
-        avg_train_loss = total_loss / len(train_loader) if len(train_loader) > 0 else 0
-
-        # Validation
-        model.eval()
-        with torch.no_grad():
-            val_inputs_normalized = val_inputs / 9.0
-            val_targets_normalized = val_targets / 9.0
-            predicted_val_distances = model(val_inputs_normalized, val_targets_normalized)
-            val_loss = loss_fn(predicted_val_distances, val_distances).item()
-
-        print(f"Epoch {epoch}/{epochs} - Training Loss: {avg_train_loss:.4f} - Validation Loss: {val_loss:.4f}")
-
-    print("Training completed.")
 
 # ===============================
 # Visualization Function with Terminal Colors
@@ -353,49 +226,20 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
 
-    # Initialize Siamese Network
-    network = SiameseNetwork()
-    optimizer = optim.Adam(network.parameters(), lr=0.0001)  # Lower learning rate
+    # Initialize Primitive Selector Network
+    primitive_list = [prim for prim in pset.primitives if hasattr(prim, 'name')]
+    primitive_count = len(primitive_list)
+    network = PrimitiveSelector(input_size=primitive_count, output_size=primitive_count)
+    network.to(device)
+    optimizer = optim.Adam(network.parameters(), lr=0.001)
     loss_fn = nn.MSELoss()
 
-    # Load and prepare dataset for training the Siamese network
+    # Load and prepare dataset for GP training
     SEED_FILE = 'data/arc-agi_training_challenges.json'
     TRAIN_SIZE_NET = 80
     VAL_SIZE_NET = 20
 
-    print("Loading dataset for Siamese network training...")
-    (train_pairs, train_distances), (val_pairs, val_distances) = load_dataset_for_network(SEED_FILE, train_size=TRAIN_SIZE_NET, val_size=VAL_SIZE_NET)
-    print(f"Prepared {len(train_pairs)} training pairs and {len(val_pairs)} validation pairs.")
-
-    if len(train_pairs) < TRAIN_SIZE_NET:
-        print(f"Warning: Insufficient training pairs. Required: {TRAIN_SIZE_NET}, Available: {len(train_pairs)}")
-    if len(val_pairs) < VAL_SIZE_NET:
-        print(f"Warning: Insufficient validation pairs. Required: {VAL_SIZE_NET}, Available: {len(val_pairs)}")
-
-    # Normalize grid values to [0, 1]
-    def normalize_grid(grid):
-        return [[cell / 9.0 for cell in row] for row in grid]
-
-    train_pairs = [(normalize_grid(pair[0]), normalize_grid(pair[1])) for pair in train_pairs]
-    val_pairs = [(normalize_grid(pair[0]), normalize_grid(pair[1])) for pair in val_pairs]
-
-    # Train the Siamese network
-    print("Training the Siamese network...")
-    train_siamese_network(network, optimizer, loss_fn, train_pairs, train_distances, val_pairs, val_distances, device, epochs=50, batch_size=16)
-
-    # Save the trained network
-    model_path = 'siamese_network.pth'
-    torch.save(network.state_dict(), model_path)
-    print(f"Siamese network saved to {model_path}")
-
-    # Initialize GP components
-    print("Initializing Genetic Programming components...")
-    POPULATION_SIZE = 200
-    GENERATIONS = 100
-    CX_PROB = 0.5  # Crossover probability
-    MUT_PROB = 0.2  # Mutation probability
-
-    # Load the dataset again for GP training
+    print("Loading dataset for GP training...")
     try:
         with open(SEED_FILE, 'r') as f:
             seeds = json.load(f)
@@ -418,21 +262,17 @@ def main():
         print(f"Warning: Not enough valid training samples. Required: {TRAIN_SIZE_NET + VAL_SIZE_NET}, Available: {len(valid_train_samples)}")
     # Shuffle and split
     random.shuffle(valid_train_samples)
-    training_samples = valid_train_samples[:TRAIN_SIZE_NET]
-    validation_samples = valid_train_samples[TRAIN_SIZE_NET:TRAIN_SIZE_NET + VAL_SIZE_NET]
-    print(f"Using {len(training_samples)} training samples for GP.")
+    training_samples_gp = valid_train_samples[:TRAIN_SIZE_NET]
+    validation_samples_gp = valid_train_samples[TRAIN_SIZE_NET:TRAIN_SIZE_NET + VAL_SIZE_NET]
+    print(f"Using {len(training_samples_gp)} training samples for GP.")
 
-    # Initialize population with seeded individuals
-    pop = []
-    seed_fraction = 0.2
-    seed_count = min(int(POPULATION_SIZE * seed_fraction), len(training_samples))
-    selected_seeds = random.sample(training_samples, seed_count)
-    for _ in selected_seeds:
-        # Initialize randomly; can be enhanced to incorporate seed data
-        individual = toolbox.individual()
-        pop.append(individual)
-    # Fill the rest of the population with random individuals
-    pop += [toolbox.individual() for _ in range(POPULATION_SIZE - len(pop))]
+    # Initialize population
+    POPULATION_SIZE = 200
+    GENERATIONS = 100
+    CX_PROB = 0.5  # Crossover probability
+    MUT_PROB = 0.2  # Mutation probability
+
+    pop = toolbox.population(n=POPULATION_SIZE)
     print(f"Initialized population with {len(pop)} individuals.")
 
     hof = tools.HallOfFame(1)
@@ -445,14 +285,12 @@ def main():
     logbook = tools.Logbook()
     logbook.header = ["gen", "evals"] + stats.fields
 
-    # Load the trained Siamese network
-    network.load_state_dict(torch.load(model_path, map_location=device))
-    network.to(device)
-    network.eval()
+    # Initialize primitive usage frequency
+    primitive_usage = {prim.name: 0 for prim in primitive_list}
 
-    # Update the toolbox evaluate function with the trained network and device
+    # Update the toolbox evaluate function with the training samples
     toolbox.unregister("evaluate")
-    toolbox.register("evaluate", eval_individual, training_samples=training_samples, network=network, device=device)
+    toolbox.register("evaluate", eval_individual, training_samples=training_samples_gp)
 
     # Evolutionary Loop
     for gen in range(1, GENERATIONS + 1):
@@ -461,17 +299,49 @@ def main():
         # Evaluate individuals that have not yet been evaluated
         invalid_ind = [ind for ind in pop if not ind.fitness.valid]
         print(f"  Evaluating {len(invalid_ind)} individuals...")
-        fitnesses = []
-        for ind in invalid_ind:
-            fit = toolbox.evaluate(ind)
-            fitnesses.append(fit)
-            if fit is None:
-                print("Warning: Fitness evaluation returned None.")
+        fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
-            if fit is not None:
-                ind.fitness.values = fit
-            else:
-                ind.fitness.values = (float('inf'),)
+            ind.fitness.values = fit
+
+        # Update primitive usage statistics
+        for ind in invalid_ind:
+            for node in ind:
+                if hasattr(node, 'name') and node.name in primitive_usage:
+                    primitive_usage[node.name] += 1
+
+        # Prepare data for neural network training
+        usage_vectors = []
+        fitness_scores = []
+        for ind in invalid_ind:
+            # Create a binary vector indicating the usage of each primitive in the individual
+            usage_vector = [0] * primitive_count
+            for node in ind:
+                if hasattr(node, 'name'):
+                    if node.name in primitive_usage:
+                        index = primitive_list.index(next(prim for prim in primitive_list if prim.name == node.name))
+                        usage_vector[index] += 1
+            usage_vectors.append(usage_vector)
+            fitness_scores.append(ind.fitness.values[0])
+
+        if usage_vectors and fitness_scores:
+            usage_tensor = torch.tensor(usage_vectors, dtype=torch.float32).to(device)
+            fitness_tensor = torch.tensor(fitness_scores, dtype=torch.float32).unsqueeze(1).to(device)
+            optimizer.zero_grad()
+            predictions = network(usage_tensor)
+            loss = loss_fn(predictions, fitness_tensor)
+            loss.backward()
+            optimizer.step()
+            print(f"  Trained Primitive Selector Network with loss: {loss.item():.4f}")
+
+        # Use the network to get primitive selection probabilities
+        if any(primitive_usage.values()):
+            usage_vector = [primitive_usage[prim.name] for prim in primitive_list]
+            usage_vector = np.array(usage_vector, dtype=np.float32)
+            usage_vector = usage_vector / usage_vector.sum() if usage_vector.sum() > 0 else np.ones_like(usage_vector) / len(usage_vector)
+            usage_tensor = torch.tensor([usage_vector], dtype=torch.float32).to(device)
+            with torch.no_grad():
+                selection_probs = network(usage_tensor).cpu().numpy()[0]
+            print(f"  Primitive selection probabilities: {selection_probs}")
 
         # Update Hall of Fame
         hof.update(pop)
@@ -494,9 +364,9 @@ def main():
             func = toolbox.compile(expr=best_individual)
             
             try:
-                # Select a sample from training or validation for visualization
-                if len(validation_samples) > 0:
-                    sample = validation_samples[0]  # You can choose different samples or iterate over multiple
+                # Select a sample from validation for visualization
+                if len(validation_samples_gp) > 0:
+                    sample = validation_samples_gp[0]
                     input_grid = sample['input']
                     target_grid = sample['output']
                     
@@ -527,7 +397,7 @@ def main():
 
         # Selection
         print("  Selecting individuals...")
-        selected = tools.selTournament(pop, k=POPULATION_SIZE // 2, tournsize=3)  # Using tournament selection
+        selected = tools.selTournament(pop, k=POPULATION_SIZE // 2, tournsize=3)
         offspring = [toolbox.clone(ind) for ind in selected]
 
         # Apply crossover and mutation on the offspring
@@ -550,17 +420,9 @@ def main():
     print("=== Final Evaluation ===")
     invalid_ind = [ind for ind in pop if not ind.fitness.valid]
     print(f"  Evaluating {len(invalid_ind)} individuals...")
-    fitnesses = []
-    for ind in invalid_ind:
-        fit = toolbox.evaluate(ind)
-        fitnesses.append(fit)
-        if fit is None:
-            print("Warning: Fitness evaluation returned None.")
+    fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
     for ind, fit in zip(invalid_ind, fitnesses):
-        if fit is not None:
-            ind.fitness.values = fit
-        else:
-            ind.fitness.values = (float('inf'),)
+        ind.fitness.values = fit
 
     hof.update(pop)
 
@@ -569,16 +431,13 @@ def main():
     # Compile and visualize the best individual
     func = toolbox.compile(expr=hof[0])
     try:
-        if len(validation_samples) > 0:
-            sample = validation_samples[0]  # You can choose different samples or iterate over multiple
+        if len(validation_samples_gp) > 0:
+            sample = validation_samples_gp[0]
             input_grid = sample['input']
             target_grid = sample['output']
             # Enforce fixed grid size of 30x30 by padding if necessary
             input_grid_padded = pad_grid(input_grid, 30, 30)
             target_grid_padded = pad_grid(target_grid, 30, 30)
-            # Normalize grids
-            input_grid_normalized = [[cell / 9.0 for cell in row] for row in input_grid_padded]
-            target_grid_normalized = [[cell / 9.0 for cell in row] for row in target_grid_padded]
             # Generate the grid using the best individual
             generated_grid = [[func(x, y, input_grid_padded) for y in range(30)] for x in range(30)]
             # Clamp generated values to [0, 9]
