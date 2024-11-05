@@ -1,0 +1,57 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_007bbfb7() -> dict:
+    diff_lb = 0
+    diff_ub = 1
+    print(f"diff_lb: {diff_lb}")
+    print(f"diff_ub: {diff_ub}")
+
+    cols = interval(1, 10, 1)
+    print(f"cols: {cols}")
+
+    h = unifint(diff_lb, diff_ub, (2, 5))
+    print(f"h: {h}")
+
+    w = unifint(diff_lb, diff_ub, (2, 5))
+    print(f"w: {w}")
+
+    c = canvas(0, (h, w))
+    print(f"c: {c}")
+
+    numcd = unifint(diff_lb, diff_ub, (0, (h * w) // 2))
+    print(f"numcd: {numcd}")
+
+    numc = choice((numcd, h * w - numcd))
+    print(f"numc: {numc}")
+
+    numc = min(max(1, numc), h * w - 1)
+    print(f"numc (clamped): {numc}")
+
+    inds = totuple(asindices(c))
+    print(f"inds: {inds}")
+
+    locs = sample(inds, numc)
+    print(f"locs: {locs}")
+
+    fgc = choice(cols)
+    print(f"fgc: {fgc}")
+
+    gi = fill(c, fgc, locs)
+    print(f"gi: {gi}")
+
+    return {'input': gi}
+
+Printed Outputs:
+diff_lb: 0
+diff_ub: 1
+cols: (1, 2, 3, 4, 5, 6, 7, 8, 9)
+h: 3
+w: 4
+c: ((0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0))
+numcd: 5
+numc: 5
+numc (clamped): 5
+inds: ((0, 1), (1, 2), (2, 1), (0, 0), (1, 1), (0, 3), (2, 0), (2, 3), (0, 2), (2, 2), (1, 0), (1, 3))
+locs: [(0, 2), (2, 2), (2, 1), (1, 1), (2, 3)]
+fgc: 9
+gi: ((0, 0, 9, 0), (0, 9, 0, 0), (0, 9, 9, 9))

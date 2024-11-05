@@ -1,4 +1,5 @@
 from typing import List,Union,Tuple,Any,Container,Callable,FrozenSet,Iterable
+from random import choice, randint, sample, shuffle, uniform
 
 Boolean = bool
 Integer = int
@@ -17,7 +18,27 @@ Piece = Union[Grid, Patch]
 TupleTuple = Tuple[Tuple]
 ContainerContainer = Container[Container]
 
+global rng
+rng = []
 
+
+### utils ###
+def unifint(
+    diff_lb: float,
+    diff_ub: float,
+    bounds: Tuple[int, int]
+) -> int:
+    """
+    diff_lb: lower bound for difficulty, must be in range [0, diff_ub]
+    diff_ub: upper bound for difficulty, must be in range [diff_lb, 1]
+    bounds: interval [a, b] determining the integer values that can be sampled
+    """
+    a, b = bounds
+    d = uniform(diff_lb, diff_ub)
+    global rng
+    rng.append(d)
+    return min(max(a, round(a + (b - a) * d)), b)
+#########
 
 # constants
 

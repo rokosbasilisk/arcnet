@@ -8,6 +8,7 @@ import io
 import contextlib
 from PIL import Image
 from termcolor import colored
+import traceback
 
 # Ensure the OpenAI API key is set
 # It's recommended to set it as an environment variable for security reasons
@@ -70,9 +71,29 @@ TERM_COLOR_MAP = {
     9: 'on_white'
 }
 
+def print_grid_in_terminal(gi):
+    """
+    Print the 'gi' grid in the terminal using termcolor for colored output.
+    Each cell is represented by two spaces with the background color corresponding to its value.
+    """
+    for row in gi:
+        line = ''
+        for cell in row:
+            # Get the background color; default to 'on_black' if not found
+            on_color = TERM_COLOR_MAP.get(cell, 'on_black')
+            
+            # Add two spaces with the background color
+            try:
+                line += colored('  ', on_color=on_color)
+            except KeyError:
+                # Handle any invalid color codes gracefully
+                line += colored('  ', on_color='on_black')
+        print(line)
+
+
 # OpenAI API pricing (as of April 2023)
 # Update these values based on the latest OpenAI pricing
-MODEL_NAME = "gpt-4"  # Replace with the specific model name if different
+MODEL_NAME = "gpt-4o-mini"  # Replace with the specific model name if different
 # Example pricing for GPT-4-8k:
 PROMPT_TOKEN_COST = 0.03 / 1000  # $0.03 per 1k prompt tokens
 COMPLETION_TOKEN_COST = 0.06 / 1000  # $0.06 per 1k completion tokens
@@ -86,8 +107,7 @@ def modify_function_code(function_code):
     - Set diff_lb = 0 and diff_ub = 1.
     - Retain only the code necessary for calculating 'gi'.
     - Add print statements after each line to output the intermediate variable values.
-    - Ensure the function returns 'gi' at the end.
-    - Include necessary imports from 're_arc.dsl' and 're_arc.utils'.
+    - Ensure the function returns a dictionary with 'input': gi at the end.
     
     Returns the modified code and the cost of the API call.
     """
@@ -97,13 +117,12 @@ Given the following Python function, modify it to:
 2. Remove all code related to calculating 'go' and only keep the code necessary for calculating 'gi'.
 3. Add a print statement after each line to output the intermediate variable values.
 4. Ensure the function returns a dictionary with 'input': gi at the end.
-5. Include the necessary imports from 're_arc.dsl' and 're_arc.utils' at the beginning of the function.
 
 Here is the original function:
 
 {function_code}
 
-Provide the modified function code only.
+Provide the modified function code only without any code block markers.
 """
 
     try:
@@ -118,6 +137,12 @@ Provide the modified function code only.
         )
         modified_code = response.choices[0].message['content'].strip()
 
+        # Remove any potential code block markers
+        if modified_code.startswith("```"):
+            modified_code = '\n'.join(modified_code.split('\n')[1:])  # Remove first line
+        if modified_code.endswith("```"):
+            modified_code = '\n'.join(modified_code.split('\n')[:-1])  # Remove last line
+
         # Extract token usage
         usage = response['usage']
         prompt_tokens = usage.get('prompt_tokens', 0)
@@ -127,6 +152,7 @@ Provide the modified function code only.
         return modified_code, cost
     except Exception as e:
         print(f"Error modifying function code: {e}")
+        traceback.print_exc()
         return None, 0.0
 
 def execute_modified_function(modified_code, hash_id):
@@ -134,6 +160,7 @@ def execute_modified_function(modified_code, hash_id):
     Execute the modified function code and capture the output of print statements.
     Returns the 'gi' grid and the captured print output.
     """
+
     # Prepare a namespace for execution
     exec_namespace = {}
     try:
@@ -152,10 +179,14 @@ def execute_modified_function(modified_code, hash_id):
         
         # Extract 'gi' from the returned dictionary
         gi = result.get('input')
+        if gi is None:
+            print(f"'input' key not found in the result of function '{hash_id}'.")
+            return None, print_output
         return gi, print_output
     except Exception as e:
         print(f"Error executing modified function '{hash_id}': {e}")
-        return None, str(e)
+        traceback.print_exc()
+        return None, traceback.format_exc()
 
 def create_image_from_gi(gi, hash_id):
     """
@@ -177,30 +208,22 @@ def create_image_from_gi(gi, hash_id):
         image.save(image_path)
     except Exception as e:
         print(f"Error creating image for '{hash_id}': {e}")
+        traceback.print_exc()
 
-def save_print_output(hash_id, print_output):
+def save_print_output(hash_id, print_output, modified_code):
     """
-    Save the captured print output to a text file.
+    Save the modified function code and the captured print output to a text file.
     """
     try:
         file_path = os.path.join(FUNC_DEFS_DIR, f"{hash_id}.txt")
         with open(file_path, 'w') as file:
+            file.write("Modified Function Code:\n")
+            file.write(modified_code)
+            file.write("\n\nPrinted Outputs:\n")
             file.write(print_output)
     except Exception as e:
         print(f"Error saving print output for '{hash_id}': {e}")
-
-def print_grid_in_terminal(gi):
-    """
-    Print the 'gi' grid in the terminal using termcolor for colored output.
-    Each cell is represented by two spaces with the background color corresponding to its value.
-    """
-    for row in gi:
-        line = ''
-        for cell in row:
-            color = TERM_COLOR_MAP.get(cell, 'on_black')
-            # Add two spaces with the background color
-            line += colored('  ', color)
-        print(line)
+        traceback.print_exc()
 
 def main():
     """
@@ -211,16 +234,19 @@ def main():
         # Get the original function code
         try:
             original_code = inspect.getsource(func)
-            print(f"original_code: {original_code}")
+            print(f"\noriginal_code for '{hash_id}':\n{original_code}\n")
         except Exception as e:
             print(f"Error retrieving source for function '{hash_id}': {e}")
+            traceback.print_exc()
             continue
         
         # Modify the function code using OpenAI API
         modified_code, cost = modify_function_code(original_code)
-        print(f"modified_code: {modified_code}")
-        if not modified_code:
-            print(f"Skipping function '{hash_id}' due to modification error.")
+        modified_code = "from re_arc.dsl import *\n" + modified_code   
+        if modified_code:
+            print(f"modified_code for '{hash_id}':\n{modified_code}\n")
+        else:
+            print(f"Skipping function '{hash_id}' due to modification error.\n")
             continue
         
         # Update total cost
@@ -229,18 +255,19 @@ def main():
         # Execute the modified function and capture gi and print outputs
         gi, print_output = execute_modified_function(modified_code, hash_id)
         if gi is None:
-            print(f"Skipping image creation for '{hash_id}' due to execution error.")
+            print(f"Skipping image creation for '{hash_id}' due to execution error.\n")
             continue
         
         # Print the grid in terminal using termcolor
         print(f"Grid for function '{hash_id}':")
         print_grid_in_terminal(gi)
+        print()  # Add an empty line for better readability
         
         # Create and save the image from gi
         create_image_from_gi(gi, hash_id)
         
-        # Save the print outputs to a text file
-        save_print_output(hash_id, print_output)
+        # Save the modified function code and print outputs to a text file
+        save_print_output(hash_id, print_output, modified_code)
         
         # Print the cost for this function and the total cost so far
         print(f"Function '{hash_id}' processed. Cost for this function: ${cost:.6f}. Total cost so far: ${total_cost:.6f}.\n")
