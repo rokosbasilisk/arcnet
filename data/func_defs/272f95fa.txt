@@ -1,0 +1,149 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_272f95fa() -> dict:
+    diff_lb = 0
+    diff_ub = 1
+    print(f"diff_lb: {diff_lb}, diff_ub: {diff_ub}")
+
+    cols = difference(interval(0, 10, 1), (1, 2, 3, 4, 6))    
+    print(f"cols: {cols}")
+
+    h = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"h: {h}")
+
+    w = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"w: {w}")
+
+    bgc, linc = sample(cols, 2)
+    print(f"bgc: {bgc}, linc: {linc}")
+
+    c = canvas(bgc, (5, 5))
+    print(f"c: {c}")
+
+    l1 = connect((1, 0), (1, 4))
+    print(f"l1: {l1}")
+
+    l2 = connect((3, 0), (3, 4))
+    print(f"l2: {l2}")
+
+    lns = l1 | l2
+    print(f"lns: {lns}")
+
+    gi = fill(dmirror(fill(c, linc, lns)), linc, lns)
+    print(f"gi after fill: {gi}")
+
+    hdist = [0, 0, 0]
+    print(f"hdist: {hdist}")
+
+    wdist = [0, 0, 0]
+    print(f"wdist: {wdist}")
+
+    idx = 0
+    for k in range(h - 2):
+        hdist[idx] += 1
+        idx = (idx + 1) % 3
+    print(f"hdist after height distribution: {hdist}")
+
+    idx = 0
+    for k in range(w - 2):
+        wdist[idx] += 1
+        idx = (idx + 1) % 3
+    print(f"wdist after width distribution: {wdist}")
+
+    shuffle(hdist)
+    print(f"hdist after shuffle: {hdist}")
+
+    shuffle(wdist)
+    print(f"wdist after shuffle: {wdist}")
+
+    hdelt1 = unifint(diff_lb, diff_ub, (0, hdist[0] - 1))
+    print(f"hdelt1: {hdelt1}")
+
+    hdist[0] -= hdelt1
+    print(f"hdist after hdelt1: {hdist}")
+
+    hdist[1] += hdelt1
+    print(f"hdist after adding hdelt1: {hdist}")
+
+    hdelt2 = unifint(diff_lb, diff_ub, (0, min(hdist[1], hdist[2]) - 1))
+    print(f"hdelt2: {hdelt2}")
+
+    hdelt2 = choice((+hdelt2, -hdelt2))
+    print(f"hdelt2 after choice: {hdelt2}")
+
+    hdist[1] += hdelt2
+    print(f"hdist after adding hdelt2: {hdist}")
+
+    hdist[2] -= hdelt2
+    print(f"hdist after subtracting hdelt2: {hdist}")
+
+    wdelt1 = unifint(diff_lb, diff_ub, (0, wdist[0] - 1))
+    print(f"wdelt1: {wdelt1}")
+
+    wdist[0] -= wdelt1
+    print(f"wdist after wdelt1: {wdist}")
+
+    wdist[1] += wdelt1
+    print(f"wdist after adding wdelt1: {wdist}")
+
+    wdelt2 = unifint(diff_lb, diff_ub, (0, min(wdist[1], wdist[2]) - 1))
+    print(f"wdelt2: {wdelt2}")
+
+    wdelt2 = choice((+wdelt2, -wdelt2))
+    print(f"wdelt2 after choice: {wdelt2}")
+
+    wdist[1] += wdelt2
+    print(f"wdist after adding wdelt2: {wdist}")
+
+    wdist[2] -= wdelt2
+    print(f"wdist after subtracting wdelt2: {wdist}")
+
+    gi = gi[:1] * hdist[0] + gi[1:2] + gi[2:3] * hdist[1] + gi[3:4] + gi[4:5] * hdist[2]
+    print(f"gi after height distribution: {gi}")
+
+    gi = dmirror(gi)
+    print(f"gi after dmirror: {gi}")
+
+    gi = gi[:1] * wdist[0] + gi[1:2] + gi[2:3] * wdist[1] + gi[3:4] + gi[4:5] * wdist[2]
+    print(f"gi after width distribution: {gi}")
+
+    gi = dmirror(gi)
+    print(f"gi after final dmirror: {gi}")
+
+    return {'input': gi}
+
+Printed Outputs:
+diff_lb: 0, diff_ub: 1
+cols: (0, 5, 7, 8, 9)
+h: 24
+w: 13
+bgc: 8, linc: 0
+c: ((8, 8, 8, 8, 8), (8, 8, 8, 8, 8), (8, 8, 8, 8, 8), (8, 8, 8, 8, 8), (8, 8, 8, 8, 8))
+l1: frozenset({(1, 2), (1, 1), (1, 4), (1, 0), (1, 3)})
+l2: frozenset({(3, 4), (3, 1), (3, 0), (3, 3), (3, 2)})
+lns: frozenset({(1, 2), (3, 4), (3, 1), (1, 1), (1, 4), (3, 0), (3, 3), (1, 0), (3, 2), (1, 3)})
+gi after fill: ((8, 0, 8, 0, 8), (0, 0, 0, 0, 0), (8, 0, 8, 0, 8), (0, 0, 0, 0, 0), (8, 0, 8, 0, 8))
+hdist: [0, 0, 0]
+wdist: [0, 0, 0]
+hdist after height distribution: [8, 7, 7]
+wdist after width distribution: [4, 4, 3]
+hdist after shuffle: [7, 7, 8]
+wdist after shuffle: [4, 3, 4]
+hdelt1: 4
+hdist after hdelt1: [3, 7, 8]
+hdist after adding hdelt1: [3, 11, 8]
+hdelt2: 4
+hdelt2 after choice: 4
+hdist after adding hdelt2: [3, 15, 8]
+hdist after subtracting hdelt2: [3, 15, 4]
+wdelt1: 2
+wdist after wdelt1: [2, 3, 4]
+wdist after adding wdelt1: [2, 5, 4]
+wdelt2: 2
+wdelt2 after choice: -2
+wdist after adding wdelt2: [2, 3, 4]
+wdist after subtracting wdelt2: [2, 3, 6]
+gi after height distribution: ((8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (0, 0, 0, 0, 0), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (0, 0, 0, 0, 0), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8), (8, 0, 8, 0, 8))
+gi after dmirror: ((8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 8, 8, 8, 8), (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), (8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 8, 8, 8, 8), (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), (8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 8, 8, 8, 8))
+gi after width distribution: ((8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 8, 8, 8, 8), (8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 8, 8, 8, 8), (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), (8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 8, 8, 8, 8), (8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 8, 8, 8, 8), (8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 8, 8, 8, 8), (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), (8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 8, 8, 8, 8), (8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 8, 8, 8, 8), (8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 8, 8, 8, 8), (8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 8, 8, 8, 8), (8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 8, 8, 8, 8), (8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 8, 8, 8, 8))
+gi after final dmirror: ((8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8), (8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8))

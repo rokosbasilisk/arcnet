@@ -1,0 +1,82 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_1e32b0e9() -> dict:
+    diff_lb = 0
+    print(f"diff_lb: {diff_lb}")
+    diff_ub = 1
+    print(f"diff_ub: {diff_ub}")
+    
+    cols = interval(0, 10, 1)
+    print(f"cols: {cols}")
+    h = unifint(diff_lb, diff_ub, (4, 6))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (4, 6))
+    print(f"w: {w}")
+    nh = unifint(diff_lb, diff_ub, (1, 4))
+    print(f"nh: {nh}")
+    nw = unifint(diff_lb, diff_ub, (1 if nh > 1 else 2, 3))
+    print(f"nw: {nw}")
+    bgc, linc, fgc = sample(cols, 3)
+    print(f"bgc: {bgc}, linc: {linc}, fgc: {fgc}")
+    fullh = h * nh + (nh - 1)
+    print(f"fullh: {fullh}")
+    fullw = w * nw + (nw - 1)
+    print(f"fullw: {fullw}")
+    c = canvas(linc, (fullh, fullw))
+    print(f"c: {c}")
+    smallc = canvas(bgc, (h, w))
+    print(f"smallc: {smallc}")
+    llocs = set()
+    for a in range(0, fullh, h + 1):
+        for b in range(0, fullw, w + 1):
+            llocs.add((a, b))
+    llocs = tuple(llocs)
+    print(f"llocs: {llocs}")
+    srcloc = choice(llocs)
+    print(f"srcloc: {srcloc}")
+    remlocs = remove(srcloc, llocs)
+    print(f"remlocs: {remlocs}")
+    ncells = unifint(diff_lb, diff_ub, (0, (h - 2) * (w - 2) - 1))
+    print(f"ncells: {ncells}")
+    smallc2 = canvas(bgc, (h - 2, w - 2))
+    print(f"smallc2: {smallc2}")
+    inds = asindices(smallc2)
+    print(f"inds: {inds}")
+    sp = choice(totuple(inds))
+    print(f"sp: {sp}")
+    inds = remove(sp, inds)
+    print(f"inds after removal: {inds}")
+    shp = {sp}
+    for j in range(ncells):
+        ij = choice(totuple((inds - shp) & mapply(neighbors, shp)))
+        shp.add(ij)
+    shp = shift(shp, (1, 1))
+    print(f"shp: {shp}")
+    gi = paint(c, shift(asobject(fill(smallc, fgc, shp)), srcloc))
+    print(f"gi: {gi}")
+    
+    return {'input': gi}
+
+Printed Outputs:
+diff_lb: 0
+diff_ub: 1
+cols: (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+h: 6
+w: 4
+nh: 1
+nw: 2
+bgc: 7, linc: 5, fgc: 9
+fullh: 6
+fullw: 9
+c: ((5, 5, 5, 5, 5, 5, 5, 5, 5), (5, 5, 5, 5, 5, 5, 5, 5, 5), (5, 5, 5, 5, 5, 5, 5, 5, 5), (5, 5, 5, 5, 5, 5, 5, 5, 5), (5, 5, 5, 5, 5, 5, 5, 5, 5), (5, 5, 5, 5, 5, 5, 5, 5, 5))
+smallc: ((7, 7, 7, 7), (7, 7, 7, 7), (7, 7, 7, 7), (7, 7, 7, 7), (7, 7, 7, 7), (7, 7, 7, 7))
+llocs: ((0, 5), (0, 0))
+srcloc: (0, 0)
+remlocs: ((0, 5),)
+ncells: 5
+smallc2: ((7, 7), (7, 7), (7, 7), (7, 7))
+inds: frozenset({(0, 1), (2, 1), (0, 0), (3, 1), (1, 1), (2, 0), (3, 0), (1, 0)})
+sp: (1, 0)
+inds after removal: frozenset({(0, 1), (2, 1), (0, 0), (3, 1), (1, 1), (2, 0), (3, 0)})
+shp: frozenset({(1, 2), (2, 1), (3, 1), (1, 1), (2, 2), (4, 1)})
+gi: ((7, 7, 7, 7, 5, 5, 5, 5, 5), (7, 9, 9, 7, 5, 5, 5, 5, 5), (7, 9, 9, 7, 5, 5, 5, 5, 5), (7, 9, 7, 7, 5, 5, 5, 5, 5), (7, 9, 7, 7, 5, 5, 5, 5, 5), (7, 7, 7, 7, 5, 5, 5, 5, 5))

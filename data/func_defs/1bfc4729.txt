@@ -1,0 +1,96 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_1bfc4729() -> dict:
+    diff_lb = 0
+    diff_ub = 1
+    print(f"diff_lb: {diff_lb}")
+    print(f"diff_ub: {diff_ub}")
+
+    cols = interval(0, 10, 1)
+    print(f"cols: {cols}")
+
+    h = unifint(diff_lb, diff_ub, (4, 30))
+    print(f"h: {h}")
+
+    w = unifint(diff_lb, diff_ub, (4, 30))
+    print(f"w: {w}")
+
+    if h % 2 == 1:
+        h = choice((max(4, h - 1), min(30, h + 1)))
+    print(f"adjusted h: {h}")
+
+    alocj = unifint(diff_lb, diff_ub, (w // 2, w - 1))
+    print(f"alocj: {alocj}")
+
+    if choice((True, False)):
+        alocj = max(min(w // 2, alocj - w // 2), 1)
+    print(f"adjusted alocj: {alocj}")
+
+    aloci = randint(1, h // 2 - 1)
+    print(f"aloci: {aloci}")
+
+    blocj = unifint(diff_lb, diff_ub, (w // 2, w - 1))
+    print(f"blocj: {blocj}")
+
+    if choice((True, False)):
+        blocj = max(min(w // 2, blocj - w // 2), 1)
+    print(f"adjusted blocj: {blocj}")
+
+    bloci = randint(h // 2, h - 2)
+    print(f"bloci: {bloci}")
+
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+
+    remcols = remove(bgc, cols)
+    print(f"remcols after removing bgc: {remcols}")
+
+    acol = choice(remcols)
+    print(f"acol: {acol}")
+
+    remcols = remove(acol, remcols)
+    print(f"remcols after removing acol: {remcols}")
+
+    bcol = choice(remcols)
+    print(f"bcol: {bcol}")
+
+    gi = canvas(bgc, (h, w))
+    print(f"gi: {gi}")
+
+    aloc = (aloci, alocj)
+    print(f"aloc: {aloc}")
+
+    bloc = (bloci, blocj)
+    print(f"bloc: {bloc}")
+
+    gi = fill(gi, acol, {aloc})
+    print(f"gi after filling acol: {gi}")
+
+    gi = fill(gi, bcol, {bloc})
+    print(f"gi after filling bcol: {gi}")
+
+    return {'input': gi}
+
+Printed Outputs:
+diff_lb: 0
+diff_ub: 1
+cols: (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+h: 11
+w: 19
+adjusted h: 10
+alocj: 12
+adjusted alocj: 12
+aloci: 1
+blocj: 14
+adjusted blocj: 5
+bloci: 7
+bgc: 6
+remcols after removing bgc: (0, 1, 2, 3, 4, 5, 7, 8, 9)
+acol: 1
+remcols after removing acol: (0, 2, 3, 4, 5, 7, 8, 9)
+bcol: 7
+gi: ((6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6))
+aloc: (1, 12)
+bloc: (7, 5)
+gi after filling acol: ((6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 1, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6))
+gi after filling bcol: ((6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 1, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6), (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6))

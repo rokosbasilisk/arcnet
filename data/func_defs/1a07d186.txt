@@ -1,0 +1,92 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_1a07d186() -> dict:
+    diff_lb = 0
+    diff_ub = 1
+    print(f"diff_lb: {diff_lb}, diff_ub: {diff_ub}")
+
+    cols = interval(0, 10, 1)
+    print(f"cols: {cols}")
+
+    h = unifint(diff_lb, diff_ub, (8, 30))
+    print(f"h: {h}")
+
+    w = unifint(diff_lb, diff_ub, (8, 30))
+    print(f"w: {w}")
+
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+
+    remcols = remove(bgc, cols)
+    print(f"remcols: {remcols}")
+
+    nlines = unifint(diff_lb, diff_ub, (1, w // 5))
+    print(f"nlines: {nlines}")
+
+    linecols = sample(remcols, nlines)
+    print(f"linecols: {linecols}")
+
+    remcols = difference(remcols, linecols)
+    print(f"remcols after removing linecols: {remcols}")
+
+    nnoisecols = unifint(diff_lb, diff_ub, (0, len(remcols)))
+    print(f"nnoisecols: {nnoisecols}")
+
+    noisecols = sample(remcols, nnoisecols)
+    print(f"noisecols: {noisecols}")
+
+    locopts = interval(0, w, 1)
+    locs = []
+    for k in range(nlines):
+        if len(locopts) == 0:
+            break
+        loc = choice(locopts)
+        print(f"Chosen loc: {loc}")
+        
+        locopts = difference(locopts, interval(loc - 2, loc + 3, 1))
+        print(f"Updated locopts: {locopts}")
+
+        locs.append(loc)
+    locs = sorted(locs)
+    print(f"Sorted locs: {locs}")
+
+    nlines = len(locs)
+    print(f"nlines after sorting locs: {nlines}")
+
+    linecols = linecols[:nlines]
+    print(f"linecols after slicing: {linecols}")
+
+    gi = canvas(bgc, (h, w))
+    print(f"Initial gi: {gi}")
+
+    for loc, col in zip(locs, linecols):
+        gi = fill(gi, col, connect((0, loc), (h - 1, loc)))
+        print(f"gi after filling with loc: {loc}, col: {col}: {gi}")
+
+    return {'input': gi}
+
+Printed Outputs:
+diff_lb: 0, diff_ub: 1
+cols: (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+h: 11
+w: 21
+bgc: 9
+remcols: (0, 1, 2, 3, 4, 5, 6, 7, 8)
+nlines: 3
+linecols: [1, 0, 8]
+remcols after removing linecols: (2, 3, 4, 5, 6, 7)
+nnoisecols: 5
+noisecols: [7, 6, 4, 2, 3]
+Chosen loc: 0
+Updated locopts: (3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
+Chosen loc: 12
+Updated locopts: (3, 4, 5, 6, 7, 8, 9, 15, 16, 17, 18, 19, 20)
+Chosen loc: 17
+Updated locopts: (3, 4, 5, 6, 7, 8, 9, 20)
+Sorted locs: [0, 12, 17]
+nlines after sorting locs: 3
+linecols after slicing: [1, 0, 8]
+Initial gi: ((9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9))
+gi after filling with loc: 0, col: 1: ((1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9))
+gi after filling with loc: 12, col: 0: ((1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 9, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 9, 9, 9, 9))
+gi after filling with loc: 17, col: 8: ((1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 8, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 8, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 8, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 8, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 8, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 8, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 8, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 8, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 8, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 8, 9, 9, 9), (1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 9, 9, 9, 9, 8, 9, 9, 9))

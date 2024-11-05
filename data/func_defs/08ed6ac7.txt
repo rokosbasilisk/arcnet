@@ -1,0 +1,76 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_08ed6ac7() -> dict:
+    diff_lb = 0
+    diff_ub = 1
+    print(f"diff_lb: {diff_lb}, diff_ub: {diff_ub}")
+    
+    colopts = interval(0, 10, 1)
+    print(f"colopts: {colopts}")
+    
+    h = unifint(diff_lb, diff_ub, (4, 30))
+    print(f"h: {h}")
+    
+    w = unifint(diff_lb, diff_ub, (4, 30))
+    print(f"w: {w}")
+    
+    bgc = choice(difference(colopts, (1, 2, 3, 4)))
+    print(f"bgc: {bgc}")
+    
+    remcols = remove(bgc, colopts)
+    print(f"remcols: {remcols}")
+    
+    gi = canvas(bgc, (h, w))
+    print(f"gi: {gi}")
+    
+    barrange = (4, w)
+    locopts = interval(0, w, 1)
+    nbars = unifint(diff_lb, diff_ub, barrange)
+    print(f"nbars: {nbars}")
+    
+    barlocs = sample(locopts, nbars)
+    print(f"barlocs: {barlocs}")
+    
+    barhopts = interval(0, h, 1)
+    barhs = sample(barhopts, 4)
+    print(f"barhs: {barhs}")
+    
+    barcols = [choice(remcols) for j in range(nbars)]
+    print(f"barcols: {barcols}")
+    
+    barhsfx = [choice(barhs) for j in range(nbars - 4)] + list(barhs)
+    print(f"barhsfx: {barhsfx}")
+    
+    shuffle(barhsfx)
+    print(f"shuffled barhsfx: {barhsfx}")
+    
+    ordered = sorted(barhs)
+    print(f"ordered: {ordered}")
+    
+    colord = interval(1, 5, 1)
+    for col, (loci, locj) in zip(barcols, list(zip(barhsfx, barlocs))):
+        bar = connect((loci, locj), (h - 1, locj))
+        gi = fill(gi, col, bar)
+        print(f"Updated gi: {gi}")
+    
+    return {'input': gi}
+
+Printed Outputs:
+diff_lb: 0, diff_ub: 1
+colopts: (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+h: 8
+w: 12
+bgc: 7
+remcols: (0, 1, 2, 3, 4, 5, 6, 8, 9)
+gi: ((7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7))
+nbars: 4
+barlocs: [3, 7, 0, 11]
+barhs: [5, 4, 6, 1]
+barcols: [5, 3, 9, 8]
+barhsfx: [5, 4, 6, 1]
+shuffled barhsfx: [6, 5, 4, 1]
+ordered: [1, 4, 5, 6]
+Updated gi: ((7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 5, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 5, 7, 7, 7, 7, 7, 7, 7, 7))
+Updated gi: ((7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 3, 7, 7, 7, 7), (7, 7, 7, 5, 7, 7, 7, 3, 7, 7, 7, 7), (7, 7, 7, 5, 7, 7, 7, 3, 7, 7, 7, 7))
+Updated gi: ((7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (9, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (9, 7, 7, 7, 7, 7, 7, 3, 7, 7, 7, 7), (9, 7, 7, 5, 7, 7, 7, 3, 7, 7, 7, 7), (9, 7, 7, 5, 7, 7, 7, 3, 7, 7, 7, 7))
+Updated gi: ((7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8), (7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8), (9, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8), (9, 7, 7, 7, 7, 7, 7, 3, 7, 7, 7, 8), (9, 7, 7, 5, 7, 7, 7, 3, 7, 7, 7, 8), (9, 7, 7, 5, 7, 7, 7, 3, 7, 7, 7, 8))
