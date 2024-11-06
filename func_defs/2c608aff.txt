@@ -1,0 +1,50 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_2c608aff() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)    
+    h = unifint(diff_lb, diff_ub, (10, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (10, 30))
+    print(f"w: {w}")
+    boxh = unifint(diff_lb, diff_ub, (2, h // 2))
+    print(f"boxh: {boxh}")
+    boxw = unifint(diff_lb, diff_ub, (2, w // 2))
+    print(f"boxw: {boxw}")
+    loci = randint(0, h - boxh)
+    print(f"loci: {loci}")
+    locj = randint(0, w - boxw)
+    print(f"locj: {locj}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    ccol = choice(remcols)
+    print(f"ccol: {ccol}")
+    remcols = remove(ccol, remcols)
+    dcol = choice(remcols)
+    print(f"dcol: {dcol}")
+    bd = backdrop(frozenset({(loci, locj), (loci + boxh - 1, locj + boxw - 1)}))
+    gi = canvas(bgc, (h, w))
+    gi = fill(gi, ccol, bd)
+    reminds = totuple(asindices(gi) - backdrop(outbox(bd)))
+    noiseb = max(1, len(reminds) // 4)
+    nnoise = unifint(diff_lb, diff_ub, (0, noiseb))
+    print(f"nnoise: {nnoise}")
+    noise = sample(reminds, nnoise)
+    print(f"noise: {noise}")
+    gi = fill(gi, dcol, noise)
+    return gi
+
+Printed Outputs:
+h: 23
+w: 14
+boxh: 4
+boxw: 7
+loci: 4
+locj: 1
+bgc: 2
+ccol: 7
+dcol: 4
+nnoise: 29
+noise: [(21, 12), (14, 13), (4, 10), (19, 3), (22, 2), (13, 4), (7, 9), (21, 8), (15, 0), (18, 1), (6, 12), (15, 12), (7, 13), (9, 0), (10, 0), (13, 11), (2, 13), (19, 4), (1, 7), (22, 13), (2, 8), (9, 9), (20, 4), (17, 5), (11, 4), (1, 3), (22, 8), (20, 10), (22, 1)]

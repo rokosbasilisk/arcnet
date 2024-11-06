@@ -1,0 +1,89 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_3befdf3e() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (10, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (10, 30))
+    print(f"w: {w}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    numcols = unifint(diff_lb, diff_ub, (2, 9))
+    print(f"numcols: {numcols}")
+    ccols = sample(remcols, numcols)
+    print(f"ccols: {ccols}")
+    nobjs = unifint(diff_lb, diff_ub, (1, ((h * w) // 40)))
+    print(f"nobjs: {nobjs}")
+    succ = 0
+    maxtr = 5 * nobjs
+    tr = 0
+    gi = canvas(bgc, (h, w))
+    inds = asindices(gi)
+    while succ < nobjs and tr < maxtr:
+        tr += 1
+        if len(inds) == 0:
+            break
+        rh = choice((1, 2))
+        print(f"rh: {rh}")
+        rw = choice((1, 2))
+        print(f"rw: {rw}")
+        fullh = (2 + 3 * rh)
+        print(f"fullh: {fullh}")
+        fullw = (2 + 3 * rw)
+        print(f"fullw: {fullw}")
+        cands = sfilter(inds, lambda ij: ij[0] <= h - fullh and ij[1] <= w - fullw)
+        if len(cands) == 0:
+            continue
+        loc = choice(totuple(cands))
+        print(f"loc: {loc}")
+        loci, locj = loc
+        fullobj = backdrop(frozenset({loc, (loci + fullh - 1, locj + fullw - 1)}))
+        if fullobj.issubset(inds):
+            succ += 1
+            inds = inds - fullobj
+            incol, outcol = sample(ccols, 2)
+            print(f"incol: {incol}, outcol: {outcol}")
+            ofincol = backdrop(frozenset({(loci + rh + 1, locj + rw + 1), (loci + 2 * rh, locj + 2 * rw)}))
+            ofoutcol = outbox(ofincol)
+            gi = fill(gi, incol, ofincol)
+            gi = fill(gi, outcol, ofoutcol)
+            ilocs = apply(first, ofoutcol)
+            jlocs = apply(last, ofoutcol)
+            ff = lambda ij: ij[0] in ilocs or ij[1] in jlocs
+            addon = sfilter(fullobj - (ofincol | ofoutcol), ff)
+            gi = fill(gi, outcol, addon)
+    return gi
+
+Printed Outputs:
+h: 19
+w: 16
+bgc: 3
+numcols: 6
+ccols: [1, 9, 2, 5, 4, 0]
+nobjs: 3
+rh: 2
+rw: 1
+fullh: 8
+fullw: 5
+loc: (10, 11)
+incol: 9, outcol: 2
+rh: 1
+rw: 1
+fullh: 5
+fullw: 5
+loc: (9, 0)
+incol: 0, outcol: 5
+rh: 1
+rw: 2
+fullh: 5
+fullw: 8
+loc: (5, 2)
+rh: 1
+rw: 1
+fullh: 5
+fullw: 5
+loc: (10, 5)
+incol: 4, outcol: 5

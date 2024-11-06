@@ -1,0 +1,81 @@
+from re_arc.dsl import *
+def generate_234bbc79() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    while True:
+        bgc, dotc = sample(cols, 2)
+        remcols = difference(cols, (bgc, dotc))
+        snek = [(spi, 0)]
+        gi = fill(canvas(bgc, (6, 30)), dotc, {(spi, 0)})
+        while True:
+            previ, prevj = snek[-1]
+            if prevj == 13 - 1:
+                if choice((True, False, False)):
+                    break
+            options = []
+            if previ < 6 - 1:
+                if gi[previ+1][prevj] == bgc:
+                    options.append((previ+1, prevj))
+            if previ > 0:
+                if gi[previ-1][prevj] == bgc:
+                    options.append((previ-1, prevj))
+            if prevj < 13 - 1:
+                options.append((previ, prevj+1))
+            if len(options) == 0:
+                break
+            snek.append(loc)
+            gi = fill(gi, dotc, {loc})
+        objs = []
+        cobj = []
+        for idx, cel in enumerate(snek):
+            if len(cobj) > 2 and width(frozenset(cobj)) > 1 and snek[idx-1] == add(cel, (0, -1)):
+                objs.append(cobj)
+                cobj = [cel]
+            else:
+                cobj.append(cel)
+        objs[-1] += cobj
+        nobjs = len(objs)
+        if nobjs < 2:
+            continue
+        ntokeep = unifint(diff_lb, diff_ub, (2, nobjs))
+        ntorem = nobjs - ntokeep
+        for k in range(ntorem):
+            idx = randint(0, len(objs) - 2)
+            objs = objs[:idx] + [objs[idx] + objs[idx+1]] + objs[idx+2:]
+        inobjs = []
+        for idx, obj in enumerate(objs):
+            gi = fill(gi, col, set(obj))
+            centerpart = recolor(col, set(obj[1:-1]))
+            leftpart = {(dotc if idx > 0 else col, obj[0])}
+            rightpart = {(dotc if idx < len(objs) - 1 else col, obj[-1])}
+            inobj = centerpart | leftpart | rightpart
+            inobjs.append(inobj)
+        spacings = [1 for idx in range(len(inobjs) - 1)]
+        fullw = unifint(diff_lb, diff_ub, (13, 30))
+        for k in range(fullw - 13 - len(inobjs) - 1):
+            idx = randint(0, len(spacings) - 1)
+            spacings[idx] += 1
+        lspacings = [0] + spacings
+        gi = canvas(bgc, (6, fullw))
+        ofs = 0
+        for i, (lsp, obj) in enumerate(zip(lspacings, inobjs)):
+            obj = set(obj)
+            if i == 0:
+                ulc = ulcorner(obj)
+            else:
+                ulci = randint(0, 6 - height(obj))
+                ulcj = ofs + lsp
+                ulc = (ulci, ulcj)
+            ofs += width(obj) + lsp
+            plcd = shift(normalize(obj), ulc)
+            gi = paint(gi, plcd)
+        break
+    ins = size(merge(fgpartition(gi)))
+    while True:
+        go2 = dmirror(dmirror(gi)[:-1])
+        if size(sfilter(asobject(go2), lambda cij: cij[0] != bgc)) < ins:
+            break
+        else:
+            gi = go2
+    return gi

@@ -1,0 +1,59 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_508bd3b6() -> float:
+    diff_lb = 0
+    diff_ub = 1
+    cols = remove(3, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (h, 30))
+    print(f"w: {w}")
+    barh = unifint(diff_lb, diff_ub, (1, h // 2))
+    print(f"barh: {barh}")
+    barloci = unifint(diff_lb, diff_ub, (2, h - barh))
+    print(f"barloci: {barloci}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    barc = choice(remcols)
+    print(f"barc: {barc}")
+    remcols = remove(barc, remcols)
+    linc = choice(remcols)
+    print(f"linc: {linc}")
+    gi = canvas(bgc, (h, w))
+    for j in range(barloci, barloci + barh):
+        gi = fill(gi, barc, connect((j, 0), (j, w - 1)))
+    dotlociinv = unifint(diff_lb, diff_ub, (0, barloci - 1))
+    print(f"dotlociinv: {dotlociinv}")
+    dotloci = min(max(0, barloci - 2 - dotlociinv), barloci - 1)
+    print(f"dotloci: {dotloci}")
+    ln1 = shoot((dotloci, 0), (1, 1))
+    ofbgc = ofcolor(gi, bgc)
+    ln1 = sfilter(ln1 & ofbgc, lambda ij: ij[0] < barloci)
+    ln1 = order(ln1, first)
+    ln2 = shoot(ln1[-1], (-1, 1))
+    ln2 = sfilter(ln2 & ofbgc, lambda ij: ij[0] < barloci)
+    ln2 = order(ln2, last)[1:]
+    ln = ln1 + ln2
+    k = len(ln1)
+    lineleninv = unifint(diff_lb, diff_ub, (0, k - 2))
+    print(f"lineleninv: {lineleninv}")
+    linelen = k - lineleninv
+    print(f"linelen: {linelen}")
+    givenl = ln[:linelen]
+    reml = ln[linelen:]
+    gi = fill(gi, linc, givenl)
+    return gi
+
+Printed Outputs:
+h: 20
+w: 20
+barh: 9
+barloci: 11
+bgc: 7
+barc: 1
+linc: 4
+dotlociinv: 7
+dotloci: 2
+lineleninv: 6
+linelen: 3

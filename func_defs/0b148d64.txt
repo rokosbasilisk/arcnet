@@ -1,0 +1,58 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_0b148d64() -> float:
+    diff_lb = 0
+    diff_ub = 1
+    itv = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (7, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (7, 30))
+    print(f"w: {w}")
+    bgc = choice(itv)
+    print(f"bgc: {bgc}")
+    remitv = remove(bgc, itv)
+    x = randint(3, h - 3)
+    print(f"x: {x}")
+    y = randint(3, w - 3)
+    print(f"y: {y}")
+    di = randint(2, h - x - 1)
+    print(f"di: {di}")
+    dj = randint(2, w - y - 1)
+    print(f"dj: {dj}")
+    A = backdrop(frozenset({(0, 0), (x, y)}))
+    B = backdrop(frozenset({(x + di, 0), (h - 1, y)}))
+    C = backdrop(frozenset({(0, y + dj), (x, w - 1)}))
+    D = backdrop(frozenset({(x + di, y + dj), (h - 1, w - 1)}))
+    cola = choice(remitv)
+    print(f"cola: {cola}")
+    colb = choice(remove(cola, remitv))
+    print(f"colb: {colb}")
+    trg = choice((A, B, C, D))
+    print(f"trg: {trg}")
+    rem = remove(trg, (A, B, C, D))
+    subf = lambda bx: {
+        choice(totuple(connect(ulcorner(bx), urcorner(bx)))),
+        choice(totuple(connect(ulcorner(bx), llcorner(bx)))),
+        choice(totuple(connect(urcorner(bx), lrcorner(bx)))),
+        choice(totuple(connect(llcorner(bx), lrcorner(bx)))),
+    }
+    sampler = lambda bx: set(sample(
+        totuple(bx),
+        len(bx) - unifint(diff_lb, diff_ub, (0, len(bx) - 1))
+    ))
+    gi = fill(canvas(bgc, (h, w)), cola, sampler(trg) | subf(trg))
+    for r in rem:
+        gi = fill(gi, colb, sampler(r) | subf(r))
+    return gi
+
+Printed Outputs:
+h: 7
+w: 26
+bgc: 9
+x: 3
+y: 7
+di: 3
+dj: 15
+cola: 1
+colb: 7
+trg: frozenset({(3, 4), (3, 1), (3, 7), (0, 2), (0, 5), (2, 2), (1, 0), (1, 6), (2, 5), (1, 3), (3, 0), (3, 3), (3, 6), (0, 1), (0, 7), (2, 4), (1, 2), (0, 4), (2, 1), (2, 7), (1, 5), (3, 2), (3, 5), (0, 0), (1, 1), (0, 3), (2, 0), (1, 4), (0, 6), (2, 3), (1, 7), (2, 6)})

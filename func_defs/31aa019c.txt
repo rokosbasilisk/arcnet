@@ -1,0 +1,78 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_31aa019c() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    while True:
+        h = unifint(diff_lb, diff_ub, (5, 30))
+        print(f"h: {h}")
+        w = unifint(diff_lb, diff_ub, (5, 30))
+        print(f"w: {w}")
+        bgc = choice(cols)
+        print(f"bgc: {bgc}")
+        remcols = remove(bgc, cols)
+        canv = canvas(bgc, (h, w))
+        inds = totuple(asindices(canv))
+        mp = (h * w) // 2 - 1
+        ncols = unifint(diff_lb, diff_ub, (2, min(9, mp // 2 - 1)))
+        print(f"ncols: {ncols}")
+        chcols = sample(cols, ncols)
+        print(f"chcols: {chcols}")
+        trgcol = chcols[0]
+        print(f"trgcol: {trgcol}")
+        chcols = chcols[1:]
+        dic = {c: set() for c in chcols}
+        nnoise = unifint(diff_lb, diff_ub, (2 * (ncols - 1), mp))
+        print(f"nnoise: {nnoise}")
+        locc = choice(inds)
+        print(f"locc: {locc}")
+        inds = remove(locc, inds)
+        noise = sample(inds, nnoise)
+        print(f"noise: {noise}")
+        for c in chcols:
+            ij = choice(inds)
+            print(f"ij (chcols): {ij}")
+            dic[c].add(ij)
+            inds = remove(ij, inds)
+        for c in chcols:
+            ij = choice(inds)
+            print(f"ij (chcols second pass): {ij}")
+            dic[c].add(ij)
+            inds = remove(ij, inds)
+        for ij in noise:
+            c = choice(chcols)
+            print(f"ij (noise): {ij}, c: {c}")
+            dic[c].add(ij)
+            inds = remove(ij, inds)
+        gi = fill(canv, trgcol, {locc})
+        for c, ss in dic.items():
+            gi = fill(gi, c, ss)
+        gi = fill(gi, trgcol, {locc})
+        if len(sfilter(palette(gi), lambda c: colorcount(gi, c) == 1)) == 1:
+            break
+    return gi
+
+Printed Outputs:
+h: 16
+w: 6
+bgc: 0
+ncols: 4
+chcols: [5, 2, 6, 4]
+trgcol: 5
+nnoise: 7
+locc: (15, 0)
+noise: [(0, 3), (7, 5), (11, 3), (10, 3), (5, 0), (11, 4), (14, 1)]
+ij (chcols): (13, 1)
+ij (chcols): (2, 2)
+ij (chcols): (7, 3)
+ij (chcols second pass): (11, 4)
+ij (chcols second pass): (3, 3)
+ij (chcols second pass): (4, 0)
+ij (noise): (0, 3), c: 2
+ij (noise): (7, 5), c: 4
+ij (noise): (11, 3), c: 6
+ij (noise): (10, 3), c: 2
+ij (noise): (5, 0), c: 6
+ij (noise): (11, 4), c: 4
+ij (noise): (14, 1), c: 6

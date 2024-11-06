@@ -1,0 +1,142 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_1a07d186() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (8, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (8, 30))
+    print(f"w: {w}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    nlines = unifint(diff_lb, diff_ub, (1, w // 5))
+    print(f"nlines: {nlines}")
+    linecols = sample(remcols, nlines)
+    print(f"linecols: {linecols}")
+    remcols = difference(remcols, linecols)
+    nnoisecols = unifint(diff_lb, diff_ub, (0, len(remcols)))
+    print(f"nnoisecols: {nnoisecols}")
+    noisecols = sample(remcols, nnoisecols)
+    print(f"noisecols: {noisecols}")
+    locopts = interval(0, w, 1)
+    locs = []
+    for k in range(nlines):
+        if len(locopts) == 0:
+            break
+        loc = choice(locopts)
+        print(f"loc: {loc}")
+        locopts = difference(locopts, interval(loc - 2, loc + 3, 1))
+        locs.append(loc)
+    locs = sorted(locs)
+    nlines = len(locs)
+    linecols = linecols[:nlines]
+    gi = canvas(bgc, (h, w))
+    for loc, col in zip(locs, linecols):
+        gi = fill(gi, col, connect((0, loc), (h - 1, loc)))
+    nilocs = unifint(diff_lb, diff_ub, (1, h))
+    print(f"nilocs: {nilocs}")
+    ilocs = sample(interval(0, h, 1), nilocs)
+    print(f"ilocs: {ilocs}")
+    dotlocopts = difference(interval(0, w, 1), locs)
+    for ii in ilocs:
+        ndots = unifint(diff_lb, diff_ub, (1, min(nlines + nnoisecols, (w - nlines) // 2 - 1)))
+        print(f"ndots: {ndots}")
+        dotlocs = sample(dotlocopts, ndots)
+        print(f"dotlocs: {dotlocs}")
+        dotcols = sample(totuple(set(linecols) | set(noisecols)), ndots)
+        print(f"dotcols: {dotcols}")
+        for dotlocj, col in zip(dotlocs, dotcols):
+            gi = fill(gi, col, {(ii, dotlocj)})
+    if choice((True, False)):
+        gi = dmirror(gi)
+    return gi
+
+Printed Outputs:
+h: 27
+w: 25
+bgc: 4
+nlines: 2
+linecols: [2, 3]
+nnoisecols: 5
+noisecols: [9, 0, 6, 7, 8]
+loc: 21
+loc: 15
+nilocs: 25
+ilocs: [0, 12, 6, 1, 25, 9, 24, 5, 13, 14, 19, 20, 26, 8, 23, 17, 3, 15, 16, 7, 4, 11, 22, 2, 18]
+ndots: 2
+dotlocs: [23, 9]
+dotcols: [9, 3]
+ndots: 4
+dotlocs: [0, 19, 20, 8]
+dotcols: [7, 3, 8, 0]
+ndots: 4
+dotlocs: [9, 18, 0, 8]
+dotcols: [8, 0, 2, 9]
+ndots: 6
+dotlocs: [18, 1, 16, 9, 2, 7]
+dotcols: [0, 2, 8, 7, 3, 9]
+ndots: 5
+dotlocs: [11, 5, 19, 13, 1]
+dotcols: [9, 8, 2, 6, 0]
+ndots: 6
+dotlocs: [14, 2, 18, 10, 9, 6]
+dotcols: [2, 8, 7, 6, 3, 0]
+ndots: 4
+dotlocs: [14, 9, 20, 13]
+dotcols: [9, 8, 3, 7]
+ndots: 2
+dotlocs: [19, 22]
+dotcols: [8, 0]
+ndots: 5
+dotlocs: [11, 16, 10, 24, 18]
+dotcols: [2, 8, 0, 7, 6]
+ndots: 3
+dotlocs: [24, 7, 12]
+dotcols: [6, 8, 3]
+ndots: 6
+dotlocs: [17, 14, 22, 11, 4, 24]
+dotcols: [6, 0, 7, 2, 9, 3]
+ndots: 2
+dotlocs: [13, 17]
+dotcols: [0, 3]
+ndots: 7
+dotlocs: [18, 17, 19, 13, 22, 4, 5]
+dotcols: [2, 8, 7, 9, 6, 3, 0]
+ndots: 5
+dotlocs: [2, 13, 17, 10, 16]
+dotcols: [6, 3, 2, 7, 0]
+ndots: 4
+dotlocs: [17, 19, 2, 6]
+dotcols: [8, 3, 0, 9]
+ndots: 6
+dotlocs: [8, 5, 1, 0, 6, 16]
+dotcols: [7, 2, 8, 9, 6, 0]
+ndots: 5
+dotlocs: [8, 17, 6, 22, 5]
+dotcols: [9, 6, 7, 0, 8]
+ndots: 2
+dotlocs: [19, 12]
+dotcols: [0, 9]
+ndots: 3
+dotlocs: [24, 18, 4]
+dotcols: [7, 0, 8]
+ndots: 2
+dotlocs: [19, 7]
+dotcols: [3, 8]
+ndots: 6
+dotlocs: [5, 14, 13, 17, 9, 0]
+dotcols: [2, 7, 9, 6, 0, 3]
+ndots: 1
+dotlocs: [6]
+dotcols: [7]
+ndots: 5
+dotlocs: [12, 5, 8, 14, 24]
+dotcols: [8, 6, 7, 2, 9]
+ndots: 6
+dotlocs: [13, 24, 18, 3, 8, 22]
+dotcols: [0, 3, 8, 6, 2, 9]
+ndots: 3
+dotlocs: [23, 18, 10]
+dotcols: [7, 9, 2]

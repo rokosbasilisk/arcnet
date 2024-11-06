@@ -1,0 +1,51 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_22eb0ac0() -> float:
+    diff_lb = 0
+    diff_ub = 1
+    colopts = interval(0, 10, 1)
+    gi = canvas(0, (1, 1))
+    h = unifint(diff_lb, diff_ub, (4, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (4, 30))
+    print(f"w: {w}")
+    bgc = choice(colopts)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, colopts)
+    nlocs = unifint(diff_lb, diff_ub, (1, h))
+    print(f"nlocs: {nlocs}")
+    locs = sample(interval(0, h, 1), nlocs)
+    print(f"locs: {locs}")
+    while set(locs).issubset({0, h - 1}):
+        locs = sample(interval(0, h, 1), nlocs)
+        print(f"new locs: {locs}")
+    mp = nlocs // 2
+    nbarsdev = unifint(diff_lb, diff_ub, (0, mp))
+    print(f"nbarsdev: {nbarsdev}")
+    nbars = choice((nbarsdev, h - nbarsdev))
+    print(f"nbars: {nbars}")
+    nbars = max(0, min(nbars, nlocs))
+    barlocs = sample(locs, nbars)
+    print(f"barlocs: {barlocs}")
+    nonbarlocs = difference(locs, barlocs)
+    barcols = [choice(remcols) for j in range(nbars)]
+    acols = [choice(remcols) for j in range(len(nonbarlocs))]
+    bcols = [choice(remove(acols[j], remcols)) for j in range(len(nonbarlocs))]
+    for bc, bl in zip(barcols, barlocs):
+        gi = fill(gi, bc, ((bl, 0), (bl, w - 1)))
+    for (a, b), loc in zip(zip(acols, bcols), nonbarlocs):
+        gi = fill(gi, a, {(loc, 0)})
+        gi = fill(gi, b, {(loc, w - 1)})
+    if choice((True, False)):
+        gi = dmirror(gi)
+    return gi
+
+Printed Outputs:
+h: 20
+w: 15
+bgc: 7
+nlocs: 15
+locs: [0, 10, 9, 12, 16, 2, 6, 3, 4, 1, 14, 8, 17, 11, 13]
+nbarsdev: 1
+nbars: 1
+barlocs: [2]

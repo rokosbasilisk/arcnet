@@ -1,0 +1,95 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_5117e062() -> float:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (10, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (10, 30))
+    print(f"w: {w}")
+    nobjs = unifint(diff_lb, diff_ub, (2, (h * w) // 15))
+    print(f"nobjs: {nobjs}")
+    tr = 0
+    maxtr = 4 * nobjs
+    done = False
+    succ = 0
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    gi = canvas(bgc, (h, w))
+    inds = asindices(gi)
+    while tr < maxtr and succ < nobjs:
+        oh = randint(2, 6)
+        print(f"oh: {oh}")
+        ow = randint(2, 6)
+        print(f"ow: {ow}")
+        bx = asindices(canvas(-1, (oh, ow)))
+        nc = randint(3, oh * ow)
+        print(f"nc: {nc}")
+        sp = choice(totuple(bx))
+        print(f"sp: {sp}")
+        bx = remove(sp, bx)
+        obj = {sp}
+        for k in range(nc - 1):
+            obj.add(choice(totuple((bx - obj) & mapply(neighbors, obj))))
+        if not done:
+            done = True
+            idx = choice(totuple(obj))
+            print(f"idx: {idx}")
+            coll = choice(remcols)
+            print(f"coll: {coll}")
+            obj2 = {(coll, idx)}
+            coll2 = choice(remove(coll, remcols))
+            print(f"coll2: {coll2}")
+            obj3 = recolor(coll2, remove(idx, obj))
+            obj = obj2 | obj3
+        else:
+            obj = recolor(choice(remcols), obj)
+        locopts = sfilter(inds, lambda ij: ij[0] <= h - oh and ij[1] <= w - ow)
+        tr += 1
+        if len(locopts) == 0:
+            continue
+        loc = choice(totuple(locopts))
+        print(f"loc: {loc}")
+        plcd = shift(obj, loc)
+        plcdi = toindices(plcd)
+        if plcdi.issubset(inds):
+            gi = paint(gi, plcd)
+            succ += 1
+            inds = (inds - plcdi) - mapply(neighbors, plcdi)
+    return gi
+
+Printed Outputs:
+h: 21
+w: 16
+nobjs: 5
+bgc: 7
+oh: 2
+ow: 3
+nc: 3
+sp: (0, 2)
+idx: (1, 1)
+coll: 2
+coll2: 5
+loc: (7, 7)
+oh: 4
+ow: 5
+nc: 20
+sp: (1, 1)
+loc: (13, 5)
+oh: 6
+ow: 3
+nc: 3
+sp: (2, 1)
+loc: (4, 12)
+oh: 3
+ow: 4
+nc: 7
+sp: (2, 0)
+loc: (13, 0)
+oh: 2
+ow: 5
+nc: 5
+sp: (0, 2)
+loc: (4, 5)

@@ -1,0 +1,32 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_253bf280() -> float:
+    diff_lb = 0
+    diff_ub = 1
+    dim_bounds = (3, 30)
+    colopts = remove(3, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, dim_bounds)
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, dim_bounds)
+    print(f"w: {w}")
+    bgc = choice(colopts)
+    print(f"bgc: {bgc}")
+    c = canvas(bgc, (h, w))
+    inds = totuple(asindices(c))
+    card_bounds = (0, max(1, (h * w) // 4))
+    num = unifint(diff_lb, diff_ub, card_bounds)
+    print(f"num: {num}")
+    s = sample(inds, num)
+    print(f"s: {s}")
+    fgcol = choice(remove(bgc, colopts))
+    print(f"fgcol: {fgcol}")
+    gi = fill(c, fgcol, s)
+    return gi
+
+Printed Outputs:
+h: 20
+w: 19
+bgc: 8
+num: 60
+s: [(19, 5), (19, 2), (1, 0), (8, 5), (12, 5), (7, 17), (5, 7), (1, 6), (13, 12), (14, 13), (9, 9), (0, 2), (13, 4), (8, 18), (17, 13), (15, 2), (11, 11), (10, 6), (7, 18), (3, 1), (10, 17), (15, 16), (16, 8), (11, 18), (17, 2), (12, 18), (3, 6), (15, 6), (16, 9), (3, 14), (16, 3), (11, 12), (14, 12), (5, 15), (11, 5), (19, 12), (7, 7), (15, 11), (18, 11), (12, 3), (9, 14), (3, 11), (6, 0), (2, 9), (0, 11), (18, 10), (12, 13), (16, 0), (3, 17), (11, 13), (11, 10), (8, 1), (18, 9), (2, 10), (3, 10), (4, 18), (18, 14), (17, 3), (11, 2), (8, 16)]
+fgcol: 2

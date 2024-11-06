@@ -1,0 +1,37 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_3ac3eb23() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (3, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (3, 30))
+    print(f"w: {w}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    nlocs = unifint(diff_lb, diff_ub, (1, max(1, (w - 2) // 3)))
+    print(f"nlocs: {nlocs}")
+    locopts = interval(1, w - 1, 1)
+    gi = canvas(bgc, (h, w))
+    for k in range(nlocs):
+        if len(locopts) == 0:
+            break
+        locj = choice(locopts)
+        print(f"locj: {locj}")
+        locopts = difference(locopts, interval(locj - 2, locj + 3, 1))
+        col = choice(remcols)
+        print(f"col: {col}")
+        gi = fill(gi, col, {(0, locj)})
+    mf = choice((identity, rot90, rot180, rot270))
+    gi = mf(gi)
+    return gi
+
+Printed Outputs:
+h: 24
+w: 27
+bgc: 9
+nlocs: 1
+locj: 20
+col: 8

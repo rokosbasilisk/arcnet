@@ -1,0 +1,541 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_22233c11() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = remove(8, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"w: {w}")
+    nobjs = unifint(diff_lb, diff_ub, (1, (h * w) // 10))
+    print(f"nobjs: {nobjs}")
+    succ = 0
+    tr = 0
+    maxtr = 10 * nobjs
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    gi = canvas(bgc, (h, w))
+    print(f"gi: {gi}")
+    inds = asindices(gi)
+    fullinds = asindices(gi)
+    ncols = unifint(diff_lb, diff_ub, (1, 8))
+    print(f"ncols: {ncols}")
+    ccols = sample(remcols, ncols)
+    print(f"ccols: {ccols}")
+    while succ < nobjs and tr < maxtr:
+        if len(inds) == 0:
+            break
+        tr += 1
+        od = randint(1, 3)
+        print(f"od: {od}")
+        fulld = 4 * od
+        g = canvas(bgc, (4, 4))
+        g = fill(g, 8, {(0, 3), (3, 0)})
+        col = choice(ccols)
+        print(f"col: {col}")
+        g = fill(g, col, {(1, 1), (2, 2)})
+        if choice((True, False)):
+            g = hmirror(g)
+        g = upscale(g, od)
+        inobj = recolor(col, ofcolor(g, col))
+        outobj = inobj | recolor(8, ofcolor(g, 8))
+        loc = choice(totuple(inds))
+        outobj = shift(outobj, loc)
+        inobj = shift(inobj, loc)
+        outobji = toindices(outobj)
+        if toindices(inobj).issubset(inds) and (outobji & fullinds).issubset(inds):
+            succ += 1
+            inds = (inds - outobji) - mapply(neighbors, outobji)
+            gi = paint(gi, inobj)
+    return gi
+
+Printed Outputs:
+h: 21
+w: 24
+nobjs: 24
+bgc: 9
+gi: ((9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9))
+ncols: 1
+ccols: [3]
+od: 1
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 1
+col: 3
+od: 1
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 3
+col: 3
+od: 2
+col: 3
+od: 3
+col: 3

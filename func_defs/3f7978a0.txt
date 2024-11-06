@@ -1,0 +1,45 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_3f7978a0() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"w: {w}")
+    bgc, noisec, linec = sample(cols, 3)
+    c = canvas(bgc, (h, w))
+    oh = unifint(diff_lb, diff_ub, (4, max(4, int((2/3) * h))))
+    print(f"oh: {oh}")
+    oh = min(oh, h)
+    ow = unifint(diff_lb, diff_ub, (4, max(4, int((2/3) * w))))
+    print(f"ow: {ow}")
+    ow = min(ow, w)
+    loci = randint(0, h - oh)
+    print(f"loci: {loci}")
+    locj = randint(0, w - ow)
+    print(f"locj: {locj}")
+    nnoise = unifint(diff_lb, diff_ub, (0, (h * w) // 4))
+    print(f"nnoise: {nnoise}")
+    inds = totuple(asindices(c))
+    noise = sample(inds, nnoise)
+    gi = fill(c, noisec, noise)
+    ulc = (loci, locj)
+    lrc = (loci + oh - 1, locj + ow - 1)
+    llc = (loci + oh - 1, locj)
+    urc = (loci, locj + ow - 1)
+    gi = fill(gi, linec, connect(ulc, llc))
+    gi = fill(gi, linec, connect(urc, lrc))
+    crns = {ulc, lrc, llc, urc}
+    gi = fill(gi, noisec, crns)
+    return gi
+
+Printed Outputs:
+h: 12
+w: 19
+oh: 8
+ow: 9
+loci: 1
+locj: 9
+nnoise: 50

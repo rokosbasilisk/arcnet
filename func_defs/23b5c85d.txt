@@ -1,0 +1,71 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_23b5c85d() -> float:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"w: {w}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    colopts = remove(bgc, cols)
+    gi = canvas(bgc, (h, w))
+    oh = unifint(diff_lb, diff_ub, (2, h - 1))
+    print(f"oh: {oh}")
+    ow = unifint(diff_lb, diff_ub, (2, w - 1))
+    print(f"ow: {ow}")
+    num = unifint(diff_lb, diff_ub, (1, 8))
+    print(f"num: {num}")
+    cnt = 0
+    while cnt < num:
+        loci = randint(0, h - oh)
+        print(f"loci: {loci}")
+        locj = randint(0, w - ow)
+        print(f"locj: {locj}")
+        col = choice(colopts)
+        print(f"col: {col}")
+        colopts = remove(col, colopts)
+        obj = backdrop(frozenset({(loci, locj), (loci + oh - 1, locj + ow - 1)}))
+        gi2 = fill(gi, col, obj)
+        if color(argmin(sfilter(partition(gi2), fork(equality, size, fork(multiply, height, width))), fork(multiply, height, width))) != col:
+            break
+        else:
+            gi = gi2
+        oh = unifint(diff_lb, diff_ub, (max(0, oh - 4), oh - 1))
+        print(f"oh: {oh}")
+        ow = unifint(diff_lb, diff_ub, (max(0, ow - 4), ow - 1))
+        print(f"ow: {ow}")
+        if oh < 1 or ow < 1:
+            break
+        cnt += 1
+    return gi
+
+Printed Outputs:
+h: 9
+w: 20
+bgc: 6
+oh: 7
+ow: 11
+num: 8
+loci: 1
+locj: 5
+col: 0
+oh: 4
+ow: 10
+loci: 4
+locj: 10
+col: 3
+oh: 3
+ow: 8
+loci: 4
+locj: 3
+col: 7
+oh: 1
+ow: 5
+loci: 8
+locj: 9
+col: 5
+oh: 0
+ow: 1

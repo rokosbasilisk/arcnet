@@ -1,0 +1,45 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_496994bd() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(1, 10, 1)
+    h = unifint(diff_lb, diff_ub, (3, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (3, 14))
+    print(f"w: {w}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    numcols = unifint(diff_lb, diff_ub, (1, 8))
+    print(f"numcols: {numcols}")
+    remcols = sample(remcols, numcols)
+    canv = canvas(bgc, (h, w))
+    nc = unifint(diff_lb, diff_ub, (2, h * w - 1))
+    print(f"nc: {nc}")
+    bx = asindices(canv)
+    obj = {
+        (choice(remcols), choice(totuple(sfilter(bx, lambda ij: ij[0] < h//2)))),
+        (choice(remcols), choice(totuple(sfilter(bx, lambda ij: ij[0] > h//2))))
+    }
+    for kk in range(nc - 2):
+        dns = mapply(neighbors, toindices(obj))
+        ch = choice(totuple(bx & dns))
+        obj.add((choice(remcols), ch))
+        bx = bx - {ch}
+    gix = paint(canv, obj)
+    gix = apply(rbind(order, matcher(identity, bgc)), gix)
+    flag = choice((True, False))
+    gi = hconcat(gix, canv if flag else hconcat(canvas(bgc, (h, 1)), canv))
+    if choice((True, False)):
+        gi = vmirror(gi)
+    if choice((True, False)):
+        gi = hmirror(gi)
+    return gi
+
+Printed Outputs:
+h: 9
+w: 10
+bgc: 8
+numcols: 1
+nc: 38

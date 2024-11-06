@@ -1,0 +1,48 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_09629e4f() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (2, 5))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (2, 5))
+    print(f"w: {w}")
+    nrows, ncolumns = h, w
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    barcol = choice(remcols)
+    print(f"barcol: {barcol}")
+    remcols = remove(barcol, remcols)
+    ncols = unifint(diff_lb, diff_ub, (2, min(7, (h * w) - 2)))
+    print(f"ncols: {ncols}")
+    c = canvas(bgc, (h, w))
+    inds = totuple(asindices(c))
+    fullh, fullw = h * nrows + nrows - 1, w * ncolumns + 1
+    gi = canvas(barcol, (fullh, fullw))
+    locs = totuple(product(interval(0, fullh, h + 1), interval(0, fullw, w + 1)))
+    trgloc = choice(locs)
+    print(f"trgloc: {trgloc}")
+    remlocs = remove(trgloc, locs)
+    colssf = sample(remcols, ncols)
+    colsss = remove(choice(colssf), colssf)
+    trgssf = sample(inds, ncols - 1)
+    gi = fill(gi, bgc, shift(inds, trgloc))
+    for ij, cl in zip(trgssf, colsss):
+        gi = fill(gi, cl, {add(trgloc, ij)})
+    for rl in remlocs:
+        trgss = sample(inds, ncols)
+        tmpg = tuple(e for e in c)
+        for ij, cl in zip(trgss, colssf):
+            tmpg = fill(tmpg, cl, {ij})
+        gi = paint(gi, shift(asobject(tmpg), rl))
+    return gi
+
+Printed Outputs:
+h: 3
+w: 5
+bgc: 8
+barcol: 3
+ncols: 4
+trgloc: (8, 18)

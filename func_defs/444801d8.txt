@@ -1,0 +1,162 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_444801d8() -> None:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (10, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (10, 30))
+    print(f"w: {w}")
+    nobjs = unifint(diff_lb, diff_ub, (1, (h * w) // 25))
+    print(f"nobjs: {nobjs}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    numcols = unifint(diff_lb, diff_ub, (2, 9))
+    print(f"numcols: {numcols}")
+    ccols = sample(remcols, numcols)
+    print(f"ccols: {ccols}")
+    succ = 0
+    tr = 0
+    maxtr = 5 * nobjs
+    gi = canvas(bgc, (h, w))
+    inds = asindices(gi)
+    while succ < nobjs and tr < maxtr:
+        tr += 1
+        oh = randint(4, 6)
+        print(f"oh: {oh}")
+        ow = 5
+        bx = box({(1, 0), (oh - 1, 4)}) - {(1, 2)}
+        fullobj = backdrop({(0, 0), (oh - 1, 4)})
+        cands = backdrop(bx) - bx
+        dot = choice(totuple(cands))
+        print(f"dot: {dot}")
+        dcol, bxcol = sample(ccols, 2)
+        print(f"dcol: {dcol}, bxcol: {bxcol}")
+        inobj = recolor(bxcol, bx) | recolor(dcol, {dot})
+        outobj = recolor(bxcol, bx) | recolor(dcol, fullobj - bx)
+        if choice((True, False)):
+            inobj = shift(hmirror(inobj), UP)
+            outobj = hmirror(outobj)
+        cands = sfilter(inds, lambda ij: ij[0] <= h - oh and ij[1] <= w - ow)
+        if len(cands) == 0:
+            continue
+        loc = choice(totuple(cands))
+        print(f"loc: {loc}")
+        outplcd = shift(outobj, loc)
+        outplcdi = toindices(outplcd)
+        if outplcdi.issubset(inds):
+            succ += 1
+            inplcd = shift(inobj, loc)
+            inds = (inds - outplcdi) - outbox(inplcd)
+            gi = paint(gi, inplcd)
+    return gi
+
+Printed Outputs:
+h: 15
+w: 14
+nobjs: 5
+bgc: 8
+numcols: 4
+ccols: [2, 3, 0, 9]
+oh: 5
+dot: (3, 1)
+dcol: 0, bxcol: 3
+loc: (7, 7)
+oh: 6
+dot: (3, 2)
+dcol: 9, bxcol: 0
+loc: (2, 9)
+oh: 4
+dot: (2, 3)
+dcol: 9, bxcol: 0
+loc: (8, 5)
+oh: 6
+dot: (1, 2)
+dcol: 3, bxcol: 9
+loc: (6, 1)
+oh: 5
+dot: (1, 2)
+dcol: 3, bxcol: 2
+loc: (0, 3)
+oh: 5
+dot: (2, 1)
+dcol: 9, bxcol: 0
+loc: (1, 9)
+oh: 4
+dot: (2, 3)
+dcol: 9, bxcol: 3
+loc: (4, 1)
+oh: 4
+dot: (2, 3)
+dcol: 0, bxcol: 3
+loc: (5, 1)
+oh: 4
+dot: (2, 3)
+dcol: 3, bxcol: 0
+loc: (6, 9)
+oh: 5
+dot: (2, 3)
+dcol: 3, bxcol: 2
+loc: (4, 0)
+oh: 4
+dot: (1, 2)
+dcol: 0, bxcol: 9
+loc: (4, 0)
+oh: 6
+dot: (4, 2)
+dcol: 3, bxcol: 0
+loc: (4, 1)
+oh: 4
+dot: (2, 3)
+dcol: 3, bxcol: 0
+loc: (2, 1)
+oh: 4
+dot: (2, 2)
+dcol: 2, bxcol: 0
+loc: (4, 1)
+oh: 4
+dot: (1, 2)
+dcol: 0, bxcol: 2
+loc: (6, 9)
+oh: 5
+dot: (2, 2)
+dcol: 2, bxcol: 9
+loc: (2, 1)
+oh: 5
+dot: (3, 2)
+dcol: 3, bxcol: 0
+loc: (1, 0)
+oh: 4
+dot: (2, 1)
+dcol: 2, bxcol: 3
+loc: (5, 1)
+oh: 5
+dot: (2, 1)
+dcol: 9, bxcol: 2
+loc: (1, 0)
+oh: 4
+dot: (1, 2)
+dcol: 2, bxcol: 3
+loc: (2, 1)
+oh: 5
+dot: (3, 2)
+dcol: 0, bxcol: 9
+loc: (1, 0)
+oh: 5
+dot: (3, 2)
+dcol: 9, bxcol: 2
+loc: (6, 8)
+oh: 5
+dot: (2, 1)
+dcol: 3, bxcol: 0
+loc: (4, 0)
+oh: 4
+dot: (2, 1)
+dcol: 3, bxcol: 9
+loc: (6, 7)
+oh: 4
+dot: (1, 2)
+dcol: 3, bxcol: 2
+loc: (1, 0)

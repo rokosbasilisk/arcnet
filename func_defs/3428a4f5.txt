@@ -1,0 +1,59 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_3428a4f5() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = remove(3, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (1, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (1, 14))
+    print(f"w: {w}")
+    bgc = 0
+    remcols = remove(bgc, cols)
+    barcol = choice(remcols)
+    print(f"barcol: {barcol}")
+    remcols = remove(barcol, remcols)
+    cola = choice(remcols)
+    print(f"cola: {cola}")
+    colb = choice(remcols)
+    print(f"colb: {colb}")
+    canv = canvas(bgc, (h, w))
+    inds = totuple(asindices(canv))
+    gbar = canvas(barcol, (h, 1))
+    mp = (h * w) // 2
+    devrng = (0, mp)
+    deva = unifint(diff_lb, diff_ub, devrng)
+    print(f"deva: {deva}")
+    devb = unifint(diff_lb, diff_ub, devrng)
+    print(f"devb: {devb}")
+    sgna = choice((+1, -1))
+    print(f"sgna: {sgna}")
+    sgnb = choice((+1, -1))
+    print(f"sgnb: {sgnb}")
+    deva = sgna * deva
+    devb = sgnb * devb
+    numa = mp + deva
+    numb = mp + devb
+    numa = max(min(h * w - 1, numa), 1)
+    numb = max(min(h * w - 1, numb), 1)
+    a = sample(inds, numa)
+    print(f"a: {a}")
+    b = sample(inds, numb)
+    print(f"b: {b}")
+    gia = fill(canv, cola, a)
+    gib = fill(canv, colb, b)
+    gi = hconcat(hconcat(gia, gbar), gib)
+    return gi
+
+Printed Outputs:
+h: 26
+w: 1
+barcol: 8
+cola: 4
+colb: 9
+deva: 8
+devb: 2
+sgna: -1
+sgnb: 1
+a: [(2, 0), (20, 0), (25, 0), (7, 0), (0, 0)]
+b: [(14, 0), (25, 0), (5, 0), (4, 0), (21, 0), (20, 0), (24, 0), (10, 0), (0, 0), (3, 0), (16, 0), (12, 0), (9, 0), (19, 0), (11, 0)]

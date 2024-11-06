@@ -1,0 +1,43 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_25ff71a9() -> float:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (2, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (2, 30))
+    print(f"w: {w}")
+    nc = unifint(diff_lb, diff_ub, (1, (h * w) // 2 - 1))
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    fgc = choice(remcols)
+    print(f"fgc: {fgc}")
+    c = canvas(bgc, (h, w))
+    bounds = asindices(c)
+    ch = choice(totuple(bounds))
+    print(f"ch: {ch}")
+    shp = {ch}
+    bounds = remove(ch, bounds)
+    for j in range(nc-1):
+        shp.add(choice(totuple((bounds - shp) & mapply(neighbors, shp))))
+    shp = normalize(shp)
+    oh, ow = shape(shp)
+    loci = randint(0, h - oh)
+    print(f"loci: {loci}")
+    locj = randint(0, w - ow)
+    print(f"locj: {locj}")
+    loc = (loci, locj)
+    plcd = shift(shp, loc)
+    gi = fill(c, fgc, plcd)
+    return gi
+
+Printed Outputs:
+h: 12
+w: 28
+bgc: 4
+fgc: 1
+ch: (8, 6)
+loci: 3
+locj: 14

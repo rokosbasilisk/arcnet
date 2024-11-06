@@ -1,0 +1,184 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_25d8a9c8() -> tuple:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)    
+    h = unifint(diff_lb, diff_ub, (2, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (2, 30))
+    print(f"w: {w}")
+    gi = []
+    ncols = unifint(diff_lb, diff_ub, (2, 10))
+    print(f"ncols: {ncols}")
+    ccols = sample(cols, ncols)
+    print(f"ccols: {ccols}")
+    for k in range(h):
+        singlecol = choice((True, False))
+        print(f"singlecol: {singlecol}")
+        col = choice(ccols)
+        print(f"col: {col}")
+        row = repeat(col, w)
+        print(f"row (initial): {row}")
+        if singlecol:
+            gi.append(row)
+        else:
+            remcols = remove(col, ccols)
+            print(f"remcols: {remcols}")
+            nothercinv = unifint(diff_lb, diff_ub, (1, w - 1))
+            print(f"nothercinv: {nothercinv}")
+            notherc = w - 1 - nothercinv
+            notherc = min(max(1, notherc), w - 1)
+            print(f"notherc: {notherc}")
+            row = list(row)
+            indss = interval(0, w, 1)
+            for j in sample(indss, notherc):
+                row[j] = choice(remcols)
+                print(f"row after replacing index {j}: {row}")
+            gi.append(tuple(row))
+    gi = tuple(gi)
+    return gi
+
+Printed Outputs:
+h: 15
+w: 23
+ncols: 5
+ccols: [9, 6, 3, 0, 8]
+singlecol: False
+col: 3
+row (initial): (3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3)
+remcols: [9, 6, 0, 8]
+nothercinv: 11
+notherc: 11
+row after replacing index 17: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 8, 3, 3, 3, 3, 3]
+row after replacing index 11: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 8, 3, 3, 3, 3, 3, 8, 3, 3, 3, 3, 3]
+row after replacing index 19: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 8, 3, 3, 3, 3, 3, 8, 3, 8, 3, 3, 3]
+row after replacing index 4: [3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 8, 3, 3, 3, 3, 3, 8, 3, 8, 3, 3, 3]
+row after replacing index 10: [3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 9, 8, 3, 3, 3, 3, 3, 8, 3, 8, 3, 3, 3]
+row after replacing index 1: [3, 6, 3, 3, 0, 3, 3, 3, 3, 3, 9, 8, 3, 3, 3, 3, 3, 8, 3, 8, 3, 3, 3]
+row after replacing index 16: [3, 6, 3, 3, 0, 3, 3, 3, 3, 3, 9, 8, 3, 3, 3, 3, 8, 8, 3, 8, 3, 3, 3]
+row after replacing index 12: [3, 6, 3, 3, 0, 3, 3, 3, 3, 3, 9, 8, 8, 3, 3, 3, 8, 8, 3, 8, 3, 3, 3]
+row after replacing index 8: [3, 6, 3, 3, 0, 3, 3, 3, 8, 3, 9, 8, 8, 3, 3, 3, 8, 8, 3, 8, 3, 3, 3]
+row after replacing index 20: [3, 6, 3, 3, 0, 3, 3, 3, 8, 3, 9, 8, 8, 3, 3, 3, 8, 8, 3, 8, 0, 3, 3]
+row after replacing index 0: [8, 6, 3, 3, 0, 3, 3, 3, 8, 3, 9, 8, 8, 3, 3, 3, 8, 8, 3, 8, 0, 3, 3]
+singlecol: True
+col: 0
+row (initial): (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+singlecol: False
+col: 0
+row (initial): (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+remcols: [9, 6, 3, 8]
+nothercinv: 18
+notherc: 4
+row after replacing index 12: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+row after replacing index 13: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+row after replacing index 6: [0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 6, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+row after replacing index 10: [0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 8, 0, 6, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+singlecol: True
+col: 3
+row (initial): (3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3)
+singlecol: True
+col: 0
+row (initial): (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+singlecol: True
+col: 3
+row (initial): (3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3)
+singlecol: False
+col: 6
+row (initial): (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6)
+remcols: [9, 3, 0, 8]
+nothercinv: 4
+notherc: 18
+row after replacing index 16: [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 6, 6, 6, 6, 6]
+row after replacing index 9: [6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 6, 6, 6, 6, 6, 3, 6, 6, 6, 6, 6, 6]
+row after replacing index 11: [6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 0, 6, 6, 6, 6, 3, 6, 6, 6, 6, 6, 6]
+row after replacing index 13: [6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 0, 6, 9, 6, 6, 3, 6, 6, 6, 6, 6, 6]
+row after replacing index 1: [6, 9, 6, 6, 6, 6, 6, 6, 6, 3, 6, 0, 6, 9, 6, 6, 3, 6, 6, 6, 6, 6, 6]
+row after replacing index 3: [6, 9, 6, 3, 6, 6, 6, 6, 6, 3, 6, 0, 6, 9, 6, 6, 3, 6, 6, 6, 6, 6, 6]
+row after replacing index 22: [6, 9, 6, 3, 6, 6, 6, 6, 6, 3, 6, 0, 6, 9, 6, 6, 3, 6, 6, 6, 6, 6, 0]
+row after replacing index 6: [6, 9, 6, 3, 6, 6, 8, 6, 6, 3, 6, 0, 6, 9, 6, 6, 3, 6, 6, 6, 6, 6, 0]
+row after replacing index 18: [6, 9, 6, 3, 6, 6, 8, 6, 6, 3, 6, 0, 6, 9, 6, 6, 3, 6, 8, 6, 6, 6, 0]
+row after replacing index 14: [6, 9, 6, 3, 6, 6, 8, 6, 6, 3, 6, 0, 6, 9, 9, 6, 3, 6, 8, 6, 6, 6, 0]
+row after replacing index 20: [6, 9, 6, 3, 6, 6, 8, 6, 6, 3, 6, 0, 6, 9, 9, 6, 3, 6, 8, 6, 9, 6, 0]
+row after replacing index 10: [6, 9, 6, 3, 6, 6, 8, 6, 6, 3, 3, 0, 6, 9, 9, 6, 3, 6, 8, 6, 9, 6, 0]
+row after replacing index 12: [6, 9, 6, 3, 6, 6, 8, 6, 6, 3, 3, 0, 3, 9, 9, 6, 3, 6, 8, 6, 9, 6, 0]
+row after replacing index 8: [6, 9, 6, 3, 6, 6, 8, 6, 0, 3, 3, 0, 3, 9, 9, 6, 3, 6, 8, 6, 9, 6, 0]
+row after replacing index 2: [6, 9, 3, 3, 6, 6, 8, 6, 0, 3, 3, 0, 3, 9, 9, 6, 3, 6, 8, 6, 9, 6, 0]
+row after replacing index 4: [6, 9, 3, 3, 8, 6, 8, 6, 0, 3, 3, 0, 3, 9, 9, 6, 3, 6, 8, 6, 9, 6, 0]
+row after replacing index 7: [6, 9, 3, 3, 8, 6, 8, 9, 0, 3, 3, 0, 3, 9, 9, 6, 3, 6, 8, 6, 9, 6, 0]
+row after replacing index 21: [6, 9, 3, 3, 8, 6, 8, 9, 0, 3, 3, 0, 3, 9, 9, 6, 3, 6, 8, 6, 9, 8, 0]
+singlecol: False
+col: 8
+row (initial): (8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8)
+remcols: [9, 6, 3, 0]
+nothercinv: 4
+notherc: 18
+row after replacing index 0: [0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
+row after replacing index 9: [0, 8, 8, 8, 8, 8, 8, 8, 8, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
+row after replacing index 21: [0, 8, 8, 8, 8, 8, 8, 8, 8, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 6, 8]
+row after replacing index 16: [0, 8, 8, 8, 8, 8, 8, 8, 8, 9, 8, 8, 8, 8, 8, 8, 6, 8, 8, 8, 8, 6, 8]
+row after replacing index 17: [0, 8, 8, 8, 8, 8, 8, 8, 8, 9, 8, 8, 8, 8, 8, 8, 6, 6, 8, 8, 8, 6, 8]
+row after replacing index 15: [0, 8, 8, 8, 8, 8, 8, 8, 8, 9, 8, 8, 8, 8, 8, 0, 6, 6, 8, 8, 8, 6, 8]
+row after replacing index 4: [0, 8, 8, 8, 0, 8, 8, 8, 8, 9, 8, 8, 8, 8, 8, 0, 6, 6, 8, 8, 8, 6, 8]
+row after replacing index 18: [0, 8, 8, 8, 0, 8, 8, 8, 8, 9, 8, 8, 8, 8, 8, 0, 6, 6, 6, 8, 8, 6, 8]
+row after replacing index 1: [0, 6, 8, 8, 0, 8, 8, 8, 8, 9, 8, 8, 8, 8, 8, 0, 6, 6, 6, 8, 8, 6, 8]
+row after replacing index 2: [0, 6, 0, 8, 0, 8, 8, 8, 8, 9, 8, 8, 8, 8, 8, 0, 6, 6, 6, 8, 8, 6, 8]
+row after replacing index 22: [0, 6, 0, 8, 0, 8, 8, 8, 8, 9, 8, 8, 8, 8, 8, 0, 6, 6, 6, 8, 8, 6, 9]
+row after replacing index 5: [0, 6, 0, 8, 0, 3, 8, 8, 8, 9, 8, 8, 8, 8, 8, 0, 6, 6, 6, 8, 8, 6, 9]
+row after replacing index 3: [0, 6, 0, 6, 0, 3, 8, 8, 8, 9, 8, 8, 8, 8, 8, 0, 6, 6, 6, 8, 8, 6, 9]
+row after replacing index 14: [0, 6, 0, 6, 0, 3, 8, 8, 8, 9, 8, 8, 8, 8, 9, 0, 6, 6, 6, 8, 8, 6, 9]
+row after replacing index 6: [0, 6, 0, 6, 0, 3, 9, 8, 8, 9, 8, 8, 8, 8, 9, 0, 6, 6, 6, 8, 8, 6, 9]
+row after replacing index 11: [0, 6, 0, 6, 0, 3, 9, 8, 8, 9, 8, 6, 8, 8, 9, 0, 6, 6, 6, 8, 8, 6, 9]
+row after replacing index 19: [0, 6, 0, 6, 0, 3, 9, 8, 8, 9, 8, 6, 8, 8, 9, 0, 6, 6, 6, 6, 8, 6, 9]
+row after replacing index 8: [0, 6, 0, 6, 0, 3, 9, 8, 6, 9, 8, 6, 8, 8, 9, 0, 6, 6, 6, 6, 8, 6, 9]
+singlecol: False
+col: 6
+row (initial): (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6)
+remcols: [9, 3, 0, 8]
+nothercinv: 19
+notherc: 3
+row after replacing index 20: [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 6]
+row after replacing index 16: [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 6, 6, 3, 6, 6]
+row after replacing index 14: [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 9, 6, 3, 6, 6, 6, 3, 6, 6]
+singlecol: True
+col: 0
+row (initial): (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+singlecol: True
+col: 6
+row (initial): (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6)
+singlecol: True
+col: 3
+row (initial): (3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3)
+singlecol: True
+col: 9
+row (initial): (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9)
+singlecol: False
+col: 0
+row (initial): (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+remcols: [9, 6, 3, 8]
+nothercinv: 1
+notherc: 21
+row after replacing index 17: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0]
+row after replacing index 13: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 9, 0, 0, 0, 0, 0]
+row after replacing index 1: [0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 9, 0, 0, 0, 0, 0]
+row after replacing index 9: [0, 6, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 6, 0, 0, 0, 9, 0, 0, 0, 0, 0]
+row after replacing index 22: [0, 6, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 6, 0, 0, 0, 9, 0, 0, 0, 0, 6]
+row after replacing index 6: [0, 6, 0, 0, 0, 0, 8, 0, 0, 9, 0, 0, 0, 6, 0, 0, 0, 9, 0, 0, 0, 0, 6]
+row after replacing index 19: [0, 6, 0, 0, 0, 0, 8, 0, 0, 9, 0, 0, 0, 6, 0, 0, 0, 9, 0, 6, 0, 0, 6]
+row after replacing index 15: [0, 6, 0, 0, 0, 0, 8, 0, 0, 9, 0, 0, 0, 6, 0, 8, 0, 9, 0, 6, 0, 0, 6]
+row after replacing index 2: [0, 6, 6, 0, 0, 0, 8, 0, 0, 9, 0, 0, 0, 6, 0, 8, 0, 9, 0, 6, 0, 0, 6]
+row after replacing index 21: [0, 6, 6, 0, 0, 0, 8, 0, 0, 9, 0, 0, 0, 6, 0, 8, 0, 9, 0, 6, 0, 3, 6]
+row after replacing index 0: [3, 6, 6, 0, 0, 0, 8, 0, 0, 9, 0, 0, 0, 6, 0, 8, 0, 9, 0, 6, 0, 3, 6]
+row after replacing index 18: [3, 6, 6, 0, 0, 0, 8, 0, 0, 9, 0, 0, 0, 6, 0, 8, 0, 9, 8, 6, 0, 3, 6]
+row after replacing index 20: [3, 6, 6, 0, 0, 0, 8, 0, 0, 9, 0, 0, 0, 6, 0, 8, 0, 9, 8, 6, 9, 3, 6]
+row after replacing index 12: [3, 6, 6, 0, 0, 0, 8, 0, 0, 9, 0, 0, 8, 6, 0, 8, 0, 9, 8, 6, 9, 3, 6]
+row after replacing index 10: [3, 6, 6, 0, 0, 0, 8, 0, 0, 9, 9, 0, 8, 6, 0, 8, 0, 9, 8, 6, 9, 3, 6]
+row after replacing index 16: [3, 6, 6, 0, 0, 0, 8, 0, 0, 9, 9, 0, 8, 6, 0, 8, 8, 9, 8, 6, 9, 3, 6]
+row after replacing index 4: [3, 6, 6, 0, 3, 0, 8, 0, 0, 9, 9, 0, 8, 6, 0, 8, 8, 9, 8, 6, 9, 3, 6]
+row after replacing index 5: [3, 6, 6, 0, 3, 6, 8, 0, 0, 9, 9, 0, 8, 6, 0, 8, 8, 9, 8, 6, 9, 3, 6]
+row after replacing index 14: [3, 6, 6, 0, 3, 6, 8, 0, 0, 9, 9, 0, 8, 6, 9, 8, 8, 9, 8, 6, 9, 3, 6]
+row after replacing index 8: [3, 6, 6, 0, 3, 6, 8, 0, 9, 9, 9, 0, 8, 6, 9, 8, 8, 9, 8, 6, 9, 3, 6]
+row after replacing index 7: [3, 6, 6, 0, 3, 6, 8, 3, 9, 9, 9, 0, 8, 6, 9, 8, 8, 9, 8, 6, 9, 3, 6]
+singlecol: True
+col: 6
+row (initial): (6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6)

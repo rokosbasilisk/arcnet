@@ -1,0 +1,81 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_2dc579da() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (3, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (3, 30))
+    print(f"w: {w}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    linc = choice(remcols)
+    print(f"linc: {linc}")
+    remcols = remove(linc, remcols)
+    dotc = choice(remcols)
+    print(f"dotc: {dotc}")
+    hdev = unifint(diff_lb, diff_ub, (0, (h - 2) // 2))
+    print(f"hdev: {hdev}")
+    lineh = choice((hdev, h - 2 - hdev))
+    print(f"lineh: {lineh}")
+    lineh = max(min(h - 2, lineh), 1)
+    print(f"lineh (after max/min): {lineh}")
+    wdev = unifint(diff_lb, diff_ub, (0, (w - 2) // 2))
+    print(f"wdev: {wdev}")
+    linew = choice((wdev, w - 2 - wdev))
+    print(f"linew: {linew}")
+    linew = max(min(w - 2, linew), 1)
+    print(f"linew (after max/min): {linew}")
+    locidev = unifint(diff_lb, diff_ub, (1, h // 2))
+    print(f"locidev: {locidev}")
+    loci = choice((h // 2 - locidev, h // 2 + locidev))
+    print(f"loci: {loci}")
+    loci = min(max(1, loci), h - lineh - 1)
+    print(f"loci (after min/max): {loci}")
+    locjdev = unifint(diff_lb, diff_ub, (1, w // 2))
+    print(f"locjdev: {locjdev}")
+    locj = choice((w // 2 - locjdev, w // 2 + locjdev))
+    print(f"locj: {locj}")
+    locj = min(max(1, locj), w - linew - 1)
+    print(f"locj (after min/max): {locj}")
+    gi = canvas(bgc, (h, w))
+    for a in range(loci, loci + lineh):
+        gi = fill(gi, linc, connect((a, 0), (a, w - 1)))
+    for b in range(locj, locj + linew):
+        gi = fill(gi, linc, connect((0, b), (h - 1, b)))
+    doth = randint(1, loci)
+    print(f"doth: {doth}")
+    dotw = randint(1, locj)
+    print(f"dotw: {dotw}")
+    dotloci = randint(0, loci - doth)
+    print(f"dotloci: {dotloci}")
+    dotlocj = randint(0, locj - dotw)
+    print(f"dotlocj: {dotlocj}")
+    dot = backdrop(frozenset({(dotloci, dotlocj), (dotloci + doth - 1, dotlocj + dotw - 1)}))
+    gi = fill(gi, dotc, dot)
+    return gi
+
+Printed Outputs:
+h: 22
+w: 11
+bgc: 9
+linc: 3
+dotc: 5
+hdev: 3
+lineh: 17
+lineh (after max/min): 17
+wdev: 1
+linew: 1
+linew (after max/min): 1
+locidev: 4
+loci: 7
+loci (after min/max): 4
+locjdev: 4
+locj: 1
+locj (after min/max): 1
+doth: 3
+dotw: 1
+dotloci: 0
+dotlocj: 0

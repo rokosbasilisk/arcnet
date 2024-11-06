@@ -1,0 +1,83 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_44f52bb0() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)    
+    h = unifint(diff_lb, diff_ub, (3, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (3, 30))
+    print(f"w: {w}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    ncols = unifint(diff_lb, diff_ub, (2, 9))
+    print(f"ncols: {ncols}")
+    ccols = sample(remcols, ncols)
+    print(f"ccols: {ccols}")
+    gi = canvas(bgc, (h, w))
+    print(f"gi: {gi}")
+    numcells = unifint(diff_lb, diff_ub, (1, h * w - 1))
+    print(f"numcells: {numcells}")
+    inds = asindices(gi)
+    while gi == hmirror(gi):
+        cells = sample(totuple(inds), numcells)
+        gi = canvas(bgc, (h, w))
+        print(f"gi (inside while): {gi}")
+        for ij in cells:
+            a, b = ij
+            col = choice(ccols)
+            print(f"col: {col}")
+            gi = fill(gi, col, {ij})
+            gi = fill(gi, col, {(a, w - 1 - b)})
+    return gi
+
+Printed Outputs:
+h: 3
+w: 19
+bgc: 9
+ncols: 4
+ccols: [0, 4, 3, 2]
+gi: ((9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9))
+numcells: 40
+gi (inside while): ((9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9), (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9))
+col: 0
+col: 0
+col: 2
+col: 3
+col: 4
+col: 3
+col: 0
+col: 4
+col: 2
+col: 2
+col: 4
+col: 0
+col: 2
+col: 3
+col: 3
+col: 4
+col: 4
+col: 0
+col: 3
+col: 3
+col: 4
+col: 2
+col: 4
+col: 2
+col: 3
+col: 0
+col: 3
+col: 2
+col: 4
+col: 2
+col: 3
+col: 0
+col: 4
+col: 3
+col: 2
+col: 2
+col: 4
+col: 3
+col: 3
+col: 3

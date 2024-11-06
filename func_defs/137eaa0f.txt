@@ -1,0 +1,119 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_137eaa0f() -> float:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (2, 4))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (2, 4))
+    print(f"w: {w}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    dotc = choice(remcols)
+    print(f"dotc: {dotc}")
+    remcols = remove(dotc, remcols)
+    inds = totuple(asindices(canvas(dotc, (h, w))))
+    loc = choice(inds)
+    print(f"loc: {loc}")
+    reminds = remove(loc, inds)
+    nc = unifint(diff_lb, diff_ub, (1, min(h * w - 1, 8)))
+    print(f"nc: {nc}")
+    choscols = sample(remcols, nc)
+    print(f"choscols: {choscols}")
+    cd = {c: set() for c in choscols}
+    for c in choscols:
+        ij = choice(reminds)
+        print(f"ij: {ij}")
+        cd[c].add(ij)
+        reminds = remove(ij, reminds)
+    for ri in reminds:
+        cd[choice(choscols)].add(ri)
+    for c, idxes in cd.items():
+        go = fill(canvas(dotc, (h, w)), c, idxes)
+    gih = unifint(diff_lb, diff_ub, (min(h, w) * 2, 30))
+    print(f"gih: {gih}")
+    giw = unifint(diff_lb, diff_ub, (min(h, w) * 2, 30))
+    print(f"giw: {giw}")
+    objs = tuple(
+        normalize(insert((dotc, loc), frozenset({(c, ij) for ij in cd[c]}))) \
+            for c in choscols
+    )
+    maxtr = min(h, w) * 2
+    maxtrtot = 1000
+    while True:
+        succ = True
+        gi = canvas(bgc, (gih, giw))
+        inds = asindices(gi)
+        for obj in objs:
+            oh, ow = shape(obj)
+            succ2 = False
+            tr = 0
+            while tr < maxtr and not succ2:
+                loci = randint(0, gih - oh)
+                print(f"loci: {loci}")
+                locj = randint(0, giw - ow)
+                print(f"locj: {locj}")
+                plcd = shift(obj, (loci, locj))
+                tr += 1
+                if toindices(plcd).issubset(inds):
+                    succ2 = True
+            if succ2:
+                gi = paint(gi, plcd)
+                inds = difference(inds, toindices(plcd))
+                inds = difference(inds, mapply(neighbors, toindices(plcd)))
+            else:
+                succ = False
+                break
+        if succ:
+            break
+        maxtrtot += 1
+        if maxtrtot < 1000:
+            break
+        maxtr = int(maxtr * 1.5)
+        gih = randint(gih, 30)
+        print(f"gih updated: {gih}")
+        giw = randint(giw, 30)
+        print(f"giw updated: {giw}")
+    return gi
+
+Printed Outputs:
+h: 3
+w: 3
+bgc: 0
+dotc: 3
+loc: (2, 0)
+nc: 5
+choscols: [5, 2, 1, 8, 7]
+ij: (1, 1)
+ij: (0, 1)
+ij: (0, 0)
+ij: (0, 2)
+ij: (1, 2)
+gih: 14
+giw: 7
+loci: 5
+locj: 1
+loci: 5
+locj: 3
+loci: 6
+locj: 4
+loci: 8
+locj: 0
+loci: 3
+locj: 3
+loci: 7
+locj: 0
+loci: 1
+locj: 2
+loci: 5
+locj: 3
+loci: 8
+locj: 0
+loci: 6
+locj: 3
+loci: 2
+locj: 0
+loci: 12
+locj: 1

@@ -1,0 +1,299 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_228f6490() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (10, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (10, 30))
+    print(f"w: {w}")
+    nsq = unifint(diff_lb, diff_ub, (1, (h * w) // 50))
+    print(f"nsq: {nsq}")
+    succ = 0
+    tr = 0
+    maxtr = 5 * nsq
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    sqc = choice(remcols)
+    print(f"sqc: {sqc}")
+    gi = canvas(bgc, (h, w))
+    inds = asindices(gi)
+    forbidden = []
+    while tr < maxtr and succ < nsq:
+        tr += 1
+        oh = randint(3, 6)
+        print(f"oh: {oh}")
+        ow = randint(3, 6)
+        print(f"ow: {ow}")
+        bd = asindices(canvas(-1, (oh, ow)))
+        bounds = shift(asindices(canvas(-1, (oh-2, ow-2))), (1, 1))
+        obj = {choice(totuple(bounds))}
+        ncells = randint(1, (oh-2) * (ow-2))
+        print(f"ncells: {ncells}")
+        for k in range(ncells - 1):
+            obj.add(choice(totuple((bounds - obj) & mapply(dneighbors, obj))))
+        sqcands = sfilter(inds, lambda ij: ij[0] <= h - oh and ij[1] <= w - ow)
+        if len(sqcands) == 0:
+            continue
+        loc = choice(totuple(sqcands))
+        print(f"loc: {loc}")
+        bdplcd = shift(bd, loc)
+        if bdplcd.issubset(inds):
+            tmpinds = inds - bdplcd
+            inobjn = normalize(obj)
+            oh, ow = shape(obj)
+            inobjcands = sfilter(inds, lambda ij: ij[0] <= h - oh and ij[1] <= w - ow)
+            if len(inobjcands) == 0:
+                continue
+            loc2 = choice(totuple(inobjcands))
+            print(f"loc2: {loc2}")
+            inobjplcd = shift(inobjn, loc2)
+            bdnorm = bd - obj
+            if inobjplcd.issubset(tmpinds) and bdnorm not in forbidden and inobjn not in forbidden:
+                forbidden.append(bdnorm)
+                forbidden.append(inobjn)
+                succ += 1
+                inds = (inds - (bdplcd | inobjplcd)) - mapply(dneighbors, inobjplcd)
+                col = choice(remcols)
+                print(f"col: {col}")
+                oplcd = shift(obj, loc)
+                gi = fill(gi, sqc, bdplcd - oplcd)
+                gi = fill(gi, col, inobjplcd)
+    nremobjs = unifint(diff_lb, diff_ub, (0, len(inds) // 25))
+    print(f"nremobjs: {nremobjs}")
+    succ = 0
+    tr = 0
+    maxtr = 10 * nremobjs
+    while tr < maxtr and succ < nremobjs:
+        tr += 1
+        oh = randint(1, 4)
+        print(f"oh: {oh}")
+        ow = randint(1, 4)
+        print(f"ow: {ow}")
+        bounds = asindices(canvas(-1, (oh, ow)))
+        obj = {choice(totuple(bounds))}
+        ncells = randint(1, oh * ow)
+        print(f"ncells: {ncells}")
+        for k in range(ncells - 1):
+            obj.add(choice(totuple((bounds - obj) & mapply(dneighbors, obj))))
+        obj = normalize(obj)
+        if obj in forbidden:
+            continue
+        cands = sfilter(inds, lambda ij: ij[0] <= h - oh and ij[1] <= w - ow)
+        if len(cands) == 0:
+            continue
+        loc = choice(totuple(cands))
+        print(f"loc: {loc}")
+        plcd = shift(obj, loc)
+        if plcd.issubset(inds):
+            succ += 1
+            inds = (inds - plcd) - mapply(dneighbors, plcd)
+            col = choice(remcols)
+            print(f"col: {col}")
+            gi = fill(gi, col, plcd)
+    return gi
+
+Printed Outputs:
+h: 28
+w: 22
+nsq: 6
+bgc: 8
+sqc: 7
+oh: 3
+ow: 5
+ncells: 2
+loc: (14, 10)
+loc2: (12, 19)
+col: 3
+oh: 5
+ow: 6
+ncells: 9
+loc: (16, 3)
+loc2: (17, 9)
+col: 1
+oh: 5
+ow: 5
+ncells: 1
+loc: (5, 10)
+loc2: (24, 13)
+col: 9
+oh: 4
+ow: 4
+ncells: 2
+loc: (9, 0)
+loc2: (10, 9)
+col: 0
+oh: 3
+ow: 3
+ncells: 1
+loc: (13, 4)
+loc2: (5, 7)
+oh: 5
+ow: 5
+ncells: 9
+loc: (22, 11)
+oh: 4
+ow: 5
+ncells: 2
+loc: (15, 6)
+oh: 3
+ow: 4
+ncells: 2
+loc: (5, 0)
+loc2: (8, 1)
+oh: 5
+ow: 4
+ncells: 6
+loc: (12, 12)
+oh: 6
+ow: 3
+ncells: 3
+loc: (4, 5)
+loc2: (24, 8)
+col: 1
+oh: 3
+ow: 3
+ncells: 1
+loc: (21, 2)
+loc2: (13, 6)
+oh: 6
+ow: 6
+ncells: 8
+loc: (13, 12)
+oh: 4
+ow: 5
+ncells: 2
+loc: (24, 0)
+loc2: (10, 5)
+oh: 5
+ow: 6
+ncells: 8
+loc: (6, 9)
+oh: 3
+ow: 6
+ncells: 4
+loc: (6, 2)
+oh: 6
+ow: 3
+ncells: 2
+loc: (12, 8)
+oh: 5
+ow: 5
+ncells: 6
+loc: (22, 13)
+oh: 5
+ow: 4
+ncells: 1
+loc: (1, 1)
+loc2: (26, 6)
+oh: 5
+ow: 4
+ncells: 6
+loc: (3, 11)
+oh: 5
+ow: 5
+ncells: 7
+loc: (22, 14)
+oh: 6
+ow: 6
+ncells: 13
+loc: (20, 14)
+oh: 5
+ow: 6
+ncells: 11
+loc: (23, 3)
+oh: 5
+ow: 5
+ncells: 6
+loc: (8, 1)
+oh: 4
+ow: 3
+ncells: 2
+loc: (15, 2)
+oh: 5
+ow: 4
+ncells: 2
+loc: (1, 2)
+oh: 6
+ow: 6
+ncells: 15
+loc: (0, 9)
+oh: 6
+ow: 6
+ncells: 8
+loc: (1, 15)
+loc2: (2, 5)
+oh: 3
+ow: 6
+ncells: 1
+loc: (22, 16)
+loc2: (8, 18)
+oh: 4
+ow: 4
+ncells: 1
+loc: (3, 4)
+oh: 3
+ow: 4
+ncells: 1
+loc: (21, 12)
+nremobjs: 5
+oh: 2
+ow: 1
+ncells: 1
+oh: 4
+ow: 1
+ncells: 1
+oh: 4
+ow: 3
+ncells: 7
+loc: (22, 0)
+col: 2
+oh: 1
+ow: 3
+ncells: 3
+loc: (2, 9)
+col: 6
+oh: 1
+ow: 4
+ncells: 2
+oh: 3
+ow: 2
+ncells: 6
+loc: (13, 10)
+oh: 1
+ow: 4
+ncells: 1
+oh: 3
+ow: 2
+ncells: 5
+loc: (22, 16)
+col: 2
+oh: 3
+ow: 2
+ncells: 6
+loc: (25, 14)
+col: 3
+oh: 1
+ow: 2
+ncells: 2
+oh: 3
+ow: 4
+ncells: 7
+loc: (4, 2)
+oh: 3
+ow: 2
+ncells: 6
+loc: (14, 9)
+oh: 3
+ow: 1
+ncells: 3
+oh: 1
+ow: 1
+ncells: 1
+oh: 4
+ow: 3
+ncells: 4
+loc: (13, 4)
+col: 5

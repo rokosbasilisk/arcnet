@@ -1,0 +1,69 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_4c5c2cf0() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (10, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (10, 30))
+    print(f"w: {w}")
+    oh = unifint(diff_lb, diff_ub, (2, (h - 3) // 2))
+    print(f"oh: {oh}")
+    ow = unifint(diff_lb, diff_ub, (2, (w - 3) // 2))
+    print(f"ow: {ow}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    cc = choice(remcols)
+    print(f"cc: {cc}")
+    remcols = remove(cc, remcols)
+    objc = choice(remcols)
+    print(f"objc: {objc}")
+    sg = canvas(bgc, (oh, ow))
+    locc = (oh - 1, ow - 1)
+    sg = fill(sg, cc, {locc})
+    reminds = totuple(remove(locc, asindices(sg)))
+    ncells = unifint(diff_lb, diff_ub, (1, max(1, int((2/3) * oh * ow))))
+    print(f"ncells: {ncells}")
+    cells = sample(reminds, ncells)
+    while ncells == 5 and shape(cells) == (3, 3):
+        ncells = unifint(diff_lb, diff_ub, (1, max(1, int((2/3) * oh * ow))))
+        print(f"ncells (inside while): {ncells}")
+        cells = sample(reminds, ncells)
+    sg = fill(sg, objc, cells)
+    G1 = sg
+    G2 = vmirror(sg)
+    G3 = hmirror(sg)
+    G4 = vmirror(hmirror(sg))
+    vbar = canvas(bgc, (oh, 1))
+    hbar = canvas(bgc, (1, ow))
+    cp = canvas(cc, (1, 1))
+    topg = hconcat(hconcat(G1, vbar), G2)
+    botg = hconcat(hconcat(G3, vbar), G4)
+    ggm = hconcat(hconcat(hbar, cp), hbar)
+    GG = vconcat(vconcat(topg, ggm), botg)
+    gg = asobject(GG)
+    canv = canvas(bgc, (h, w))
+    loci = randint(0, h - 2 * oh - 1)
+    print(f"loci: {loci}")
+    locj = randint(0, w - 2 * ow - 1)
+    print(f"locj: {locj}")
+    loc = (loci, locj)
+    gi = paint(canv, shift(asobject(sg), loc))
+    gi = fill(gi, cc, ofcolor(gi, cc))
+    rotf = choice((identity, rot90, rot180, rot270))
+    gi = rotf(gi)
+    return gi
+
+Printed Outputs:
+h: 19
+w: 12
+oh: 7
+ow: 4
+bgc: 6
+cc: 4
+objc: 7
+ncells: 14
+loci: 0
+locj: 3

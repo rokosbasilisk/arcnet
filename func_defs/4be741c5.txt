@@ -1,0 +1,107 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_4be741c5() -> list:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (4, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (6, 30))
+    print(f"w: {w}")
+    numcolors = unifint(diff_lb, diff_ub, (2, w // 3))
+    print(f"numcolors: {numcolors}")
+    ccols = sample(cols, numcolors)
+    print(f"ccols: {ccols}")
+    gi = merge(tuple(repeat(repeat(c, h), 3) for c in ccols))
+    while len(gi) < w:
+        idx = randint(0, len(gi) - 1)
+        print(f"idx: {idx}")
+        gi = gi[:idx] + gi[idx:idx+1] + gi[idx:]
+    gi = dmirror(gi)
+    ndisturbances = unifint(diff_lb, diff_ub, (0, 3 * h * numcolors))
+    print(f"ndisturbances: {ndisturbances}")
+    for k in range(ndisturbances):
+        options = []
+        for a in range(h):
+            for b in range(w - 3):
+                if gi[a][b] == gi[a][b+1] and gi[a][b+2] == gi[a][b+3]:
+                    options.append((a, b, gi[a][b], gi[a][b+2]))
+        if len(options) == 0:
+            break
+        a, b, c1, c2 = choice(options)
+        print(f"a: {a}, b: {b}, c1: {c1}, c2: {c2}")
+        if choice((True, False)):
+            gi = fill(gi, c2, {(a, b+1)})
+        else:
+            gi = fill(gi, c1, {(a, b+2)})
+    if choice((True, False)):
+        gi = dmirror(gi)
+    return gi
+
+Printed Outputs:
+h: 20
+w: 30
+numcolors: 3
+ccols: [8, 2, 1]
+idx: 6
+idx: 7
+idx: 1
+idx: 3
+idx: 11
+idx: 11
+idx: 7
+idx: 0
+idx: 1
+idx: 10
+idx: 0
+idx: 9
+idx: 19
+idx: 14
+idx: 21
+idx: 22
+idx: 11
+idx: 18
+idx: 15
+idx: 5
+idx: 22
+ndisturbances: 40
+a: 12, b: 4, c1: 8, c2: 8
+a: 15, b: 16, c1: 1, c2: 1
+a: 12, b: 1, c1: 8, c2: 8
+a: 2, b: 25, c1: 1, c2: 1
+a: 3, b: 10, c1: 2, c2: 2
+a: 13, b: 18, c1: 1, c2: 1
+a: 6, b: 3, c1: 8, c2: 8
+a: 15, b: 3, c1: 8, c2: 8
+a: 18, b: 0, c1: 8, c2: 8
+a: 18, b: 16, c1: 1, c2: 1
+a: 15, b: 2, c1: 8, c2: 8
+a: 4, b: 12, c1: 2, c2: 2
+a: 19, b: 0, c1: 8, c2: 8
+a: 3, b: 3, c1: 8, c2: 8
+a: 18, b: 1, c1: 8, c2: 8
+a: 1, b: 10, c1: 2, c2: 2
+a: 4, b: 14, c1: 2, c2: 1
+a: 1, b: 18, c1: 1, c2: 1
+a: 5, b: 3, c1: 8, c2: 8
+a: 17, b: 20, c1: 1, c2: 1
+a: 19, b: 14, c1: 2, c2: 1
+a: 13, b: 11, c1: 2, c2: 2
+a: 6, b: 7, c1: 8, c2: 2
+a: 10, b: 7, c1: 8, c2: 2
+a: 0, b: 1, c1: 8, c2: 8
+a: 1, b: 19, c1: 1, c2: 1
+a: 19, b: 1, c1: 8, c2: 8
+a: 7, b: 16, c1: 1, c2: 1
+a: 10, b: 21, c1: 1, c2: 1
+a: 18, b: 12, c1: 2, c2: 2
+a: 4, b: 19, c1: 1, c2: 1
+a: 1, b: 22, c1: 1, c2: 1
+a: 8, b: 22, c1: 1, c2: 1
+a: 1, b: 20, c1: 1, c2: 1
+a: 5, b: 14, c1: 2, c2: 1
+a: 6, b: 17, c1: 1, c2: 1
+a: 7, b: 21, c1: 1, c2: 1
+a: 4, b: 20, c1: 1, c2: 1
+a: 3, b: 7, c1: 8, c2: 2
+a: 5, b: 9, c1: 2, c2: 2

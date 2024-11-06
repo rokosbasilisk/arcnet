@@ -1,0 +1,53 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_1bfc4729() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (4, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (4, 30))
+    print(f"w: {w}")
+    if h % 2 == 1:
+        h = choice((max(4, h - 1), min(30, h + 1)))
+    print(f"h after choice: {h}")
+    alocj = unifint(diff_lb, diff_ub, (w // 2, w - 1))
+    print(f"alocj: {alocj}")
+    if choice((True, False)):
+        alocj = max(min(w // 2, alocj - w // 2), 1)
+    print(f"alocj after choice: {alocj}")
+    aloci = randint(1, h // 2 - 1)
+    print(f"aloci: {aloci}")
+    blocj = unifint(diff_lb, diff_ub, (w // 2, w - 1))
+    print(f"blocj: {blocj}")
+    if choice((True, False)):
+        blocj = max(min(w // 2, blocj - w // 2), 1)
+    print(f"blocj after choice: {blocj}")
+    bloci = randint(h // 2, h - 2)
+    print(f"bloci: {bloci}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    acol = choice(remcols)
+    print(f"acol: {acol}")
+    remcols = remove(acol, remcols)
+    bcol = choice(remcols)
+    print(f"bcol: {bcol}")
+    gi = canvas(bgc, (h, w))
+    gi = fill(gi, acol, {(aloci, alocj)})
+    gi = fill(gi, bcol, {(bloci, blocj)})
+    return gi
+
+Printed Outputs:
+h: 24
+w: 18
+h after choice: 24
+alocj: 9
+alocj after choice: 9
+aloci: 7
+blocj: 11
+blocj after choice: 11
+bloci: 18
+bgc: 4
+acol: 9
+bcol: 2

@@ -1,0 +1,55 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_1cf80156() -> float:
+    diff_lb = 0
+    diff_ub = 1
+    colopts = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (3, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (3, 30))
+    print(f"w: {w}")
+    bgc = choice(colopts)
+    print(f"bgc: {bgc}")
+    fgc = choice(remove(bgc, colopts))
+    print(f"fgc: {fgc}")
+    gi = canvas(bgc, (h, w))
+    hb = unifint(diff_lb, diff_ub, (1, min(15, h - 1)))
+    print(f"hb: {hb}")
+    wb = unifint(diff_lb, diff_ub, (1, min(15, w - 1)))
+    print(f"wb: {wb}")
+    bounds = asindices(canvas(0, (hb, wb)))
+    print(f"bounds: {bounds}")
+    shp = {choice(totuple(corners(bounds)))}
+    print(f"shp: {shp}")
+    mp = (hb * wb) // 2
+    print(f"mp: {mp}")
+    dev = unifint(diff_lb, diff_ub, (0, mp))
+    print(f"dev: {dev}")
+    nc = choice((dev, hb * wb - dev))
+    print(f"nc: {nc}")
+    nc = max(0, min(hb * wb - 1, nc))
+    for j in range(nc):
+        shp.add(choice(totuple((bounds - shp) & mapply(neighbors, shp))))
+    shp = normalize(shp)
+    di = randint(0, h - height(shp))
+    print(f"di: {di}")
+    dj = randint(0, w - width(shp))
+    print(f"dj: {dj}")
+    shpp = shift(shp, (di, dj))
+    gi = fill(gi, fgc, shpp)
+    return gi
+
+Printed Outputs:
+h: 13
+w: 6
+bgc: 3
+fgc: 8
+hb: 2
+wb: 5
+bounds: frozenset({(0, 1), (1, 2), (0, 4), (0, 0), (1, 1), (0, 3), (1, 4), (0, 2), (1, 0), (1, 3)})
+shp: {(0, 0)}
+mp: 5
+dev: 3
+nc: 7
+di: 5
+dj: 0

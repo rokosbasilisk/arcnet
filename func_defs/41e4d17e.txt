@@ -1,0 +1,85 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_41e4d17e() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = remove(6, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (6, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (6, 30))
+    print(f"w: {w}")
+    num = unifint(diff_lb, diff_ub, (1, (h * w) // 16))
+    print(f"num: {num}")
+    bgc, fgc = sample(cols, 2)
+    print(f"bgc: {bgc}, fgc: {fgc}")
+    gi = canvas(bgc, (h, w))
+    inds = asindices(gi)
+    bx = box(frozenset({(0, 0), (4, 4)}))
+    bd = backdrop(bx)
+    maxtrials = 4 * num
+    succ = 0
+    tr = 0
+    while succ < num and tr < maxtrials:
+        loc = choice(totuple(inds))
+        print(f"loc: {loc}")
+        bxs = shift(bx, loc)
+        if bxs.issubset(set(inds)):
+            gi = fill(gi, fgc, bxs)
+            cen = center(bxs)
+            frns = hfrontier(cen) | vfrontier(cen)
+            kep = frns & ofcolor(gi, bgc)
+            gi = fill(gi, 6, kep)
+            inds = difference(inds, shift(bd, loc))
+            succ += 1
+        tr += 1
+    return gi
+
+Printed Outputs:
+h: 9
+w: 23
+num: 11
+bgc: 9, fgc: 0
+loc: (5, 20)
+loc: (4, 10)
+loc: (8, 1)
+loc: (4, 6)
+loc: (3, 19)
+loc: (0, 2)
+loc: (5, 17)
+loc: (4, 20)
+loc: (8, 22)
+loc: (7, 5)
+loc: (4, 7)
+loc: (7, 9)
+loc: (8, 1)
+loc: (3, 11)
+loc: (7, 4)
+loc: (2, 21)
+loc: (3, 20)
+loc: (4, 17)
+loc: (6, 5)
+loc: (8, 15)
+loc: (8, 8)
+loc: (7, 15)
+loc: (7, 2)
+loc: (8, 3)
+loc: (3, 1)
+loc: (8, 8)
+loc: (3, 18)
+loc: (1, 14)
+loc: (0, 18)
+loc: (4, 8)
+loc: (0, 1)
+loc: (3, 19)
+loc: (4, 7)
+loc: (2, 15)
+loc: (7, 2)
+loc: (0, 17)
+loc: (2, 12)
+loc: (2, 16)
+loc: (7, 1)
+loc: (7, 16)
+loc: (7, 6)
+loc: (6, 7)
+loc: (0, 14)
+loc: (6, 6)

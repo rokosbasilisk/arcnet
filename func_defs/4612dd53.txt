@@ -1,0 +1,67 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_4612dd53() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = remove(2, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (8, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (8, 30))
+    print(f"w: {w}")
+    ih = unifint(diff_lb, diff_ub, (5, h-1))
+    print(f"ih: {ih}")
+    iw = unifint(diff_lb, diff_ub, (5, w-1))
+    print(f"iw: {iw}")
+    bgc, col = sample(cols, 2)
+    print(f"bgc: {bgc}, col: {col}")
+    loci = randint(0, h - ih)
+    print(f"loci: {loci}")
+    locj = randint(0, w - iw)
+    print(f"locj: {locj}")
+    bx = box(frozenset({(loci, locj), (loci + ih - 1, locj + iw - 1)}))
+    print(f"bx: {bx}")
+    locc = randint(loci + 2, loci + ih - 3) if choice((True, False)) else randint(locj + 2, locj + iw - 3)
+    print(f"locc: {locc}")
+    br = connect((locc, locj + 1), (locc, locj + iw - 2)) if choice((True, False)) else connect((loci + 1, locc), (loci + ih - 2, locc))
+    print(f"br: {br}")
+    c = canvas(bgc, (h, w))
+    print(f"c: {c}")
+    crns = sample(totuple(corners(bx)), 3)
+    print(f"crns: {crns}")
+    onbx = totuple(crns)
+    rembx = difference(bx, crns)
+    onbr = sample(totuple(br), 2)
+    rembr = difference(br, onbr)
+    noccbx = unifint(diff_lb, diff_ub, (0, len(rembx)))
+    print(f"noccbx: {noccbx}")
+    noccbr = unifint(diff_lb, diff_ub, (0, len(rembr)))
+    print(f"noccbr: {noccbr}")
+    occbx = sample(totuple(rembx), noccbx)
+    print(f"occbx: {occbx}")
+    occbr = sample(totuple(rembr), noccbr)
+    print(f"occbr: {occbr}")
+    c = fill(c, col, bx)
+    c = fill(c, col, br)
+    gi = fill(c, bgc, occbx)
+    gi = fill(gi, bgc, occbr)
+    if choice((True, False)):
+        gi = fill(gi, bgc, br)
+    return gi
+
+Printed Outputs:
+h: 20
+w: 24
+ih: 16
+iw: 12
+bgc: 4, col: 8
+loci: 0
+locj: 1
+bx: frozenset({(6, 12), (12, 1), (3, 1), (14, 1), (4, 12), (5, 1), (0, 2), (0, 5), (8, 12), (0, 8), (10, 12), (15, 2), (0, 11), (1, 12), (15, 5), (15, 11), (7, 1), (15, 8), (15, 9), (12, 12), (3, 12), (14, 12), (9, 1), (5, 12), (0, 1), (11, 1), (0, 7), (0, 4), (2, 1), (13, 1), (0, 10), (15, 4), (6, 1), (15, 1), (15, 7), (15, 10), (7, 12), (4, 1), (8, 1), (1, 1), (9, 12), (10, 1), (0, 3), (0, 9), (0, 6), (0, 12), (11, 12), (15, 6), (2, 12), (13, 12), (15, 3), (15, 12)})
+locc: 6
+br: frozenset({(9, 6), (4, 6), (11, 6), (14, 6), (12, 6), (7, 6), (2, 6), (5, 6), (8, 6), (3, 6), (6, 6), (1, 6), (10, 6), (13, 6)})
+c: ((4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4))
+crns: [(15, 1), (15, 12), (0, 1)]
+noccbx: 18
+noccbr: 6
+occbx: [(8, 12), (0, 2), (2, 1), (15, 6), (15, 11), (2, 12), (0, 10), (0, 8), (0, 7), (0, 6), (0, 12), (7, 1), (9, 1), (12, 12), (3, 1), (4, 12), (15, 5), (1, 12)]
+occbr: [(8, 6), (10, 6), (14, 6), (3, 6), (4, 6), (1, 6)]

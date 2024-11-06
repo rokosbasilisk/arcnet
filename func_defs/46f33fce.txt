@@ -1,0 +1,41 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_46f33fce() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (2, 7))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (2, 7))
+    print(f"w: {w}")
+    nc = unifint(diff_lb, diff_ub, (0, (h * w) // 2 - 1))
+    print(f"nc: {nc}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    print(f"remcols: {remcols}")
+    gi = canvas(bgc, (h*2, w*2))
+    print(f"gi: {gi}")
+    inds = totuple(asindices(gi))
+    locs = sample(inds, nc)
+    print(f"locs: {locs}")
+    objo = frozenset({(choice(remcols), ij) for ij in locs})
+    print(f"objo: {objo}")
+    f = lambda cij: (cij[0], double(cij[1]))
+    obji = shift(apply(f, objo), (1, 1))
+    print(f"obji: {obji}")
+    gi = paint(gi, obji)
+    print(f"gi after paint: {gi}")
+    return gi
+
+Printed Outputs:
+h: 3
+w: 4
+nc: 2
+bgc: 4
+remcols: (0, 1, 2, 3, 5, 6, 7, 8, 9)
+gi: ((4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4))
+locs: [(4, 7), (0, 7)]
+objo: frozenset({(8, (0, 7)), (1, (4, 7))})
+obji: frozenset({(1, (9, 15)), (8, (1, 15))})
+gi after paint: ((4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4), (4, 4, 4, 4, 4, 4, 4, 4))

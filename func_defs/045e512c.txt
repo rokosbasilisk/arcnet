@@ -1,0 +1,89 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_045e512c() -> None:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (11, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (11, 30))
+    print(f"w: {w}")
+    while True:
+        oh = unifint(diff_lb, diff_ub, (2, min(4, (h - 2) // 3)))
+        print(f"oh: {oh}")
+        ow = unifint(diff_lb, diff_ub, (2, min(4, (w - 2) // 3)))
+        print(f"ow: {ow}")
+        bounds = asindices(canvas(-1, (oh, ow)))
+        c1 = choice(totuple(connect((0, 0), (oh - 1, 0))))
+        print(f"c1: {c1}")
+        c2 = choice(totuple(connect((0, 0), (0, ow - 1))))
+        print(f"c2: {c2}")
+        c3 = choice(totuple(connect((oh - 1, ow - 1), (oh - 1, 0))))
+        print(f"c3: {c3}")
+        c4 = choice(totuple(connect((oh - 1, ow - 1), (0, ow - 1))))
+        print(f"c4: {c4}")
+        obj = {c1, c2, c3, c4}
+        remcands = totuple(bounds - obj)
+        ncells = unifint(diff_lb, diff_ub, (0, len(remcands)))
+        print(f"ncells: {ncells}")
+        for k in range(ncells):
+            loc = choice(remcands)
+            print(f"loc: {loc}")
+            obj.add(loc)
+            remcands = remove(loc, remcands)
+        objt = normalize(obj)
+        cc = canvas(0, shape(obj))
+        cc = fill(cc, 1, objt)
+        if len(colorfilter(objects(cc, T, T, F), 1)) == 1:
+            break
+    loci = randint(oh + 1, h - 2 * oh - 1)
+    print(f"loci: {loci}")
+    locj = randint(ow + 1, w - 2 * ow - 1)
+    print(f"locj: {locj}")
+    loc = (loci, locj)
+    bgc, objc = sample(cols, 2)
+    print(f"bgc: {bgc}, objc: {objc}")
+    remcols = remove(bgc, remove(objc, cols))
+    ncols = unifint(diff_lb, diff_ub, (1, 8))
+    print(f"ncols: {ncols}")
+    ccols = sample(remcols, ncols)
+    gi = canvas(bgc, (h, w))
+    obj = shift(recolor(objc, obj), loc)
+    gi = paint(gi, obj)
+    options = totuple(neighbors((0, 0)))
+    ndirs = unifint(diff_lb, diff_ub, (1, 8))
+    print(f"ndirs: {ndirs}")
+    dirs = sample(options, ndirs)
+    dcols = [choice(ccols) for k in range(ndirs)]
+    hbars = hfrontier((loci - 2, 0)) | hfrontier((loci + oh + 1, 0))
+    vbars = vfrontier((0, locj - 2)) | vfrontier((0, locj + ow + 1))
+    bars = hbars | vbars
+    ofs = increment((oh, ow))
+    for direc, col in zip(dirs, dcols):
+        indicatorobj = shift(obj, multiply(direc, increment((oh, ow))))
+        indicatorobj = sfilter(indicatorobj, lambda cij: cij[1] in bars)
+        nindsd = unifint(diff_lb, diff_ub, (0, len(indicatorobj) - 1))
+        ninds = len(indicatorobj) - nindsd
+        indicatorobj = set(sample(totuple(indicatorobj), ninds))
+        if len(indicatorobj) > 0 and len(indicatorobj) < len(obj):
+            gi = fill(gi, col, indicatorobj)
+    return gi
+
+Printed Outputs:
+h: 17
+w: 25
+oh: 3
+ow: 3
+c1: (1, 0)
+c2: (0, 1)
+c3: (2, 1)
+c4: (0, 2)
+ncells: 3
+loc: (0, 0)
+loc: (1, 2)
+loc: (2, 0)
+loci: 4
+locj: 13
+bgc: 2, objc: 9
+ncols: 3
+ndirs: 6

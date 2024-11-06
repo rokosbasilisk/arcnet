@@ -1,0 +1,167 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_447fd412() -> float:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (12, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (12, 30))
+    print(f"w: {w}")
+    bgc, indic, mainc = sample(cols, 3)
+    oh = unifint(diff_lb, diff_ub, (1, 4))
+    print(f"oh: {oh}")
+    ow = unifint(diff_lb, diff_ub, (1, 4))
+    print(f"ow: {ow}")
+    if oh * ow < 3:
+        if choice((True, False)):
+            oh = unifint(diff_lb, diff_ub, (3, 4))
+            print(f"oh (modified): {oh}")
+        else:
+            ow = unifint(diff_lb, diff_ub, (3, 4))
+            print(f"ow (modified): {ow}")
+    bounds = asindices(canvas(-1, (oh, ow)))
+    ncells = unifint(diff_lb, diff_ub, (3, oh * ow))
+    print(f"ncells: {ncells}")
+    obj = {choice(totuple(bounds))}
+    for k in range(ncells - 1):
+        obj.add(choice(totuple((bounds - obj) & mapply(neighbors, obj))))
+    obj = normalize(obj)
+    oh, ow = shape(obj)
+    objt = totuple(obj)
+    kk = len(obj)
+    nindic = randint(1, kk // 2 if kk % 2 == 1 else kk // 2 - 1)
+    print(f"nindic: {nindic}")
+    indicobj = set(sample(objt, nindic))
+    mainobj = obj - indicobj
+    obj = recolor(indic, indicobj) | recolor(mainc, mainobj)
+    loci = randint(0, h - oh)
+    print(f"loci: {loci}")
+    locj = randint(0, w - ow)
+    print(f"locj: {locj}")
+    gi = canvas(bgc, (h, w))
+    plcd = shift(obj, (loci, locj))
+    gi = paint(gi, plcd)
+    inds = ofcolor(gi, bgc) - mapply(neighbors, toindices(plcd))
+    fullinds = asindices(gi)
+    noccs = unifint(diff_lb, diff_ub, (1, max(1, (h * w) // (4 * len(plcd)))))
+    print(f"noccs: {noccs}")
+    tr = 0
+    maxtr = 5 * noccs
+    succ = 0
+    while succ < noccs and tr < maxtr:
+        tr += 1
+        fac = randint(1, min(5, min(h, w) // max(oh, ow) - 1))
+        print(f"fac: {fac}")
+        outobj = upscale(obj, fac)
+        inobj = sfilter(outobj, lambda cij: cij[0] == indic)
+        hh, ww = shape(outobj)
+        cands = sfilter(inds, lambda ij: ij[0] <= h - hh and ij[1] <= w - ww)
+        if len(cands) == 0:
+            continue
+        loc = choice(totuple(cands))
+        inobjp = shift(inobj, loc)
+        outobjp = shift(outobj, loc)
+        outobjp = sfilter(outobjp, lambda cij: cij[1] in fullinds)
+        outobjpi = toindices(outobjp)
+        if outobjpi.issubset(inds):
+            succ += 1
+            inds = (inds - outobjpi) - mapply(neighbors, toindices(inobjp))
+            gi = paint(gi, inobjp)
+    return gi
+
+Printed Outputs:
+h: 20
+w: 16
+oh: 3
+ow: 1
+ncells: 3
+nindic: 1
+loci: 7
+locj: 5
+noccs: 17
+fac: 2
+fac: 3
+fac: 4
+fac: 2
+fac: 2
+fac: 3
+fac: 4
+fac: 2
+fac: 2
+fac: 4
+fac: 1
+fac: 1
+fac: 1
+fac: 4
+fac: 2
+fac: 4
+fac: 3
+fac: 1
+fac: 2
+fac: 2
+fac: 3
+fac: 1
+fac: 1
+fac: 1
+fac: 2
+fac: 4
+fac: 2
+fac: 2
+fac: 3
+fac: 3
+fac: 1
+fac: 2
+fac: 2
+fac: 2
+fac: 1
+fac: 4
+fac: 3
+fac: 1
+fac: 4
+fac: 1
+fac: 1
+fac: 4
+fac: 4
+fac: 1
+fac: 3
+fac: 2
+fac: 3
+fac: 2
+fac: 4
+fac: 2
+fac: 2
+fac: 3
+fac: 1
+fac: 2
+fac: 4
+fac: 1
+fac: 2
+fac: 3
+fac: 4
+fac: 2
+fac: 1
+fac: 1
+fac: 1
+fac: 4
+fac: 2
+fac: 4
+fac: 2
+fac: 2
+fac: 4
+fac: 2
+fac: 1
+fac: 1
+fac: 4
+fac: 1
+fac: 4
+fac: 4
+fac: 2
+fac: 4
+fac: 3
+fac: 3
+fac: 1
+fac: 2
+fac: 1
+fac: 1
+fac: 4

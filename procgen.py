@@ -9,6 +9,7 @@ import contextlib
 from PIL import Image
 from termcolor import colored
 import traceback
+import re
 
 # Ensure the OpenAI API key is set
 # It's recommended to set it as an environment variable for security reasons
@@ -18,10 +19,12 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 RE_ARC_PATH = 're_arc/generators.py'
 GRIDS_DIR = 'grids'
 FUNC_DEFS_DIR = 'func_defs'
+FINAL_FUNC_DEFS_DIR = 'final_func_defs'  # New directory for final functions
 
 # Create necessary directories if they don't exist
 os.makedirs(GRIDS_DIR, exist_ok=True)
 os.makedirs(FUNC_DEFS_DIR, exist_ok=True)
+os.makedirs(FINAL_FUNC_DEFS_DIR, exist_ok=True)  # Ensure final functions directory exists
 
 # Add re_arc directory to sys.path to import generators module
 re_arc_dir = os.path.dirname(RE_ARC_PATH)
@@ -106,8 +109,9 @@ def modify_function_code(function_code):
     Modify the function code to:
     - Set diff_lb = 0 and diff_ub = 1.
     - Retain only the code necessary for calculating 'gi'.
-    - Add print statements after each line to output the intermediate variable values.
-    - Ensure the function returns a dictionary with 'input': gi at the end.
+    - Add print statements after each line to output the intermediate variable values 
+      (only 'h', 'w', and variables obtained by randint, uniform, sample, choice).
+    - Ensure the function returns 'gi' directly without intermediate variables.
     
     Returns the modified code and the cost of the API call.
     """
@@ -115,8 +119,8 @@ def modify_function_code(function_code):
 Given the following Python function, modify it to:
 1. Set diff_lb = 0 and diff_ub = 1.
 2. Remove all code related to calculating 'go' and only keep the code necessary for calculating 'gi'.
-3. Add a print statement after each line to output the intermediate variable values.
-4. Ensure the function returns a dictionary with 'input': gi at the end.
+3. Add a print statement after each line to output the values of variables 'h', 'w', and any variables obtained from randint, uniform, sample, or choice functions.
+4. Eliminate all intermediate variables and return 'gi' directly as a single expression without wrapping it in a dictionary.
 
 Here is the original function:
 
@@ -174,14 +178,9 @@ def execute_modified_function(modified_code, hash_id):
         # Redirect stdout to capture print statements
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
-            result = modified_func()
+            gi = modified_func()
         print_output = f.getvalue()
         
-        # Extract 'gi' from the returned dictionary
-        gi = result.get('input')
-        if gi is None:
-            print(f"'input' key not found in the result of function '{hash_id}'.")
-            return None, print_output
         return gi, print_output
     except Exception as e:
         print(f"Error executing modified function '{hash_id}': {e}")
@@ -225,6 +224,85 @@ def save_print_output(hash_id, print_output, modified_code):
         print(f"Error saving print output for '{hash_id}': {e}")
         traceback.print_exc()
 
+def inline_variables_in_function(original_modified_code, print_output):
+    """
+    Create a new function code by inlining the variables with their printed values.
+    This function assumes that the print_output contains lines like 'var: value'.
+    
+    Returns the new function code as a string.
+    """
+    try:
+        # Parse the printed outputs to extract variable values
+        var_values = {}
+        for line in print_output.strip().split('\n'):
+            match = re.match(r'(\w+):\s+(.+)', line)
+            if match:
+                var, value = match.groups()
+                # Attempt to convert value to int or float
+                try:
+                    if '.' in value:
+                        var_values[var] = float(value)
+                    else:
+                        var_values[var] = int(value)
+                except ValueError:
+                    var_values[var] = value  # Keep as string if not a number
+
+        # Debug: Print extracted variable values
+        print(f"Extracted variable values: {var_values}")
+
+        # Replace variables in the original_modified_code with their values
+        # This assumes that variable assignments are simple and can be replaced
+        # For more complex cases, a proper parser would be needed
+
+        # Remove variable assignments and print statements
+        lines = original_modified_code.split('\n')
+        new_lines = []
+        for line in lines:
+            # Skip lines that assign to variables that have been inlined
+            assign_match = re.match(r'\s*(\w+)\s*=\s*.*', line)
+            if assign_match:
+                var = assign_match.group(1)
+                if var in var_values and var not in ['diff_lb', 'diff_ub']:
+                    continue  # Remove this line as we'll inline its value
+            # Skip print statements
+            if 'print(' in line:
+                continue
+            new_lines.append(line)
+
+        # Now, replace remaining variable usages with their values
+        # This requires careful replacement to avoid unintended substitutions
+        # We'll use regex word boundaries to replace whole words only
+        modified_code = '\n'.join(new_lines)
+        for var, value in var_values.items():
+            if var in ['h', 'w', 'numcd', 'numc', 'fgc']:
+                # Replace whole word occurrences
+                # For strings, keep quotes
+                if isinstance(value, str):
+                    value_str = f'"{value}"'
+                else:
+                    value_str = str(value)
+                modified_code = re.sub(rf'\b{var}\b', value_str, modified_code)
+
+        # Now, ensure that the function returns gi directly
+        # Since all variables are inlined, the expression should already be simplified
+        return modified_code
+    except Exception as e:
+        print(f"Error inlining variables: {e}")
+        traceback.print_exc()
+        return original_modified_code  # Fallback to original if error occurs
+
+def save_final_function(hash_id, final_code):
+    """
+    Save the final inlined function code to a separate directory.
+    """
+    try:
+        file_path = os.path.join(FINAL_FUNC_DEFS_DIR, f"{hash_id}.py")
+        with open(file_path, 'w') as file:
+            file.write(final_code)
+    except Exception as e:
+        print(f"Error saving final function for '{hash_id}': {e}")
+        traceback.print_exc()
+
 def main():
     """
     Main function to process all generator functions.
@@ -234,7 +312,7 @@ def main():
         # Get the original function code
         try:
             original_code = inspect.getsource(func)
-            print(f"\noriginal_code for '{hash_id}':\n{original_code}\n")
+            print(f"\nOriginal code for '{hash_id}':\n{original_code}\n")
         except Exception as e:
             print(f"Error retrieving source for function '{hash_id}': {e}")
             traceback.print_exc()
@@ -244,7 +322,7 @@ def main():
         modified_code, cost = modify_function_code(original_code)
         modified_code = "from re_arc.dsl import *\n" + modified_code   
         if modified_code:
-            print(f"modified_code for '{hash_id}':\n{modified_code}\n")
+            print(f"Modified code for '{hash_id}':\n{modified_code}\n")
         else:
             print(f"Skipping function '{hash_id}' due to modification error.\n")
             continue
@@ -268,6 +346,13 @@ def main():
         
         # Save the modified function code and print outputs to a text file
         save_print_output(hash_id, print_output, modified_code)
+        
+        # Inline the variables in the function code
+        final_code = inline_variables_in_function(modified_code, print_output)
+        print(f"Final inlined code for '{hash_id}':\n{final_code}\n")
+        
+        # Save the final inlined function code to a separate file
+        save_final_function(hash_id, final_code)
         
         # Print the cost for this function and the total cost so far
         print(f"Function '{hash_id}' processed. Cost for this function: ${cost:.6f}. Total cost so far: ${total_cost:.6f}.\n")

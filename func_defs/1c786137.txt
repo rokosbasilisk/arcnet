@@ -1,0 +1,55 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_1c786137() -> float:
+    diff_lb = 0
+    diff_ub = 1
+    dim_bounds = (3, 30)
+    num_cols_card_bounds = (1, 8)
+    colopts = interval(1, 10, 1)
+    h = unifint(diff_lb, diff_ub, dim_bounds)
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, dim_bounds)
+    print(f"w: {w}")
+    noise_card_bounds = (0, h * w)
+    c = canvas(0, (h, w))
+    inds = totuple(asindices(c))
+    num_noise = unifint(diff_lb, diff_ub, noise_card_bounds)
+    print(f"num_noise: {num_noise}")
+    num_cols = unifint(diff_lb, diff_ub, num_cols_card_bounds)
+    print(f"num_cols: {num_cols}")
+    noiseinds = sample(inds, num_noise)
+    colset = sample(colopts, num_cols)
+    trgcol = choice(difference(colopts, colset))
+    noise = frozenset((choice(colset), ij) for ij in noiseinds)
+    gi = paint(c, noise)
+    boxhrng = (3, max(3, h//2))
+    boxwrng = (3, max(3, w//2))
+    boxh = unifint(diff_lb, diff_ub, boxhrng)
+    print(f"boxh: {boxh}")
+    boxw = unifint(diff_lb, diff_ub, boxwrng)
+    print(f"boxw: {boxw}")
+    boxi = choice(interval(0, h - boxh + 1, 1))
+    print(f"boxi: {boxi}")
+    boxj = choice(interval(0, w - boxw + 1, 1))
+    print(f"boxj: {boxj}")
+    loc = (boxi, boxj)
+    llc = add(loc, toivec(boxh - 1))
+    urc = add(loc, tojvec(boxw - 1))
+    lrc = add(loc, (boxh - 1, boxw - 1))
+    l1 = connect(loc, llc)
+    l2 = connect(loc, urc)
+    l3 = connect(urc, lrc)
+    l4 = connect(llc, lrc)
+    l = l1 | l2 | l3 | l4
+    gi = fill(gi, trgcol, l)
+    return gi
+
+Printed Outputs:
+h: 26
+w: 10
+num_noise: 218
+num_cols: 1
+boxh: 5
+boxw: 3
+boxi: 10
+boxj: 0

@@ -1,0 +1,88 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_2013d3e2() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(1, 10, 1)
+    h = unifint(diff_lb, diff_ub, (3, 10))
+    print(f"h: {h}")
+    w = h
+    print(f"w: {w}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    numcols = unifint(diff_lb, diff_ub, (1, 8))
+    print(f"numcols: {numcols}")
+    remcols = sample(remcols, numcols)
+    canv = canvas(bgc, (h, w))
+    nc = unifint(diff_lb, diff_ub, (2, h * w - 1))
+    print(f"nc: {nc}")
+    bx = asindices(canv)
+    obj = {(choice(remcols), choice(totuple(bx)))}
+    print(f"initial obj: {obj}")
+    for kk in range(nc - 1):
+        dns = mapply(neighbors, toindices(obj))
+        ch = choice(totuple(bx & dns))
+        print(f"ch: {ch}")
+        obj.add((choice(remcols), ch))
+        bx = bx - {ch}
+    gi = paint(canv, obj)
+    gi1 = hconcat(gi, rot90(gi))
+    gi2 = hconcat(rot270(gi), rot180(gi))
+    gi = vconcat(gi1, gi2)
+    fullh = unifint(diff_lb, diff_ub, (2*h, 30))
+    print(f"fullh: {fullh}")
+    fullw = unifint(diff_lb, diff_ub, (2*w, 30))
+    print(f"fullw: {fullw}")
+    gio = asobject(gi)
+    gic = canvas(bgc, (fullh, fullw))
+    loci = randint(0, fullh - 2*h)
+    print(f"loci: {loci}")
+    locj = randint(0, fullw - 2*w)
+    print(f"locj: {locj}")
+    gi = paint(gic, shift(gio, (loci, locj)))
+    reminds = difference(asindices(gi), ofcolor(gi, bgc))
+    return gi
+
+Printed Outputs:
+h: 8
+w: 8
+bgc: 5
+numcols: 3
+nc: 32
+initial obj: {(9, (7, 1))}
+ch: (6, 2)
+ch: (6, 1)
+ch: (7, 3)
+ch: (6, 0)
+ch: (7, 4)
+ch: (5, 2)
+ch: (6, 3)
+ch: (7, 5)
+ch: (4, 3)
+ch: (5, 3)
+ch: (3, 4)
+ch: (3, 5)
+ch: (4, 1)
+ch: (3, 1)
+ch: (7, 1)
+ch: (3, 3)
+ch: (2, 3)
+ch: (7, 2)
+ch: (7, 6)
+ch: (5, 0)
+ch: (3, 6)
+ch: (4, 0)
+ch: (2, 0)
+ch: (1, 2)
+ch: (4, 4)
+ch: (1, 4)
+ch: (5, 1)
+ch: (7, 7)
+ch: (3, 7)
+ch: (6, 6)
+ch: (6, 4)
+fullh: 25
+fullw: 18
+loci: 7
+locj: 1

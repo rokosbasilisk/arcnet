@@ -1,0 +1,50 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_3de23699() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"w: {w}")
+    bgc = choice(cols)
+    c = canvas(bgc, (h, w))
+    hi = unifint(diff_lb, diff_ub, (4, h))
+    print(f"hi: {hi}")
+    wi = unifint(diff_lb, diff_ub, (4, w))
+    print(f"wi: {wi}")
+    loci = randint(0, h - hi)
+    print(f"loci: {loci}")
+    locj = randint(0, w - wi)
+    print(f"locj: {locj}")
+    remcols = remove(bgc, cols)
+    ccol = choice(remcols)
+    print(f"ccol: {ccol}")
+    remcols = remove(ccol, remcols)
+    ncol = choice(remcols)
+    print(f"ncol: {ncol}")
+    tmpo = frozenset({(loci, locj), (loci + hi - 1, locj + wi - 1)})
+    cnds = totuple(backdrop(inbox(tmpo)))
+    mp = len(cnds) // 2
+    dev = unifint(diff_lb, diff_ub, (0, mp))
+    print(f"dev: {dev}")
+    ncnds = choice((dev, len(cnds) - dev))
+    print(f"ncnds: {ncnds}")
+    ncnds = min(max(0, ncnds), len(cnds))
+    ss = sample(cnds, ncnds)
+    gi = fill(c, ccol, corners(tmpo))
+    gi = fill(gi, ncol, ss)
+    return gi
+
+Printed Outputs:
+h: 30
+w: 27
+hi: 15
+wi: 17
+loci: 15
+locj: 9
+ccol: 3
+ncol: 5
+dev: 27
+ncnds: 168

@@ -1,0 +1,63 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_29c11459() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    colopts = remove(5, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (5, 29))
+    print(f"w: {w}")
+    if w % 2 == 0:
+        w = choice((max(5, w - 1), min(29, w + 1)))
+    print(f"w after adjustment: {w}")
+    bgc = choice(colopts)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, colopts)
+    ncols = unifint(diff_lb, diff_ub, (2, len(remcols)))
+    print(f"ncols: {ncols}")
+    ccols = sample(remcols, ncols)
+    print(f"ccols: {ccols}")
+    gi = canvas(bgc, (h, w))
+    nlocs = unifint(diff_lb, diff_ub, (1, h))
+    print(f"nlocs: {nlocs}")
+    locs = sample(interval(0, h, 1), nlocs)
+    print(f"locs: {locs}")
+    while set(locs).issubset({0, h - 1}):
+        locs = sample(interval(0, h, 1), nlocs)
+        print(f"locs after while check: {locs}")
+    acols = []
+    bcols = []
+    aforb = -1
+    bforb = -1
+    for k in range(nlocs):
+        ac = choice(remove(aforb, ccols))
+        acols.append(ac)
+        print(f"ac: {ac}")
+        aforb = ac
+        bc = choice(remove(bforb, ccols))
+        bcols.append(bc)
+        print(f"bc: {bc}")
+        bforb = bc
+    for (a, b), loc in zip(zip(acols, bcols), sorted(locs)):
+        gi = fill(gi, a, {(loc, 0)})
+        gi = fill(gi, b, {(loc, w - 1)})
+    if choice((True, False)):
+        gi = dmirror(gi)
+    return gi
+
+Printed Outputs:
+h: 8
+w: 8
+w after adjustment: 9
+bgc: 2
+ncols: 4
+ccols: [9, 6, 3, 7]
+nlocs: 3
+locs: [0, 1, 4]
+ac: 7
+bc: 6
+ac: 3
+bc: 9
+ac: 6
+bc: 3

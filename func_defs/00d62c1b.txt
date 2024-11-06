@@ -1,0 +1,201 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_00d62c1b() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = remove(4, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"w: {w}")
+    bgc, fgc = sample(cols, 2)
+    gi = canvas(bgc, (h, w))
+    nblocks = unifint(diff_lb, diff_ub, (1, (h * w) // 20))
+    print(f"nblocks: {nblocks}")
+    succ = 0
+    tr = 0
+    maxtr = 5 * nblocks
+    inds = asindices(gi)
+    while succ < nblocks and tr < maxtr:
+        tr += 1
+        oh = randint(3, 8)
+        print(f"oh: {oh}")
+        ow = randint(3, 8)
+        print(f"ow: {ow}")
+        cands = sfilter(inds, lambda ij: ij[0] <= h - oh and ij[1] <= w - ow)
+        if len(cands) == 0:
+            continue
+        loc = choice(totuple(cands))
+        print(f"loc: {loc}")
+        loci, locj = loc
+        bx = box(frozenset({(loci, locj), (loci + oh - 1, locj + ow - 1)}))
+        bx = bx - set(sample(totuple(corners(bx)), randint(0, 4)))
+        if bx.issubset(inds) and len(inds - bx) > (h * w) // 2 + 1:
+            gi = fill(gi, fgc, bx)
+            succ += 1
+            inds = inds - bx
+    maxnnoise = max(0, (h * w) // 2 - 1 - colorcount(gi, fgc))
+    namt = unifint(diff_lb, diff_ub, (0, maxnnoise))
+    print(f"namt: {namt}")
+    noise = sample(totuple(inds), namt)
+    gi = fill(gi, fgc, noise)
+    objs = objects(gi, T, F, F)
+    cands = colorfilter(objs, bgc)
+    res = mfilter(cands, compose(flip, rbind(bordering, gi)))
+    return gi
+
+Printed Outputs:
+h: 10
+w: 25
+nblocks: 10
+oh: 8
+ow: 6
+loc: (2, 12)
+oh: 5
+ow: 7
+loc: (4, 8)
+oh: 6
+ow: 3
+loc: (4, 1)
+oh: 3
+ow: 4
+loc: (6, 19)
+oh: 4
+ow: 6
+loc: (1, 18)
+oh: 6
+ow: 7
+loc: (2, 9)
+oh: 5
+ow: 7
+loc: (3, 2)
+oh: 3
+ow: 6
+loc: (4, 0)
+oh: 4
+ow: 5
+loc: (6, 4)
+oh: 5
+ow: 3
+loc: (3, 20)
+oh: 3
+ow: 6
+loc: (1, 2)
+oh: 5
+ow: 3
+loc: (2, 19)
+oh: 3
+ow: 8
+loc: (0, 17)
+oh: 5
+ow: 5
+loc: (5, 8)
+oh: 8
+ow: 8
+loc: (2, 1)
+oh: 7
+ow: 7
+loc: (0, 13)
+oh: 5
+ow: 6
+loc: (1, 1)
+oh: 4
+ow: 4
+loc: (3, 14)
+oh: 7
+ow: 5
+loc: (3, 14)
+oh: 8
+ow: 4
+loc: (0, 17)
+oh: 8
+ow: 6
+loc: (2, 11)
+oh: 6
+ow: 8
+loc: (0, 1)
+oh: 7
+ow: 4
+loc: (0, 5)
+oh: 4
+ow: 6
+loc: (2, 10)
+oh: 8
+ow: 6
+loc: (0, 15)
+oh: 7
+ow: 7
+loc: (2, 1)
+oh: 4
+ow: 5
+loc: (5, 9)
+oh: 6
+ow: 3
+loc: (4, 5)
+oh: 6
+ow: 3
+loc: (4, 16)
+oh: 8
+ow: 8
+loc: (0, 13)
+oh: 6
+ow: 6
+loc: (1, 14)
+oh: 7
+ow: 6
+loc: (2, 3)
+oh: 8
+ow: 5
+loc: (0, 2)
+oh: 3
+ow: 8
+loc: (7, 5)
+oh: 5
+ow: 5
+loc: (2, 1)
+oh: 3
+ow: 4
+loc: (0, 15)
+oh: 7
+ow: 3
+loc: (2, 20)
+oh: 6
+ow: 8
+loc: (0, 12)
+oh: 3
+ow: 6
+loc: (2, 10)
+oh: 5
+ow: 6
+loc: (3, 19)
+oh: 4
+ow: 3
+loc: (6, 9)
+oh: 7
+ow: 5
+loc: (1, 12)
+oh: 5
+ow: 7
+loc: (0, 9)
+oh: 6
+ow: 4
+loc: (3, 13)
+oh: 7
+ow: 4
+loc: (1, 13)
+oh: 6
+ow: 3
+loc: (1, 1)
+oh: 4
+ow: 6
+loc: (6, 11)
+oh: 5
+ow: 7
+loc: (0, 9)
+oh: 4
+ow: 3
+loc: (5, 10)
+oh: 3
+ow: 6
+loc: (0, 7)
+namt: 17

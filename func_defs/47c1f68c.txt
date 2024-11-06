@@ -1,0 +1,63 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_47c1f68c() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(1, 10, 1)
+    h = unifint(diff_lb, diff_ub, (2, 14))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (2, 14))
+    print(f"w: {w}")
+    bgc, linc = sample(cols, 2)
+    print(f"bgc: {bgc}, linc: {linc}")
+    remcols = difference(cols, (bgc, linc))
+    objc = choice(remcols)
+    print(f"objc: {objc}")
+    canv = canvas(bgc, (h, w))
+    nc = unifint(diff_lb, diff_ub, (1, h * w - 1))
+    print(f"nc: {nc}")
+    bx = asindices(canv)
+    obj = {choice(totuple(bx))}
+    print(f"obj: {obj}")
+    for kk in range(nc - 1):
+        dns = mapply(neighbors, obj)
+        ch = choice(totuple(bx & dns))
+        print(f"ch: {ch}")
+        obj.add(ch)
+        bx = bx - {ch}
+    obj = recolor(objc, obj)
+    gi = paint(canv, obj)
+    return gi
+
+Printed Outputs:
+h: 8
+w: 7
+bgc: 7, linc: 2
+objc: 3
+nc: 26
+obj: {(4, 1)}
+ch: (5, 0)
+ch: (3, 0)
+ch: (4, 0)
+ch: (5, 2)
+ch: (6, 1)
+ch: (4, 2)
+ch: (3, 1)
+ch: (7, 2)
+ch: (2, 1)
+ch: (6, 0)
+ch: (2, 2)
+ch: (1, 1)
+ch: (4, 3)
+ch: (6, 3)
+ch: (3, 2)
+ch: (3, 4)
+ch: (7, 0)
+ch: (2, 5)
+ch: (6, 4)
+ch: (1, 0)
+ch: (4, 4)
+ch: (3, 3)
+ch: (5, 5)
+ch: (5, 1)
+ch: (7, 4)

@@ -1,0 +1,75 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_1f876c06() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"w: {w}")
+    nlns = unifint(diff_lb, diff_ub, (1, min(min(h, w), 9)))
+    print(f"nlns: {nlns}")
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    ccols = sample(remcols, nlns)
+    print(f"ccols: {ccols}")
+    succ = 0
+    tr = 0
+    maxtr = 10 * nlns
+    direcs = ineighbors((0, 0))
+    gi = canvas(bgc, (h, w))
+    inds = asindices(gi)
+    while succ < nlns and tr < maxtr:
+        tr += 1
+        if len(inds) == 0:
+            break
+        loc = choice(totuple(inds))
+        print(f"loc: {loc}")
+        lns = []
+        for direc in direcs:
+            ln = [loc]
+            ofs = 1
+            while True:
+                nextpix = add(loc, multiply(ofs, direc))
+                ofs += 1
+                if nextpix not in inds:
+                    break
+                ln.append(nextpix)
+            if len(ln) > 2:
+                lns.append(ln)
+        if len(lns) > 0:
+            succ += 1
+            lns = sorted(lns, key=len)
+            idx = unifint(diff_lb, diff_ub, (0, len(lns) - 1))
+            print(f"idx: {idx}")
+            ln = lns[idx]
+            col = ccols[0]
+            ccols = ccols[1:]
+            gi = fill(gi, col, {ln[0], ln[-1]})
+            inds = inds - set(ln)
+    return gi
+
+Printed Outputs:
+h: 28
+w: 11
+nlns: 8
+bgc: 6
+ccols: [8, 2, 7, 0, 9, 1, 3, 4]
+loc: (27, 7)
+idx: 1
+loc: (22, 6)
+idx: 1
+loc: (5, 2)
+idx: 1
+loc: (0, 5)
+idx: 0
+loc: (5, 4)
+idx: 2
+loc: (16, 9)
+idx: 0
+loc: (19, 2)
+idx: 2
+loc: (21, 9)
+idx: 0

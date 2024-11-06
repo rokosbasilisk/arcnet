@@ -1,0 +1,43 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_28e73c20() -> float:
+    diff_lb = 0
+    diff_ub = 1
+    cols = difference(interval(0, 10, 1), (3,))
+    h = unifint(diff_lb, diff_ub, (3, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (4, 30))
+    print(f"w: {w}")
+    sp = (0, w - 1)
+    ncols = unifint(diff_lb, diff_ub, (1, 9))
+    print(f"ncols: {ncols}")
+    ccols = sample(cols, ncols)
+    print(f"ccols: {ccols}")
+    gi = canvas(-1, (h, w))
+    inds = asindices(gi)
+    obj = {(choice(ccols), ij) for ij in inds}
+    gi = paint(gi, obj)
+    lw = w
+    lh = h
+    ld = h
+    isverti = False
+    while ld > 0:
+        lw -= 1
+        lh -= 1
+        ep = add(sp, multiply((1, 0), ld - 1))
+        ln = connect(sp, ep)
+        gi = fill(gi, 3, ln)
+        if isverti:
+            ld = lh
+        else:
+            ld = lw
+        isverti = not isverti
+        sp = ep
+    gi = dmirror(dmirror(gi)[1:])
+    return gi
+
+Printed Outputs:
+h: 20
+w: 29
+ncols: 3
+ccols: [6, 0, 2]

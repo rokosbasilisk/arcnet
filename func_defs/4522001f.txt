@@ -1,0 +1,78 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_4522001f() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    print(f"diff_lb: {diff_lb}, diff_ub: {diff_ub}")
+    
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (3, 10))
+    print(f"h: {h}")
+    
+    w = unifint(diff_lb, diff_ub, (3, 10))
+    print(f"w: {w}")
+    
+    bgc, sqc, dotc = sample(cols, 3)
+    print(f"bgc: {bgc}, sqc: {sqc}, dotc: {dotc}")
+    
+    gi = canvas(bgc, (h, w))
+    print(f"gi: {gi}")
+    
+    sqi = {(dotc, (1, 1))} | recolor(sqc, {(0, 0), (0, 1), (1, 0)})
+    sqo = backdrop(frozenset({(0, 0), (3, 3)}))
+    sqo |= shift(sqo, (4, 4))
+    
+    loci = randint(0, min(h-2, 3*h-8))
+    print(f"loci: {loci}")
+    
+    locj = randint(0, min(w-2, 3*w-8))
+    print(f"locj: {locj}")
+    
+    loc = (loci, locj)
+    plcdi = shift(sqi, loc)
+    plcdo = shift(sqo, loc)
+    
+    gi = paint(gi, plcdi)
+    print(f"gi after paint: {gi}")
+    
+    noccs = unifint(diff_lb, diff_ub, (0, (h*w) // 9))
+    print(f"noccs: {noccs}")
+    
+    succ = 0
+    tr = 0
+    maxtr = 10 * noccs
+    iinds = ofcolor(gi, bgc) - mapply(dneighbors, toindices(plcdi))
+    
+    while tr < maxtr and succ < noccs:
+        tr += 1
+        cands = sfilter(iinds, lambda ij: ij[0] <= h - 2 and ij[1] <= w - 2)
+        if len(cands) == 0:
+            break
+        loc = choice(totuple(cands))
+        plcdi = shift(sqi, loc)
+        plcdo = shift(sqo, loc)
+        plcdii = toindices(plcdi)
+        if plcdii.issubset(iinds):
+            succ += 1
+            iinds = (iinds - plcdii) - mapply(dneighbors, plcdii)
+            gi = paint(gi, plcdi)
+            print(f"gi after paint in loop: {gi}")
+    
+    rotf = choice((identity, rot90, rot180, rot270))
+    gi = rotf(gi)
+    print(f"gi after rotation: {gi}")
+    
+    return gi
+
+Printed Outputs:
+diff_lb: 0, diff_ub: 1
+h: 5
+w: 9
+bgc: 7, sqc: 9, dotc: 2
+gi: ((7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7))
+loci: 3
+locj: 6
+gi after paint: ((7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 9, 9, 7), (7, 7, 7, 7, 7, 7, 9, 2, 7))
+noccs: 1
+gi after paint in loop: ((7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 9, 9, 7, 7, 7, 7, 7, 7), (7, 9, 2, 7, 7, 7, 9, 9, 7), (7, 7, 7, 7, 7, 7, 9, 2, 7))
+gi after rotation: ((7, 2, 9, 7, 7, 7, 7, 7, 7), (7, 9, 9, 7, 7, 7, 2, 9, 7), (7, 7, 7, 7, 7, 7, 9, 9, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7), (7, 7, 7, 7, 7, 7, 7, 7, 7))

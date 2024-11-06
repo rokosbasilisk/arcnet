@@ -1,0 +1,73 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_363442ee() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (1, 3))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (1, 3))
+    print(f"w: {w}")
+    h = h * 2 + 1
+    print(f"h after modification: {h}")
+    w = w * 2 + 1
+    print(f"w after modification: {w}")
+    nremh = unifint(diff_lb, diff_ub, (2, 30 // h))
+    print(f"nremh: {nremh}")
+    nremw = unifint(diff_lb, diff_ub, (2, (30 - w - 1) // w))
+    print(f"nremw: {nremw}")
+    rsh = nremh * h
+    print(f"rsh: {rsh}")
+    rsw = nremw * w
+    print(f"rsw: {rsw}")
+    rss = (rsh, rsw)
+    bgc = choice(cols)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, cols)
+    barcol = choice(remcols)
+    print(f"barcol: {barcol}")
+    remcols = remove(barcol, remcols)
+    rsi = canvas(bgc, rss)
+    rso = canvas(bgc, rss)
+    ls = canvas(bgc, ((nremh - 1) * h, w))
+    ulc = canvas(bgc, (h, w))
+    bar = canvas(barcol, (nremh * h, 1))
+    dotcands = totuple(product(interval(0, rsh, h), interval(0, rsw, w)))
+    dotcol = choice(remcols)
+    print(f"dotcol: {dotcol}")
+    dev = unifint(diff_lb, diff_ub, (1, len(dotcands) // 2))
+    print(f"dev: {dev}")
+    ndots = choice((dev, len(dotcands) - dev))
+    print(f"ndots before min/max: {ndots}")
+    ndots = min(max(1, ndots), len(dotcands))
+    print(f"ndots after min/max: {ndots}")
+    dots = sample(dotcands, ndots)
+    nfullremcols = unifint(diff_lb, diff_ub, (1, 8))
+    print(f"nfullremcols: {nfullremcols}")
+    fullremcols = sample(remcols, nfullremcols)
+    for ij in asindices(ulc):
+        ulc = fill(ulc, choice(fullremcols), {ij})
+    ulco = asobject(ulc)
+    osf = (h//2, w//2)
+    for d in dots:
+        rsi = fill(rsi, dotcol, {add(osf, d)})
+        rso = paint(rso, shift(ulco, d))
+    gi = hconcat(hconcat(vconcat(ulc, ls), bar), rsi)
+    return gi
+
+Printed Outputs:
+h: 1
+w: 3
+h after modification: 3
+w after modification: 7
+nremh: 10
+nremw: 3
+rsh: 30
+rsw: 21
+bgc: 7
+barcol: 1
+dotcol: 0
+dev: 1
+ndots before min/max: 1
+ndots after min/max: 1
+nfullremcols: 2

@@ -1,0 +1,63 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_1f0c79e5() -> float:
+    diff_lb = 0
+    diff_ub = 1
+    cols = remove(2, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (5, 30))
+    print(f"w: {w}")
+    bgc, objc = sample(cols, 2)
+    gi = canvas(bgc, (h, w))
+    nobjs = unifint(diff_lb, diff_ub, (1, (h * w) // 24))
+    print(f"nobjs: {nobjs}")
+    inds = asindices(gi)
+    obj = ((0, 0), (0, 1), (1, 0), (1, 1))
+    for k in range(nobjs):
+        cands = sfilter(inds, lambda ij: shift(set(obj), ij).issubset(inds))
+        if len(cands) == 0:
+            break
+        loc = choice(totuple(cands))
+        print(f"loc: {loc}")
+        plcd = shift(obj, loc)
+        nred = unifint(diff_lb, diff_ub, (1, 3))
+        print(f"nred: {nred}")
+        reds = sample(totuple(plcd), nred)
+        print(f"reds: {reds}")
+        gi = fill(gi, objc, plcd)
+        gi = fill(gi, 2, reds)
+        for idx in reds:
+            direc = decrement(multiply(2, add(idx, invert(loc))))
+            gi = fill(gi, objc, mapply(rbind(shoot, direc), frozenset(plcd)))
+        inds = (inds - plcd) - mapply(dneighbors, set(plcd))
+    return gi
+
+Printed Outputs:
+h: 21
+w: 13
+nobjs: 8
+loc: (19, 9)
+nred: 3
+reds: [(20, 9), (20, 10), (19, 10)]
+loc: (3, 5)
+nred: 3
+reds: [(4, 5), (3, 5), (4, 6)]
+loc: (8, 11)
+nred: 3
+reds: [(8, 11), (8, 12), (9, 12)]
+loc: (5, 2)
+nred: 1
+reds: [(5, 2)]
+loc: (11, 1)
+nred: 2
+reds: [(11, 1), (11, 2)]
+loc: (2, 10)
+nred: 1
+reds: [(3, 10)]
+loc: (13, 7)
+nred: 2
+reds: [(13, 8), (14, 7)]
+loc: (0, 3)
+nred: 3
+reds: [(0, 3), (1, 3), (0, 4)]

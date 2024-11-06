@@ -1,0 +1,70 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_469497ad() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    print(f"diff_lb: {diff_lb}, diff_ub: {diff_ub}")
+    
+    cols = remove(2, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (3, 6))
+    print(f"h: {h}")
+    
+    w = unifint(diff_lb, diff_ub, (3, 6))
+    print(f"w: {w}")
+    
+    bgc, sqc = sample(cols, 2)
+    print(f"bgc: {bgc}, sqc: {sqc}")
+    
+    gi = canvas(bgc, (h, w))
+    
+    sqh = randint(1, h - 2)
+    print(f"sqh: {sqh}")
+    
+    sqw = randint(1, w - 2)
+    print(f"sqw: {sqw}")
+    
+    sqloci = randint(0, h - sqh - 2)
+    print(f"sqloci: {sqloci}")
+    
+    sqlocj = randint(0, w - sqw - 2)
+    print(f"sqlocj: {sqlocj}")
+    
+    sq = backdrop(frozenset({(sqloci, sqlocj), (sqloci + sqh - 1, sqlocj + sqw - 1)}))
+    
+    gi = fill(gi, sqc, sq)
+    
+    numcub = min(min(min(h, w) + 1, 30 // (max(h, w))), 7)
+    numc = unifint(diff_lb, diff_ub, (2, numcub))
+    print(f"numc: {numc}")
+    
+    numaccc = numc - 1
+    remcols = remove(bgc, remove(sqc, cols))
+    ccols = sample(remcols, numaccc)
+    print(f"ccols: {ccols}")
+    
+    gi = rot180(gi)
+    
+    locs = sample(interval(1, min(h, w), 1), numaccc - 1)
+    locs = [0] + sorted(locs)
+    print(f"locs: {locs}")
+    
+    for c, l in zip(ccols, locs):
+        gi = fill(gi, c, shoot((0, l), (0, 1)))
+        gi = fill(gi, c, shoot((l, 0), (1, 0)))
+    
+    gi = rot180(gi)
+    
+    return gi
+
+Printed Outputs:
+diff_lb: 0, diff_ub: 1
+h: 5
+w: 3
+bgc: 1, sqc: 3
+sqh: 2
+sqw: 1
+sqloci: 1
+sqlocj: 0
+numc: 4
+ccols: [7, 9, 4]
+locs: [0, 1, 2]

@@ -1,0 +1,43 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_27a28665() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    mapping = [
+        (1, {(0, 0), (0, 1), (1, 0), (1, 2), (2, 1)}),
+        (2, {(0, 0), (1, 1), (2, 0), (0, 2), (2, 2)}),
+        (3, {(2, 0), (0, 1), (0, 2), (1, 1), (1, 2)}),
+        (6, {(1, 1), (0, 1), (1, 0), (1, 2), (2, 1)})
+    ]
+    h = unifint(diff_lb, diff_ub, (3, 30))
+    print(f'h: {h}')
+    w = unifint(diff_lb, diff_ub, (3, 30))
+    print(f'w: {w}')
+    col, obj = choice(mapping)
+    print(f'col: {col}, obj: {obj}')
+    bgc, objc = sample(cols, 2)
+    print(f'bgc: {bgc}, objc: {objc}')
+    fac = unifint(diff_lb, diff_ub, (1, min(h, w) // 3))
+    print(f'fac: {fac}')
+    gi = canvas(bgc, (h, w))
+    canv = canvas(bgc, (3, 3))
+    canv = fill(canv, objc, obj)
+    canv = upscale(canv, fac)
+    obj = asobject(canv)
+    loci = randint(0, h - 3 * fac)
+    print(f'loci: {loci}')
+    locj = randint(0, w - 3 * fac)
+    print(f'locj: {locj}')
+    loc = (loci, locj)
+    gi = paint(gi, shift(obj, loc))
+    return gi
+
+Printed Outputs:
+h: 25
+w: 29
+col: 2, obj: {(0, 2), (2, 2), (0, 0), (1, 1), (2, 0)}
+bgc: 9, objc: 6
+fac: 5
+loci: 4
+locj: 4

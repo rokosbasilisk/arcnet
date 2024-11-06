@@ -1,0 +1,68 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_2bee17df() -> float:
+    diff_lb = 0
+    diff_ub = 1
+    cols = remove(3, interval(0, 10, 1))
+    print(f'cols: {cols}')
+    h = unifint(diff_lb, diff_ub, (7, 30))
+    print(f'h: {h}')
+    w = unifint(diff_lb, diff_ub, (7, 30))
+    print(f'w: {w}')
+    bgc = choice(cols)
+    print(f'bgc: {bgc}')
+    remcols = remove(bgc, cols)
+    c = canvas(bgc, (h, w))
+    indord1 = apply(tojvec, interval(0, w, 1))
+    indord2 = apply(rbind(astuple, w - 1), interval(1, h - 1, 1))
+    indord3 = apply(lbind(astuple, h - 1), interval(w - 1, 0, -1))
+    indord4 = apply(toivec, interval(h - 1, 0, -1))
+    indord = indord1 + indord2 + indord3 + indord4
+    k = len(indord)
+    sp = randint(0, k)
+    print(f'sp: {sp}')
+    arr = indord[sp:] + indord[:sp]
+    ep = randint(k // 2 - 3, k // 2 + 1)
+    print(f'ep: {ep}')
+    a = arr[:ep]
+    b = arr[ep:]
+    cola = choice(remcols)
+    print(f'cola: {cola}')
+    remcols = remove(cola, remcols)
+    colb = choice(remcols)
+    print(f'colb: {colb}')
+    gi = fill(c, cola, a)
+    gi = fill(gi, colb, b)
+    nr = unifint(diff_lb, diff_ub, (1, min(4, min(h, w) // 2)))
+    print(f'nr: {nr}')
+    for kk in range(nr):
+        ring = box(frozenset({(1 + kk, 1 + kk), (h - 1 - kk, w - 1 - kk)}))
+        for br in (cola, colb):
+            blacks = ofcolor(gi, br)
+            bcands = totuple(ring & ofcolor(gi, bgc) & mapply(dneighbors, ofcolor(gi, br)))
+            jj = len(bcands)
+            jj2 = randint(max(0, jj // 2 - 2), min(jj, jj // 2 + 1))
+            print(f'jj: {jj}, jj2: {jj2}')
+            ss = sample(bcands, jj2)
+            gi = fill(gi, br, ss)
+    res = shift(merge(frontiers(trim(gi))), (1, 1))
+    return gi
+
+Printed Outputs:
+cols: (0, 1, 2, 4, 5, 6, 7, 8, 9)
+h: 11
+w: 21
+bgc: 6
+sp: 58
+ep: 28
+cola: 9
+colb: 8
+nr: 4
+jj: 20, jj2: 8
+jj: 7, jj2: 4
+jj: 11, jj2: 5
+jj: 25, jj2: 12
+jj: 3, jj2: 2
+jj: 10, jj2: 6
+jj: 2, jj2: 2
+jj: 4, jj2: 2

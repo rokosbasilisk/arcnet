@@ -1,0 +1,26 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_49d1d64f() -> float:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (2, 28))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (2, 28))
+    print(f"w: {w}")
+    ncols = unifint(diff_lb, diff_ub, (1, 10))
+    print(f"ncols: {ncols}")
+    ccols = sample(cols, ncols)
+    print(f"ccols: {ccols}")
+    gi = canvas(-1, (h, w))
+    print(f"gi: {gi}")
+    obj = {(choice(ccols), ij) for ij in asindices(gi)}
+    gi = paint(gi, obj)
+    return gi
+
+Printed Outputs:
+h: 6
+w: 16
+ncols: 6
+ccols: [9, 0, 6, 5, 2, 8]
+gi: ((-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1), (-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1), (-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1), (-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1), (-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1), (-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1))

@@ -1,0 +1,32 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_4258a5f9() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    colopts = remove(1, interval(0, 10, 1))
+    h = unifint(diff_lb, diff_ub, (2, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (2, 30))
+    print(f"w: {w}")
+    bgc = choice(colopts)
+    print(f"bgc: {bgc}")
+    remcols = remove(bgc, colopts)
+    fgc = choice(remcols)
+    print(f"fgc: {fgc}")
+    gi = canvas(bgc, (h, w))
+    mp = ((h * w) // 2) if (h * w) % 2 == 1 else ((h * w) // 2 - 1)
+    ndots = unifint(diff_lb, diff_ub, (1, mp))
+    print(f"ndots: {ndots}")
+    inds = totuple(asindices(gi))
+    dots = sample(inds, ndots)
+    print(f"dots: {dots}")
+    gi = fill(gi, fgc, dots)
+    return gi
+
+Printed Outputs:
+h: 6
+w: 29
+bgc: 7
+fgc: 9
+ndots: 64
+dots: [(5, 15), (1, 26), (1, 16), (3, 8), (1, 9), (2, 21), (4, 5), (1, 22), (3, 7), (0, 6), (2, 1), (1, 24), (0, 5), (0, 17), (4, 19), (3, 14), (2, 28), (3, 20), (2, 14), (1, 5), (0, 22), (0, 3), (5, 1), (2, 16), (2, 23), (0, 27), (1, 13), (4, 20), (5, 24), (1, 6), (2, 0), (3, 19), (1, 15), (3, 6), (1, 8), (1, 21), (2, 18), (0, 25), (4, 18), (3, 21), (4, 28), (4, 10), (5, 10), (1, 18), (3, 25), (5, 6), (3, 16), (2, 26), (5, 17), (2, 8), (0, 14), (3, 28), (4, 13), (4, 26), (3, 15), (5, 23), (3, 1), (4, 16), (4, 11), (2, 10), (2, 6), (0, 12), (2, 4), (3, 17)]

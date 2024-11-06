@@ -1,0 +1,59 @@
+Modified Function Code:
+from re_arc.dsl import *
+def generate_4093f84a() -> any:
+    diff_lb = 0
+    diff_ub = 1
+    cols = interval(0, 10, 1)
+    h = unifint(diff_lb, diff_ub, (7, 30))
+    print(f"h: {h}")
+    w = unifint(diff_lb, diff_ub, (7, 30))
+    print(f"w: {w}")
+    loci1, loci2 = sorted(sample(interval(2, h - 2, 1), 2))
+    bgc, barc, dotc = sample(cols, 3)
+    gi = canvas(bgc, (h, w))
+    for ii in range(loci1, loci2 + 1, 1):
+        gi = fill(gi, barc, connect((ii, 0), (ii, w - 1)))
+    opts = interval(0, w, 1)
+    num1 = unifint(diff_lb, diff_ub, (1, w // 2))
+    print(f"num1: {num1}")
+    num2 = unifint(diff_lb, diff_ub, (1, w // 2))
+    print(f"num2: {num2}")
+    locs1 = sample(opts, num1)
+    print(f"locs1: {locs1}")
+    locs2 = sample(opts, num2)
+    print(f"locs2: {locs2}")
+    for l1 in locs1:
+        k = unifint(diff_lb, diff_ub, (1, loci1 - 1))
+        print(f"k (locs1): {k}")
+        locsx = sample(interval(0, loci1, 1), k)
+        print(f"locsx (locs1): {locsx}")
+        gi = fill(gi, dotc, apply(rbind(astuple, l1), locsx))
+    for l2 in locs2:
+        k = unifint(diff_lb, diff_ub, (1, h - loci2 - 2))
+        print(f"k (locs2): {k}")
+        locsx = sample(interval(loci2 + 1, h, 1), k)
+        print(f"locsx (locs2): {locsx}")
+        gi = fill(gi, dotc, apply(rbind(astuple, l2), locsx))
+    if choice((True, False)):
+        gi = dmirror(gi)
+    return gi
+
+Printed Outputs:
+h: 20
+w: 11
+num1: 3
+num2: 3
+locs1: [5, 4, 0]
+locs2: [6, 9, 2]
+k (locs1): 9
+locsx (locs1): [0, 3, 9, 4, 1, 10, 8, 5, 7]
+k (locs1): 9
+locsx (locs1): [9, 0, 1, 2, 5, 3, 6, 4, 10]
+k (locs1): 6
+locsx (locs1): [3, 0, 4, 10, 5, 2]
+k (locs2): 2
+locsx (locs2): [15, 19]
+k (locs2): 1
+locsx (locs2): [19]
+k (locs2): 4
+locsx (locs2): [17, 16, 14, 19]
