@@ -1,7 +1,7 @@
 import ast
 import json
 
-DSL_FILE = 'dsl.py'
+DSL_FILE = 're_arc/dsl.py'
 OUTPUT_FILE = 'data/dsl_context.json'
 
 with open(DSL_FILE, 'r') as f:
